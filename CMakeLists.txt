@@ -15,11 +15,11 @@ add_library(mermaid
 
 target_include_directories(mermaid PUBLIC includes)
 
-add_executable(mermaid_cli
+add_executable(mermaidc
     src/cli.cpp
 )
 
-target_link_libraries(mermaid_cli PRIVATE mermaid)
+target_link_libraries(mermaidc PRIVATE mermaid)
 
 add_executable(sequence_tests
     tests/test_sequence_svg.cpp

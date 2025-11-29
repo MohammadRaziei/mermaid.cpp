@@ -1,0 +1,18 @@
+sequenceDiagram
+actor User
+participant Service
+participant DB as Database
+
+User->>Service: Request
+alt Cache hit
+    Service-->>User: Serve cached
+else Cache miss
+    Service->>DB: Query
+    DB-->>Service: Result
+    Service-->>User: Serve fresh
+end
+par Logging
+    Service->>Service: Record event
+and Metrics
+    Service->>Service: Update counter
+end
