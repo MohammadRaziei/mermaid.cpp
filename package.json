@@ -1,0 +1,23 @@
+{
+  "name": "mermaid.cpp",
+  "version": "1.0.0",
+  "description": "C++ friendly wrapper project for rendering Mermaid diagrams using mermaid-cli",
+  "main": "index.js",
+  "scripts": {
+    "render": "mmdc -i diagram.mmd -o diagram.png"
+  },
+  "keywords": [
+    "mermaid",
+    "mermaid-cli",
+    "cpp",
+    "diagram",
+    "uml",
+    "svg",
+    "png"
+  ],
+  "author": "your-name",
+  "license": "MIT",
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "^10.9.0"
+  }
+}
