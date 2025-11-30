@@ -1,0 +1,11 @@
+sequenceDiagram
+  participant Frontend
+  participant Backend
+  participant Cache
+
+  par Load API
+    Frontend->>Backend: Fetch data
+  and Load Cache
+    Frontend->>Cache: Get cached item
+  end
+

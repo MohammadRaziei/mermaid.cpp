@@ -1,0 +1,21 @@
+sequenceDiagram
+  actor User
+  participant Web
+  participant API
+
+  User->>Web: Open page
+  Web->>API: Load data
+
+  alt Data found
+    API-->>Web: Data
+  else No data
+    API-->>Web: Empty
+  end
+
+  loop Poll updates
+    Web->>API: Poll
+    API-->>Web: Update
+  end
+
+  Web-->>User: Render page
+
