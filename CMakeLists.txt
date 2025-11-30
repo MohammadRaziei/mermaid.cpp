@@ -14,6 +14,7 @@ add_library(mermaid
 )
 
 target_include_directories(mermaid PUBLIC includes)
+target_compile_definitions(mermaid PUBLIC MERMAID_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 
 add_executable(mermaidc
     src/cli.cpp
@@ -27,6 +28,7 @@ add_executable(sequence_tests
 
 target_include_directories(sequence_tests PRIVATE includes)
 target_link_libraries(sequence_tests PRIVATE mermaid)
+target_compile_definitions(sequence_tests PRIVATE MERMAID_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 
 enable_testing()
 add_test(NAME sequence_svg COMMAND sequence_tests)
