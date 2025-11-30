@@ -1,0 +1,47 @@
+sequenceDiagram
+    actor User
+    participant WebApp
+    participant Server
+    participant Database
+    participant Cache
+
+    User->>WebApp: Open WebApp
+    WebApp->>Server: Fetch Data
+    Server->>Cache: Check cache
+    alt Cache hit
+        Cache-->>Server: Data
+        Server-->>WebApp: Return cached data
+    else Cache miss
+        Server->>Database: Query database
+        Database-->>Server: Return data
+        Server->>Cache: Save data to cache
+        Server-->>WebApp: Return new data
+    end
+
+    par Async Task 1
+        WebApp->>Server: Send analytics data
+        Server->>Database: Log data
+    and Async Task 2
+        WebApp->>Cache: Fetch frequently accessed data
+        Cache-->>WebApp: Return data
+    end
+
+    loop Retry until success
+        WebApp->>Server: Request data again
+        Server-->>WebApp: Response
+    end
+
+    note over WebApp, Server: WebApp sends multiple requests to Server for new data
+
+    activate WebApp
+    WebApp->>Server: Check status
+    deactivate WebApp
+
+    note left of WebApp: User interacts with WebApp until tasks are complete
+    note right of Server: Server processes and caches responses
+
+    alt If error occurs
+        Server-->>User: Error
+    else Success
+        Server-->>User: Success
+    end
