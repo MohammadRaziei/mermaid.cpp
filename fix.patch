@@ -1,0 +1,220 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f4047c90a71c0e4b0b323e360367508325a08725..039740d54de55c40d3f9b8af54b04d5ad8040e0a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,32 +1,32 @@
+ cmake_minimum_required(VERSION 3.10)
+ project(mermaid_cpp)
+ 
+ set(CMAKE_CXX_STANDARD 17)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ 
+ add_library(mermaid
+     src/mermaid.cpp
+     src/lexer.cpp
+     src/parser.cpp
+     src/layout.cpp
+     src/renderer.cpp
+     src/ast.cpp
+ )
+ 
+ target_include_directories(mermaid PUBLIC includes)
+ 
+-add_executable(mermaid_cli
++add_executable(mermaidc
+     src/cli.cpp
+ )
+ 
+-target_link_libraries(mermaid_cli PRIVATE mermaid)
++target_link_libraries(mermaidc PRIVATE mermaid)
+ 
+ add_executable(sequence_tests
+     tests/test_sequence_svg.cpp
+ )
+ 
+ target_include_directories(sequence_tests PRIVATE includes)
+ target_link_libraries(sequence_tests PRIVATE mermaid)
+ 
+ enable_testing()
+ add_test(NAME sequence_svg COMMAND sequence_tests)
+diff --git a/includes/mermaid.h b/includes/mermaid.h
+index dc6682089319037b4704c8c6bdfc843973273b01..003e0a4dc3a73c1a832c27fc643a0075969737ff 100644
+--- a/includes/mermaid.h
++++ b/includes/mermaid.h
+@@ -1,12 +1,13 @@
+ #pragma once
+ 
+ #include <string>
+ 
+ namespace mermaid {
+ 
+-// High-level API: convert Mermaid source directly to SVG text.
+-// For now, only supports `sequenceDiagram` diagrams.
++// Render a Mermaid sequenceDiagram source into SVG text.
++// Full support is expected to match mermaid.js behavior as the engine evolves.
++// Throws std::runtime_error on parse or render errors.
+ std::string render_to_svg(const std::string &mermaid_source);
+ 
+ } // namespace mermaid
+ 
+diff --git a/src/cli.cpp b/src/cli.cpp
+index 3b9c1b77f4b31eaa81b22a946064d1b6f65a96d1..ea08eca7a27837b23ed0383dad63f44b9cec2b09 100644
+--- a/src/cli.cpp
++++ b/src/cli.cpp
+@@ -1,66 +1,69 @@
+ #include "mermaid.h"
++#include "CLI11.hpp"
+ 
+ #include <filesystem>
+ #include <fstream>
+ #include <iostream>
+ #include <sstream>
+ #include <string>
+ 
+ namespace {
+ 
+ std::string read_file(const std::filesystem::path &path) {
+     std::ifstream ifs(path);
+     if (!ifs) {
+         throw std::runtime_error("Failed to open input file: " + path.string());
+     }
+     std::ostringstream buffer;
+     buffer << ifs.rdbuf();
+     return buffer.str();
+ }
+ 
+ void write_file(const std::filesystem::path &path, const std::string &contents) {
+     std::ofstream ofs(path);
+     if (!ofs) {
+         throw std::runtime_error("Failed to open output file: " + path.string());
+     }
+     ofs << contents;
+ }
+ 
+ std::filesystem::path derive_output_path(const std::filesystem::path &input_path) {
+     std::filesystem::path output = input_path;
+     output.replace_extension(".svg");
+     return output;
+ }
+ 
+-void print_usage(const std::string &program_name) {
+-    std::cerr << "Usage: " << program_name << " <diagram.mermaid>" << std::endl;
+-}
+-
+ } // namespace
+ 
+ int main(int argc, char **argv) {
+-    if (argc != 2) {
+-        print_usage(argv[0]);
+-        return 1;
+-    }
++    CLI::App app{"Native Mermaid sequence diagram renderer"};
++
++    std::string input_path_str;
++    std::string output_path_str;
++
++    app.add_option("input", input_path_str, "Input Mermaid file")
++        ->required()
++        ->check(CLI::ExistingFile);
++    app.add_option("-o,--output", output_path_str, "Output SVG file");
+ 
+     try {
+-        std::filesystem::path input_path{argv[1]};
+-        if (!std::filesystem::exists(input_path)) {
+-            std::cerr << "Input file does not exist: " << input_path << std::endl;
+-            return 1;
+-        }
++        CLI11_PARSE(app, argc, argv);
++
++        std::filesystem::path input_path{input_path_str};
++        std::filesystem::path output_path = output_path_str.empty()
++                                             ? derive_output_path(input_path)
++                                             : std::filesystem::path{output_path_str};
+ 
+         std::string source = read_file(input_path);
+         std::string svg = mermaid::render_to_svg(source);
+-
+-        std::filesystem::path output_path = derive_output_path(input_path);
+         write_file(output_path, svg);
+ 
+         std::cout << "Wrote SVG to " << output_path << std::endl;
+         return 0;
++    } catch (const CLI::ParseError &e) {
++        return app.exit(e);
+     } catch (const std::exception &ex) {
+         std::cerr << "Error: " << ex.what() << std::endl;
+         return 1;
+     }
+ }
+diff --git a/tests/data/activation_destroy.mermaid b/tests/data/activation_destroy.mermaid
+new file mode 100644
+index 0000000000000000000000000000000000000000..6a1468291f23c6a57c82205581d7d3e2aad49ff6
+--- /dev/null
++++ b/tests/data/activation_destroy.mermaid
+@@ -0,0 +1,9 @@
++sequenceDiagram
++participant A
++participant B
++
++A->>B: Start
++activate B
++B-->>A: Ack
++A-xB: Finish
++deactivate B
+diff --git a/tests/data/blocks_par_alt.mermaid b/tests/data/blocks_par_alt.mermaid
+new file mode 100644
+index 0000000000000000000000000000000000000000..7bb31f1a016bd019e9c243710bdfb3ed1a908dfd
+--- /dev/null
++++ b/tests/data/blocks_par_alt.mermaid
+@@ -0,0 +1,18 @@
++sequenceDiagram
++actor User
++participant Service
++participant DB as Database
++
++User->>Service: Request
++alt Cache hit
++    Service-->>User: Serve cached
++else Cache miss
++    Service->>DB: Query
++    DB-->>Service: Result
++    Service-->>User: Serve fresh
++end
++par Logging
++    Service->>Service: Record event
++and Metrics
++    Service->>Service: Update counter
++end
+diff --git a/tests/data/notes_and_messages.mermaid b/tests/data/notes_and_messages.mermaid
+new file mode 100644
+index 0000000000000000000000000000000000000000..ec3469a7ab9f4802a5a7855f10b7134360acf43c
+--- /dev/null
++++ b/tests/data/notes_and_messages.mermaid
+@@ -0,0 +1,8 @@
++sequenceDiagram
++participant Alice
++participant Bob
++note left of Alice: Initialization
++Alice->>Bob: Ping
++note over Alice,Bob: Shared context
++Bob-->>Alice: Pong
++note right of Bob: Completed
+diff --git a/tools/update_golden_svgs.sh b/tools/update_golden_svgs.sh
+new file mode 100755
+index 0000000000000000000000000000000000000000..e0abe0421a04e59c453084937207e5fc0ace4d56
+--- /dev/null
++++ b/tools/update_golden_svgs.sh
+@@ -0,0 +1,13 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
++DATA_DIR="$ROOT_DIR/tests/data"
++
++shopt -s nullglob
++
++for mermaid_file in "$DATA_DIR"/*.mermaid; do
++    svg_file="${mermaid_file%.mermaid}.svg"
++    echo "Generating ${svg_file##*/}"
++    npx mmdc -i "$mermaid_file" -o "$svg_file"
++done
