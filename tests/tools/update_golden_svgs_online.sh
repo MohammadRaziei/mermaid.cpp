@@ -6,12 +6,12 @@ DATA_DIR="$ROOT_DIR/data"
 
 KROKI_URL="https://kroki.io/mermaid/svg"
 
-shopt -s nullglob
+mapfile -d '' mermaid_files < <(find "$DATA_DIR" -type f -name '*.mermaid' -print0 | sort -z)
 
-for mermaid_file in "$DATA_DIR"/*.mermaid; do
+for mermaid_file in "${mermaid_files[@]}"; do
     svg_file="${mermaid_file%.mermaid}.svg"
 
-    echo "Generating (online) ${svg_file##*/}"
+    echo "Generating (online) ${svg_file#$DATA_DIR/}"
 
     http_code=$(curl -sS -w "%{http_code}" \
         -H "Content-Type: text/plain" \

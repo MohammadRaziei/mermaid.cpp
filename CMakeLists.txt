@@ -13,8 +13,7 @@ add_library(mermaid
     src/ast.cpp
 )
 
-target_include_directories(mermaid PUBLIC includes)
-target_compile_definitions(mermaid PUBLIC MERMAID_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(mermaid PUBLIC includes PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
 add_executable(mermaidc
     src/cli.cpp
@@ -22,13 +21,15 @@ add_executable(mermaidc
 
 target_link_libraries(mermaidc PRIVATE mermaid)
 
+file(GLOB_RECURSE sequence_test_sources CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_*.cpp")
+
 add_executable(sequence_tests
-    tests/test_sequence_svg.cpp
+    ${sequence_test_sources}
 )
 
-target_include_directories(sequence_tests PRIVATE includes)
+target_include_directories(sequence_tests PRIVATE includes ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 target_link_libraries(sequence_tests PRIVATE mermaid)
-target_compile_definitions(sequence_tests PRIVATE MERMAID_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 
 enable_testing()
 add_test(NAME sequence_svg COMMAND sequence_tests)
