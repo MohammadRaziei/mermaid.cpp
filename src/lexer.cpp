@@ -49,8 +49,18 @@ Token Lexer::read_token() {
         return Token{TokenType::Colon, ":", m_line, m_column - 1};
     }
 
-    if (c == '-' && (m_pos + 1) < m_source.size() && m_source[m_pos + 1] == '>') {
-        return lex_arrow();
+    if (c == '+') {
+        advance();
+        return Token{TokenType::Plus, "+", m_line, m_column - 1};
+    }
+
+    if (c == '-') {
+        // Could be start of arrow or minus sign
+        if ((m_pos + 1) < m_source.size() && m_source[m_pos + 1] == '>') {
+            return lex_arrow();
+        }
+        advance();
+        return Token{TokenType::Minus, "-", m_line, m_column - 1};
     }
 
     if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') {
@@ -97,12 +107,50 @@ Token Lexer::lex_identifier() {
 
 Token Lexer::lex_arrow() {
     std::size_t start_col = m_column;
-    advance(); // '-'
-    advance(); // '>'
-    if (match('>')) {
-        return Token{TokenType::Arrow, "->>", m_line, start_col};
+    
+    // Check if it's a dotted arrow (-->) or solid arrow (->)
+    bool is_dotted = false;
+    advance(); // first '-'
+    if (m_pos < m_source.size() && m_source[m_pos] == '-') {
+        is_dotted = true;
+        advance(); // second '-'
     }
-    return Token{TokenType::Arrow, "->", m_line, start_col};
+    
+    // Must have '>' after '-'
+    if (m_pos >= m_source.size() || m_source[m_pos] != '>') {
+        throw std::runtime_error("Expected '>' after '-' in arrow");
+    }
+    advance(); // '>'
+    
+    // Check for cross arrow (>>)
+    bool has_cross = match('>');
+    
+    // Build lexeme
+    std::string lexeme;
+    if (is_dotted) {
+        lexeme = "--";
+    } else {
+        lexeme = "-";
+    }
+    lexeme += ">";
+    if (has_cross) {
+        lexeme += ">";
+    }
+    
+    // Return appropriate token
+    if (is_dotted) {
+        if (has_cross) {
+            return Token{TokenType::ArrowDottedCross, lexeme, m_line, start_col};
+        } else {
+            return Token{TokenType::ArrowDotted, lexeme, m_line, start_col};
+        }
+    } else {
+        if (has_cross) {
+            return Token{TokenType::ArrowSolidCross, lexeme, m_line, start_col};
+        } else {
+            return Token{TokenType::ArrowSolid, lexeme, m_line, start_col};
+        }
+    }
 }
 
 Token Lexer::lex_text() {
@@ -141,4 +189,3 @@ bool Lexer::match(char expected) {
 }
 
 } // namespace mermaid
-

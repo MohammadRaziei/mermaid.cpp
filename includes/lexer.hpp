@@ -10,7 +10,12 @@ enum class TokenType {
     KeywordParticipant,
     KeywordAs,
     Identifier,
-    Arrow,
+    ArrowSolid,        // ->
+    ArrowSolidCross,   // ->>
+    ArrowDotted,       // -->
+    ArrowDottedCross,  // -->>
+    Plus,              // + (activation)
+    Minus,             // - (deactivation)
     Colon,
     Text,
     Newline,
@@ -50,4 +55,3 @@ private:
 };
 
 } // namespace mermaid
-

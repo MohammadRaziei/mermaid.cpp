@@ -59,8 +59,33 @@ void SvgVisitor::visit(MessageNode &node) {
     double text_y = node.y - 6.0;
 
     ss << "  <g class=\"message\">\n";
+    
+    // Draw line with appropriate style
     ss << "    <line x1=\"" << node.from_x << "\" y1=\"" << node.y << "\" x2=\"" << node.to_x
-       << "\" y2=\"" << node.y << "\" stroke=\"#000\" marker-end=\"url(#arrowhead)\" />\n";
+       << "\" y2=\"" << node.y << "\" stroke=\"#000\"";
+    
+    // Set stroke-dasharray for dotted lines
+    if (node.is_dotted) {
+        ss << " stroke-dasharray=\"3,3\"";
+    }
+    
+    // TODO: Handle cross arrows (different marker)
+    ss << " marker-end=\"url(#arrowhead)\" />\n";
+    
+    // Draw activation rectangle if activating target
+    if (node.activate_target) {
+        // Activation rectangle: width 10, height will be determined by next deactivation
+        // For now, use a fixed height
+        const double activation_width = 10.0;
+        const double activation_height = 48.0; // Should be calculated based on layout
+        double activation_x = node.to_x - activation_width / 2.0;
+        double activation_y = node.y;
+        
+        ss << "    <rect class=\"activation0\" x=\"" << activation_x << "\" y=\"" << activation_y
+           << "\" width=\"" << activation_width << "\" height=\"" << activation_height
+           << "\" stroke=\"#666\" fill=\"#EDF2AE\" />\n";
+    }
+    
     ss << "    <text x=\"" << text_x << "\" y=\"" << text_y
        << "\" font-family=\"sans-serif\" font-size=\"13\" text-anchor=\"middle\">"
        << node.text << "</text>\n";
@@ -68,4 +93,3 @@ void SvgVisitor::visit(MessageNode &node) {
 }
 
 } // namespace mermaid
-

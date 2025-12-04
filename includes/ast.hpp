@@ -33,6 +33,10 @@ struct MessageNode : AstNode {
     double y{0.0};
     double from_x{0.0};
     double to_x{0.0};
+    bool activate_target{false};  // + after arrow
+    bool deactivate_source{false}; // - after arrow
+    bool is_dotted{false};        // --> or -->> vs -> or ->>
+    bool has_cross{false};        // ->> or -->> vs -> or -->
 
     MessageNode(std::string from_, std::string to_, std::string text_)
         : from(std::move(from_)), to(std::move(to_)), text(std::move(text_)) {}
@@ -50,4 +54,3 @@ struct SequenceDiagramNode : AstNode {
 };
 
 } // namespace mermaid
-

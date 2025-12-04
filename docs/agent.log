@@ -1,0 +1,53 @@
+# Mermaid C++ Port - Progress Log
+## Started: 2025-12-04 20:02
+
+### Current Status
+- Project structure analyzed
+- Existing implementation understood: basic lexer, parser, layout, renderer for sequence diagrams
+- Test suite has 13 test files with various features
+- Current implementation fails on first test (activation_basic.mermaid) due to missing support for:
+  - Activation markers (+ and - after arrows)
+  - Dotted arrows (-->>)
+
+### Analysis of JS Reference Implementation
+- Examined sequenceDiagram.jison grammar from mermaid-js
+- Activation markers (+/-) appear after arrow type and before target actor
+- Grammar supports multiple arrow types: ->, ->>, -->, -->>, -x, --x, etc.
+- Parser creates 'addMessage' with activate flag and separate 'activeStart'/'activeEnd' nodes
+
+### Implementation Plan (TDD Approach)
+1. Fix lexer to properly tokenize activation markers after arrows
+2. Update parser to handle different arrow types and activation markers
+3. Extend AST to support activation state
+4. Update layout to handle activations (vertical bars)
+5. Update SVG renderer to draw activation bars
+6. Test with activation_basic.mermaid
+7. Continue with other features incrementally
+
+### Next Immediate Steps
+1. Update lexer to handle '+' and '-' tokens when they appear after arrows
+2. Update parser to:
+   - Accept different arrow token types (ArrowSolid, ArrowSolidCross, ArrowDotted, ArrowDottedCross)
+   - Parse optional '+' or '-' after arrow
+   - Store activation info in MessageNode
+3. Run tests to verify activation_basic passes
+
+### Reference
+- JS implementation in ./mermaidjs/packages/mermaid/src/diagrams/sequence/parser/sequenceDiagram.jison
+- Arrow types include: ->, ->>, -->>, -->, -x, --x, etc.
+- Activation markers: + for activate, - for deactivate
+
+### Progress Entry: 2025-12-04 20:13
+- Completed analysis of current codebase and JS reference
+- Identified root cause of test failure
+- Created detailed implementation plan
+- Ready to start implementing activation marker support
+
+### Progress Entry: 2025-12-04 20:18
+- Updated AST to include activation and arrow type fields
+- Updated parser to handle different arrow types and activation markers
+- Updated renderer to draw activation rectangles and dotted lines
+- Successfully built project with changes
+- CLI tool can now parse and render activation_basic.mermaid
+- Test still failing due to SVG output differences (not exceptions)
+- Next: Compare generated SVG with golden SVG to identify differences

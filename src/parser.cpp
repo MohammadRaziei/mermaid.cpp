@@ -57,12 +57,39 @@ void Parser::parse_participant(SequenceDiagramNode &diagram) {
 
 void Parser::parse_message(SequenceDiagramNode &diagram) {
     Token from = consume(TokenType::Identifier, "Expected sender identifier");
-    consume(TokenType::Arrow, "Expected message arrow");
+    
+    // Parse arrow (could be any arrow type)
+    Token arrow = m_current;
+    if (m_current.type != TokenType::ArrowSolid &&
+        m_current.type != TokenType::ArrowSolidCross &&
+        m_current.type != TokenType::ArrowDotted &&
+        m_current.type != TokenType::ArrowDottedCross) {
+        throw std::runtime_error("Expected message arrow");
+    }
+    advance(); // consume arrow
+    
+    // Check for activation marker (+ or -)
+    bool activate_target = false;
+    bool deactivate_source = false;
+    if (m_current.type == TokenType::Plus) {
+        activate_target = true;
+        advance();
+    } else if (m_current.type == TokenType::Minus) {
+        deactivate_source = true;
+        advance();
+    }
+    
     Token to = consume(TokenType::Identifier, "Expected receiver identifier");
     consume(TokenType::Colon, "Expected ':' after receiver");
     Token text = consume(TokenType::Text, "Expected message text");
 
-    diagram.messages.push_back(std::make_unique<MessageNode>(from.lexeme, to.lexeme, text.lexeme));
+    auto message = std::make_unique<MessageNode>(from.lexeme, to.lexeme, text.lexeme);
+    message->activate_target = activate_target;
+    message->deactivate_source = deactivate_source;
+    message->is_dotted = (arrow.type == TokenType::ArrowDotted || arrow.type == TokenType::ArrowDottedCross);
+    message->has_cross = (arrow.type == TokenType::ArrowSolidCross || arrow.type == TokenType::ArrowDottedCross);
+    
+    diagram.messages.push_back(std::move(message));
 
     if (m_current.type == TokenType::Newline) {
         advance();
@@ -101,4 +128,3 @@ void Parser::skip_newlines() {
 }
 
 } // namespace mermaid
-
