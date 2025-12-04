@@ -28,7 +28,7 @@ private:
 
     SequenceDiagramNode *current_sequence{nullptr};
     std::ostringstream ss;
+    int message_count{0};
 };
 
 } // namespace mermaid
-
