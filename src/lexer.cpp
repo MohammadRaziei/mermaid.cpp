@@ -56,7 +56,12 @@ Token Lexer::read_token() {
 
     if (c == '-') {
         // Could be start of arrow or minus sign
+        // Check for -> or --> (dotted arrow starts with --)
         if ((m_pos + 1) < m_source.size() && m_source[m_pos + 1] == '>') {
+            return lex_arrow();
+        }
+        // Also check for --> where first char is - and second is -
+        if ((m_pos + 2) < m_source.size() && m_source[m_pos + 1] == '-' && m_source[m_pos + 2] == '>') {
             return lex_arrow();
         }
         advance();

@@ -16,12 +16,28 @@ struct AstNode {
 struct ParticipantNode : AstNode {
     std::string id;
     std::string label;
+    std::string type; // "participant" or "actor"
     double x{0.0};
     double y{0.0};
     double lifeline_end_y{0.0};
 
-    ParticipantNode(std::string id_, std::string label_)
-        : id(std::move(id_)), label(std::move(label_)) {}
+    ParticipantNode(std::string id_, std::string label_, std::string type_ = "participant")
+        : id(std::move(id_)), label(std::move(label_)), type(std::move(type_)) {}
+
+    void accept(AstVisitor &v) override;
+};
+
+struct NoteNode : AstNode {
+    std::string actor;
+    std::string placement; // "left of", "right of", "over"
+    std::string text;
+    double x{0.0};
+    double y{0.0};
+    double width{0.0};
+    double height{0.0};
+
+    NoteNode(std::string actor_, std::string placement_, std::string text_)
+        : actor(std::move(actor_)), placement(std::move(placement_)), text(std::move(text_)) {}
 
     void accept(AstVisitor &v) override;
 };
@@ -47,6 +63,7 @@ struct MessageNode : AstNode {
 struct SequenceDiagramNode : AstNode {
     std::vector<std::unique_ptr<ParticipantNode>> participants;
     std::vector<std::unique_ptr<MessageNode>> messages;
+    std::vector<std::unique_ptr<NoteNode>> notes;
     double width{800.0};
     double height{600.0};
 

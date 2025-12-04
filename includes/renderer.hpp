@@ -12,6 +12,7 @@ public:
     virtual void visit(SequenceDiagramNode &node) = 0;
     virtual void visit(ParticipantNode &node) = 0;
     virtual void visit(MessageNode &node) = 0;
+    virtual void visit(NoteNode &node) = 0;
 };
 
 class SvgVisitor : public AstVisitor {
@@ -19,6 +20,7 @@ public:
     void visit(SequenceDiagramNode &node) override;
     void visit(ParticipantNode &node) override;
     void visit(MessageNode &node) override;
+    void visit(NoteNode &node) override;
 
     std::string result_svg;
 
