@@ -15,6 +15,8 @@ public:
 private:
     std::unique_ptr<SequenceDiagramNode> parse_sequence_diagram();
     void parse_participant(SequenceDiagramNode &diagram);
+    void parse_actor(SequenceDiagramNode &diagram);
+    void parse_note(SequenceDiagramNode &diagram);
     void parse_message(SequenceDiagramNode &diagram);
 
     void advance();
@@ -28,4 +30,3 @@ private:
 };
 
 } // namespace mermaid
-

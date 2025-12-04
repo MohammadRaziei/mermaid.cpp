@@ -217,3 +217,4 @@ void SvgVisitor::visit(NoteNode &node) {
        << text_y << "\" x=\"" << text_x << "\"><tspan x=\"" << text_x << "\">" 
        << node.text << "</tspan></text></g>\n";
 }
+}
