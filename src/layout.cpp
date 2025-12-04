@@ -5,11 +5,11 @@
 namespace mermaid {
 
 void SequenceLayoutStrategy::layout(SequenceDiagramNode &root) {
-    const double start_x = 80.0;
-    const double participant_spacing = 180.0;
+    const double start_x = 75.0;
+    const double participant_spacing = 200.0;
     const double header_y = 60.0;
-    const double message_start_y = 140.0;
-    const double message_gap = 80.0;
+    const double message_start_y = 113.0;
+    const double message_gap = 48.0;
 
     auto participant_map = build_participant_map(root);
 
@@ -55,4 +55,3 @@ std::unordered_map<std::string, ParticipantNode *> SequenceLayoutStrategy::build
 }
 
 } // namespace mermaid
-

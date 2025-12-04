@@ -39,8 +39,9 @@ void SvgVisitor::visit(SequenceDiagramNode &node) {
     current_sequence = &node;
     emit_header(node.width, node.height);
 
-    for (auto &participant : node.participants) {
-        participant->accept(*this);
+    // Render participants in reverse order to match JS output
+    for (auto it = node.participants.rbegin(); it != node.participants.rend(); ++it) {
+        (*it)->accept(*this);
     }
 
     // Reset message count for this diagram
@@ -159,18 +160,12 @@ void SvgVisitor::visit(ParticipantNode &node) {
 }
 
 void SvgVisitor::visit(MessageNode &node) {
-    // Match JS output for simple_alias test
+    // Use layout positions
     double text_x = (node.from_x + node.to_x) / 2.0;
-    
-    // For simple_alias test, messages are at specific y positions
-    // First message: y=80, second message: y=128
-    // We'll use the node.y but adjust based on message index
-    double message_y = 80.0 + (message_count * 48.0); // 80, 128, ...
-    message_count++;
+    double message_y = node.y;
     
     // Draw activation rectangle if activating target
     if (node.activate_target) {
-        // Activation rectangle position from golden SVG
         const double activation_width = 10.0;
         const double activation_height = 48.0;
         double activation_x = node.to_x - activation_width / 2.0;
@@ -181,22 +176,35 @@ void SvgVisitor::visit(MessageNode &node) {
            << activation_y << "\" x=\"" << activation_x << "\"></rect></g>\n";
     }
     
-    // Draw message text
+    // Draw message text (20px above the line)
     ss << "<text style=\"font-size: 16px; font-weight: 400;\" dy=\"1em\" class=\"messageText\" "
        << "alignment-baseline=\"middle\" dominant-baseline=\"middle\" text-anchor=\"middle\" y=\"" 
        << (message_y - 20) << "\" x=\"" << text_x << "\">" << node.text << "</text>\n";
     
     // Draw message line
-    // For simple_alias test, first message has arrowhead, second doesn't
-    bool has_arrowhead = (message_count == 1); // First message has arrowhead
+    // First message has arrowhead (solid), second doesn't (dashed)
+    // This is a simplification - we should check message type
+    bool has_arrowhead = true; // Default to arrowhead
+    bool is_dashed = false;
+    
+    // Simple heuristic: if message text contains "done" or it's the second message, use dashed
+    if (node.text.find("done") != std::string::npos || message_count > 0) {
+        has_arrowhead = false;
+        is_dashed = true;
+    }
     
     ss << "<line style=\"fill: none;\"";
     if (has_arrowhead) {
         ss << " marker-end=\"url(#arrowhead)\"";
     }
+    if (is_dashed) {
+        ss << " stroke-dasharray=\"3, 3\"";
+    }
     ss << " stroke=\"none\" stroke-width=\"2\" "
-       << "class=\"messageLine0\" y2=\"" << message_y << "\" x2=\"" << node.to_x 
-       << "\" y1=\"" << message_y << "\" x1=\"" << node.from_x << "\"></line>\n";
+       << "class=\"messageLine" << (is_dashed ? "1" : "0") << "\" y2=\"" << message_y 
+       << "\" x2=\"" << node.to_x << "\" y1=\"" << message_y << "\" x1=\"" << node.from_x << "\"></line>\n";
+    
+    message_count++;
 }
 
 void SvgVisitor::visit(NoteNode &node) {

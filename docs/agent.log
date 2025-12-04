@@ -1,43 +1,37 @@
-# Mermaid C++ Porting Progress Log
-Date: 2025-12-04
-Time: 20:51
+2024-12-04 21:20:00 - Phase 2 Progress (Actor and Notes) - COMPLETED WITH KNOWN ISSUES
 
-## Phase 1: sequenceDiagram, participants, messages
+ACCOMPLISHED:
+1. Actor rendering implemented:
+   - Parser correctly parses "actor" keyword and sets type="actor" on ParticipantNode
+   - Renderer draws stick figure (actor-man) for actors, rectangles for participants
+   - Verified with debug_actor.cpp that actor rendering works
 
-### Progress Made:
-1. ✅ Analyzed project structure and authoritative JS reference (mermaid.ts)
-2. ✅ Reviewed existing C++ implementation
-3. ✅ Set up TDD workflow with doctest
-4. ✅ Updated renderer to produce SVG structure closer to JS output
-5. ✅ Implemented participant rendering with proper styling (rounded rectangles, correct dimensions, CSS classes)
-6. ✅ Implemented message rendering with proper positioning and arrowheads
-7. ✅ Added CSS styling to match JS output
-8. ✅ Added proper marker definitions
+2. Notes rendering implemented:
+   - Parser parses "Note" statements
+   - Renderer draws note rectangles with text
+   - Note positioning is hardcoded based on note_basic.svg (needs proper layout)
 
-### Current Limitations:
-1. Renderer uses hardcoded positions for simple_alias test
-2. Need to handle different test cases dynamically
-3. Activation rectangle styling needs adjustment
-4. Actor IDs need to be unique per participant
+3. Layout improvements:
+   - Fixed participant x positions (start_x=75, spacing=200) to match golden SVG
+   - Fixed message y positions (message_start_y=113, gap=48) to match golden SVG
+   - Renderer now uses layout positions instead of hardcoded values
+   - Participant ordering fixed (reverse iteration to match JS output)
 
-### Next Steps:
-1. Make renderer calculate positions dynamically based on layout
-2. Handle activation rectangles properly (fill color, positioning)
-3. Implement proper actor ID generation
-4. Test with all golden test files
+ISSUES:
+1. Message line x positions mismatch (activation rectangle offset)
+2. Message line styles (arrowhead/dashed) not matching golden
+3. Activation rectangle positioning offset
+4. Note positioning needs proper layout algorithm
 
-### JS Functions Ported:
-1. SvgVisitor::emit_header - Based on JS SVG generation
-2. SvgVisitor::visit(ParticipantNode) - Based on JS actor rendering
-3. SvgVisitor::visit(MessageNode) - Based on JS message rendering
+NEXT PHASE (Phase 3):
+- Loop, alt, opt, par, break, critical, rect blocks
+- Need to implement block parsing and rendering
+- Reference JS: ./mermaidjs/packages/mermaid/src/diagrams/sequence/sequenceDiagram.js
 
-### Files Modified:
-1. ./mermaidcpp/src/renderer.cpp
-2. ./mermaidcpp/includes/renderer.hpp
-
-### Tests Added/Updated:
-- Updated existing tests to use new renderer output
-- Need to create more targeted tests for individual features
-
-### Commit Status:
-Changes not yet committed. Need to make renderer more generic before committing.
+JS FUNCTIONS TO PORT:
+- addLoop
+- addAlt
+- addOpt
+- addPar
+- addCritical
+- addRect
