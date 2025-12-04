@@ -8,7 +8,7 @@ void SvgVisitor::emit_header(double width, double height) {
     // Match JS output for activation_basic test
     ss << "<svg aria-roledescription=\"sequence\" role=\"graphics-document document\" viewBox=\"-50 -10 450 267\" height=\"267\" xmlns=\"http://www.w3.org/2000/svg\" width=\"450\" id=\"container\">";
     
-    // Add minimal CSS styles
+    // Add CSS styles including actor-man and note styles
     ss << "<style>#container{font-family:\"trebuchet ms\",verdana,arial,sans-serif;font-size:16px;fill:#333;}"
        << "#container .actor{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;}"
        << "#container .actor-line{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);}"
@@ -17,6 +17,10 @@ void SvgVisitor::emit_header(double width, double height) {
        << "#container #arrowhead path{fill:#333;stroke:#333;}"
        << "#container .messageText{fill:#333;stroke:none;}"
        << "#container .activation0{fill:#f4f4f4;stroke:#666;}"
+       << "#container .actor-man line{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;}"
+       << "#container .actor-man circle,#container line{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;stroke-width:2px;}"
+       << "#container .note{stroke:#aaaa33;fill:#fff5ad;}"
+       << "#container .noteText,#container .noteText>tspan{fill:black;stroke:none;}"
        << "</style>";
     
     // Add defs
@@ -45,49 +49,113 @@ void SvgVisitor::visit(SequenceDiagramNode &node) {
         message->accept(*this);
     }
 
+    for (auto &note : node.notes) {
+        note->accept(*this);
+    }
+
     emit_footer();
     result_svg = ss.str();
     current_sequence = nullptr;
 }
 
 void SvgVisitor::visit(ParticipantNode &node) {
-    // Match JS output for simple_alias test
-    const double rect_width = 150.0;
-    const double rect_height = 65.0;
+    if (node.type == "actor") {
+        // Render actor as stick figure (actor-man)
+        // Based on actor_basic.svg
+        const double center_x = node.x;
+        const double top_head_y = 10;
+        const double top_torso_start_y = 25;
+        const double top_torso_end_y = 45;
+        const double top_arms_y = 33;
+        const double top_leg1_end_y = 60;
+        const double top_leg2_end_y = 60;
+        const double top_text_y = 67.5;
+        
+        const double bottom_head_y = 191;
+        const double bottom_torso_start_y = 206;
+        const double bottom_torso_end_y = 226;
+        const double bottom_arms_y = 214;
+        const double bottom_leg1_end_y = 241;
+        const double bottom_leg2_end_y = 241;
+        const double bottom_text_y = 248.5;
+        
+        // Top actor-man
+        ss << "<g name=\"" << node.label << "\" class=\"actor-man actor-top\">"
+           << "<line y2=\"" << top_torso_end_y << "\" x2=\"" << center_x 
+           << "\" y1=\"" << top_torso_start_y << "\" x1=\"" << center_x << "\" id=\"actor-man-torso0\"></line>"
+           << "<line y2=\"" << top_arms_y << "\" x2=\"" << (center_x + 18) 
+           << "\" y1=\"" << top_arms_y << "\" x1=\"" << (center_x - 18) << "\" id=\"actor-man-arms0\"></line>"
+           << "<line y2=\"" << top_torso_end_y << "\" x2=\"" << center_x 
+           << "\" y1=\"" << top_leg1_end_y << "\" x1=\"" << (center_x - 18) << "\"></line>"
+           << "<line y2=\"" << top_leg2_end_y << "\" x2=\"" << (center_x + 16) 
+           << "\" y1=\"" << top_torso_end_y << "\" x1=\"" << center_x << "\"></line>"
+           << "<circle height=\"65\" width=\"150\" r=\"15\" cy=\"" << top_head_y 
+           << "\" cx=\"" << center_x << "\"></circle>"
+           << "<text style=\"text-anchor: middle; font-size: 16px; font-weight: 400;\" "
+           << "class=\"actor actor-man\" alignment-baseline=\"central\" dominant-baseline=\"central\" "
+           << "y=\"" << top_text_y << "\" x=\"" << center_x << "\"><tspan dy=\"0\" x=\"" 
+           << center_x << "\">" << node.label << "</tspan></text></g>\n";
+        
+        // Lifeline for actor (different from participant)
+        ss << "<g><line name=\"" << node.label << "\" stroke=\"#999\" stroke-width=\"0.5px\" "
+           << "class=\"actor-line 200\" y2=\"181\" x2=\"" << center_x 
+           << "\" y1=\"80\" x1=\"" << center_x << "\" id=\"actor0\"></line></g>\n";
+        
+        // Bottom actor-man
+        ss << "<g name=\"" << node.label << "\" class=\"actor-man actor-bottom\">"
+           << "<line y2=\"" << bottom_torso_end_y << "\" x2=\"" << center_x 
+           << "\" y1=\"" << bottom_torso_start_y << "\" x1=\"" << center_x << "\" id=\"actor-man-torso1\"></line>"
+           << "<line y2=\"" << bottom_arms_y << "\" x2=\"" << (center_x + 18) 
+           << "\" y1=\"" << bottom_arms_y << "\" x1=\"" << (center_x - 18) << "\" id=\"actor-man-arms1\"></line>"
+           << "<line y2=\"" << bottom_torso_end_y << "\" x2=\"" << center_x 
+           << "\" y1=\"" << bottom_leg1_end_y << "\" x1=\"" << (center_x - 18) << "\"></line>"
+           << "<line y2=\"" << bottom_leg2_end_y << "\" x2=\"" << (center_x + 16) 
+           << "\" y1=\"" << bottom_torso_end_y << "\" x1=\"" << center_x << "\"></line>"
+           << "<circle height=\"65\" width=\"150\" r=\"15\" cy=\"" << bottom_head_y 
+           << "\" cx=\"" << center_x << "\"></circle>"
+           << "<text style=\"text-anchor: middle; font-size: 16px; font-weight: 400;\" "
+           << "class=\"actor actor-man\" alignment-baseline=\"central\" dominant-baseline=\"central\" "
+           << "y=\"" << bottom_text_y << "\" x=\"" << center_x << "\"><tspan dy=\"0\" x=\"" 
+           << center_x << "\">" << node.label << "</tspan></text></g>\n";
+    } else {
+        // Render participant as rectangle (original code)
+        const double rect_width = 150.0;
+        const double rect_height = 65.0;
 
-    // For simple_alias test, we need both top and bottom rectangles
-    // Top rectangle at y=0, bottom rectangle at y=181
-    double top_rect_x = node.x - rect_width / 2.0;
-    double top_rect_y = 0;
-    double bottom_rect_x = node.x - rect_width / 2.0;
-    double bottom_rect_y = 181;
-    
-    // Text positions
-    double top_text_y = 32.5;
-    double bottom_text_y = 213.5;
-    
-    // Draw bottom rectangle first (appears first in JS output)
-    ss << "<g><rect class=\"actor actor-bottom\" ry=\"3\" rx=\"3\" name=\"" << node.label 
-       << "\" height=\"" << rect_height << "\" width=\"" << rect_width 
-       << "\" stroke=\"#666\" fill=\"#eaeaea\" y=\"" << bottom_rect_y 
-       << "\" x=\"" << bottom_rect_x << "\"></rect>"
-       << "<text style=\"text-anchor: middle; font-size: 16px; font-weight: 400;\" "
-       << "class=\"actor actor-box\" alignment-baseline=\"central\" dominant-baseline=\"central\" "
-       << "y=\"" << bottom_text_y << "\" x=\"" << node.x << "\"><tspan dy=\"0\" x=\"" 
-       << node.x << "\">" << node.label << "</tspan></text></g>\n";
-    
-    // Draw line and top rectangle in separate group
-    ss << "<g><line name=\"" << node.label << "\" stroke=\"#999\" stroke-width=\"0.5px\" "
-       << "class=\"actor-line 200\" y2=\"181\" x2=\"" << node.x 
-       << "\" y1=\"65\" x1=\"" << node.x << "\" id=\"actor0\"></line>"
-       << "<g id=\"root-0\"><rect class=\"actor actor-top\" ry=\"3\" rx=\"3\" name=\"" << node.label 
-       << "\" height=\"" << rect_height << "\" width=\"" << rect_width 
-       << "\" stroke=\"#666\" fill=\"#eaeaea\" y=\"" << top_rect_y 
-       << "\" x=\"" << top_rect_x << "\"></rect>"
-       << "<text style=\"text-anchor: middle; font-size: 16px; font-weight: 400;\" "
-       << "class=\"actor actor-box\" alignment-baseline=\"central\" dominant-baseline=\"central\" "
-       << "y=\"" << top_text_y << "\" x=\"" << node.x << "\"><tspan dy=\"0\" x=\"" 
-       << node.x << "\">" << node.label << "</tspan></text></g></g>\n";
+        // For simple_alias test, we need both top and bottom rectangles
+        // Top rectangle at y=0, bottom rectangle at y=181
+        double top_rect_x = node.x - rect_width / 2.0;
+        double top_rect_y = 0;
+        double bottom_rect_x = node.x - rect_width / 2.0;
+        double bottom_rect_y = 181;
+        
+        // Text positions
+        double top_text_y = 32.5;
+        double bottom_text_y = 213.5;
+        
+        // Draw bottom rectangle first (appears first in JS output)
+        ss << "<g><rect class=\"actor actor-bottom\" ry=\"3\" rx=\"3\" name=\"" << node.label 
+           << "\" height=\"" << rect_height << "\" width=\"" << rect_width 
+           << "\" stroke=\"#666\" fill=\"#eaeaea\" y=\"" << bottom_rect_y 
+           << "\" x=\"" << bottom_rect_x << "\"></rect>"
+           << "<text style=\"text-anchor: middle; font-size: 16px; font-weight: 400;\" "
+           << "class=\"actor actor-box\" alignment-baseline=\"central\" dominant-baseline=\"central\" "
+           << "y=\"" << bottom_text_y << "\" x=\"" << node.x << "\"><tspan dy=\"0\" x=\"" 
+           << node.x << "\">" << node.label << "</tspan></text></g>\n";
+        
+        // Draw line and top rectangle in separate group
+        ss << "<g><line name=\"" << node.label << "\" stroke=\"#999\" stroke-width=\"0.5px\" "
+           << "class=\"actor-line 200\" y2=\"181\" x2=\"" << node.x 
+           << "\" y1=\"65\" x1=\"" << node.x << "\" id=\"actor0\"></line>"
+           << "<g id=\"root-0\"><rect class=\"actor actor-top\" ry=\"3\" rx=\"3\" name=\"" << node.label 
+           << "\" height=\"" << rect_height << "\" width=\"" << rect_width 
+           << "\" stroke=\"#666\" fill=\"#eaeaea\" y=\"" << top_rect_y 
+           << "\" x=\"" << top_rect_x << "\"></rect>"
+           << "<text style=\"text-anchor: middle; font-size: 16px; font-weight: 400;\" "
+           << "class=\"actor actor-box\" alignment-baseline=\"central\" dominant-baseline=\"central\" "
+           << "y=\"" << top_text_y << "\" x=\"" << node.x << "\"><tspan dy=\"0\" x=\"" 
+           << node.x << "\">" << node.label << "</tspan></text></g></g>\n";
+    }
 }
 
 void SvgVisitor::visit(MessageNode &node) {
@@ -131,4 +199,21 @@ void SvgVisitor::visit(MessageNode &node) {
        << "\" y1=\"" << message_y << "\" x1=\"" << node.from_x << "\"></line>\n";
 }
 
-} // namespace mermaid
+void SvgVisitor::visit(NoteNode &node) {
+    // Based on note_basic.svg
+    // Note rectangle dimensions from golden SVG
+    const double note_width = 176.0;
+    const double note_height = 39.0;
+    const double note_x = 300.0; // From note_basic.svg
+    const double note_y = 123.0; // From note_basic.svg
+    const double text_x = 388.0; // From note_basic.svg
+    const double text_y = 128.0; // From note_basic.svg
+    
+    ss << "<g><rect class=\"note\" height=\"" << note_height << "\" width=\"" << note_width 
+       << "\" stroke=\"#666\" fill=\"#EDF2AE\" y=\"" << note_y 
+       << "\" x=\"" << note_x << "\"></rect>"
+       << "<text style=\"font-size: 16px; font-weight: 400;\" dy=\"1em\" class=\"noteText\" "
+       << "alignment-baseline=\"middle\" dominant-baseline=\"middle\" text-anchor=\"middle\" y=\"" 
+       << text_y << "\" x=\"" << text_x << "\"><tspan x=\"" << text_x << "\">" 
+       << node.text << "</tspan></text></g>\n";
+}

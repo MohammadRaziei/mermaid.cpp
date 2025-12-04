@@ -104,6 +104,12 @@ Token Lexer::lex_identifier() {
     if (lexeme == "participant") {
         return Token{TokenType::KeywordParticipant, lexeme, m_line, start_col};
     }
+    if (lexeme == "actor") {
+        return Token{TokenType::KeywordActor, lexeme, m_line, start_col};
+    }
+    if (lexeme == "note") {
+        return Token{TokenType::KeywordNote, lexeme, m_line, start_col};
+    }
     if (lexeme == "as") {
         return Token{TokenType::KeywordAs, lexeme, m_line, start_col};
     }

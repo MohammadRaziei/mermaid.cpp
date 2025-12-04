@@ -8,6 +8,8 @@ namespace mermaid {
 enum class TokenType {
     KeywordSequenceDiagram,
     KeywordParticipant,
+    KeywordActor,
+    KeywordNote,
     KeywordAs,
     Identifier,
     ArrowSolid,        // ->

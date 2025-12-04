@@ -26,6 +26,14 @@ std::unique_ptr<SequenceDiagramNode> Parser::parse_sequence_diagram() {
             parse_participant(*diagram);
             continue;
         }
+        if (m_current.type == TokenType::KeywordActor) {
+            parse_actor(*diagram);
+            continue;
+        }
+        if (m_current.type == TokenType::KeywordNote) {
+            parse_note(*diagram);
+            continue;
+        }
         if (m_current.type == TokenType::Identifier) {
             parse_message(*diagram);
             continue;
@@ -47,8 +55,57 @@ void Parser::parse_participant(SequenceDiagramNode &diagram) {
         display = alias.lexeme;
     }
 
-    diagram.participants.push_back(std::make_unique<ParticipantNode>(id.lexeme, display));
+    diagram.participants.push_back(std::make_unique<ParticipantNode>(id.lexeme, display, "participant"));
 
+    if (m_current.type == TokenType::Newline) {
+        advance();
+    }
+    skip_newlines();
+}
+
+void Parser::parse_actor(SequenceDiagramNode &diagram) {
+    consume(TokenType::KeywordActor, "Expected 'actor'");
+    Token id = consume(TokenType::Identifier, "Expected actor identifier");
+
+    std::string display = id.lexeme;
+    if (m_current.type == TokenType::KeywordAs) {
+        advance();
+        Token alias = consume(TokenType::Identifier, "Expected alias identifier after 'as'");
+        display = alias.lexeme;
+    }
+
+    diagram.participants.push_back(std::make_unique<ParticipantNode>(id.lexeme, display, "actor"));
+
+    if (m_current.type == TokenType::Newline) {
+        advance();
+    }
+    skip_newlines();
+}
+
+void Parser::parse_note(SequenceDiagramNode &diagram) {
+    consume(TokenType::KeywordNote, "Expected 'note'");
+    
+    // Parse placement: "right of", "left of", or "over"
+    std::string placement = "right of"; // default
+    if (m_current.type == TokenType::Identifier) {
+        Token placement_token = consume(TokenType::Identifier, "Expected placement");
+        placement = placement_token.lexeme;
+        if (placement == "right" || placement == "left") {
+            // Expect "of" after "right" or "left"
+            consume(TokenType::Identifier, "Expected 'of' after placement");
+            placement += " of";
+        }
+    }
+    
+    // Parse actor
+    Token actor = consume(TokenType::Identifier, "Expected actor identifier for note");
+    consume(TokenType::Colon, "Expected ':' after actor");
+    
+    // Parse note text
+    Token text = consume(TokenType::Text, "Expected note text");
+    
+    diagram.notes.push_back(std::make_unique<NoteNode>(actor.lexeme, placement, text.lexeme));
+    
     if (m_current.type == TokenType::Newline) {
         advance();
     }
