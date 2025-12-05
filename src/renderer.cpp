@@ -122,12 +122,13 @@ void SvgVisitor::visit(MessageNode &node) {
     bool is_dashed = node.is_dotted; // dotted arrow means dashed line
     // For loop_basic, both messages use arrowhead (not crosshead)
     // TODO: implement proper crosshead mapping based on arrow type
-    ss << "<line style=\"fill: none;\"";
-    ss << " marker-end=\"url(#arrowhead)\"";
+    ss << "<line";
     if (is_dashed) {
-        ss << " stroke-dasharray=\"3, 3\"";
+        ss << " style=\"stroke-dasharray: 3, 3; fill: none;\"";
+    } else {
+        ss << " style=\"fill: none;\"";
     }
-    ss << " stroke=\"none\" stroke-width=\"2\" "
+    ss << " marker-end=\"url(#arrowhead)\" stroke=\"none\" stroke-width=\"2\" "
        << "class=\"messageLine" << (is_dashed ? "1" : "0") << "\" y2=\"" << message_y 
        << "\" x2=\"" << x2 << "\" y1=\"" << message_y << "\" x1=\"" << x1 << "\"></line>\n";
     
