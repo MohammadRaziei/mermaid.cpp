@@ -34,6 +34,16 @@ std::unique_ptr<SequenceDiagramNode> Parser::parse_sequence_diagram() {
             parse_note(*diagram);
             continue;
         }
+        if (m_current.type == TokenType::KeywordLoop ||
+            m_current.type == TokenType::KeywordAlt ||
+            m_current.type == TokenType::KeywordOpt ||
+            m_current.type == TokenType::KeywordPar ||
+            m_current.type == TokenType::KeywordBreak ||
+            m_current.type == TokenType::KeywordCritical ||
+            m_current.type == TokenType::KeywordRect) {
+            parse_block(*diagram);
+            continue;
+        }
         if (m_current.type == TokenType::Identifier) {
             parse_message(*diagram);
             continue;

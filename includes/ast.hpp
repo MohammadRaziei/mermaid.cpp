@@ -60,10 +60,24 @@ struct MessageNode : AstNode {
     void accept(AstVisitor &v) override;
 };
 
+struct BlockNode : AstNode {
+    std::string type; // "loop", "alt", "opt", "par", "break", "critical", "rect"
+    std::string label;
+    double start_y{0.0};
+    double end_y{0.0};
+    std::vector<std::unique_ptr<MessageNode>> messages; // messages inside block
+
+    BlockNode(std::string type_, std::string label_)
+        : type(std::move(type_)), label(std::move(label_)) {}
+
+    void accept(AstVisitor &v) override;
+};
+
 struct SequenceDiagramNode : AstNode {
     std::vector<std::unique_ptr<ParticipantNode>> participants;
     std::vector<std::unique_ptr<MessageNode>> messages;
     std::vector<std::unique_ptr<NoteNode>> notes;
+    std::vector<std::unique_ptr<BlockNode>> blocks;
     double width{800.0};
     double height{600.0};
 

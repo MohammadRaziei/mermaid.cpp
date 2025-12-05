@@ -18,6 +18,7 @@ private:
     void parse_actor(SequenceDiagramNode &diagram);
     void parse_note(SequenceDiagramNode &diagram);
     void parse_message(SequenceDiagramNode &diagram);
+    void parse_block(SequenceDiagramNode &diagram);
 
     void advance();
     bool match(TokenType type);

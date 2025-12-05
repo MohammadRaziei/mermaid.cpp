@@ -11,6 +11,17 @@ enum class TokenType {
     KeywordActor,
     KeywordNote,
     KeywordAs,
+    KeywordLoop,
+    KeywordAlt,
+    KeywordOpt,
+    KeywordPar,
+    KeywordBreak,
+    KeywordCritical,
+    KeywordRect,
+    KeywordEnd,
+    KeywordElse,
+    KeywordAnd,
+    KeywordOption,
     Identifier,
     ArrowSolid,        // ->
     ArrowSolidCross,   // ->>

@@ -113,6 +113,39 @@ Token Lexer::lex_identifier() {
     if (lexeme == "as") {
         return Token{TokenType::KeywordAs, lexeme, m_line, start_col};
     }
+    if (lexeme == "loop") {
+        return Token{TokenType::KeywordLoop, lexeme, m_line, start_col};
+    }
+    if (lexeme == "alt") {
+        return Token{TokenType::KeywordAlt, lexeme, m_line, start_col};
+    }
+    if (lexeme == "opt") {
+        return Token{TokenType::KeywordOpt, lexeme, m_line, start_col};
+    }
+    if (lexeme == "par") {
+        return Token{TokenType::KeywordPar, lexeme, m_line, start_col};
+    }
+    if (lexeme == "break") {
+        return Token{TokenType::KeywordBreak, lexeme, m_line, start_col};
+    }
+    if (lexeme == "critical") {
+        return Token{TokenType::KeywordCritical, lexeme, m_line, start_col};
+    }
+    if (lexeme == "rect") {
+        return Token{TokenType::KeywordRect, lexeme, m_line, start_col};
+    }
+    if (lexeme == "end") {
+        return Token{TokenType::KeywordEnd, lexeme, m_line, start_col};
+    }
+    if (lexeme == "else") {
+        return Token{TokenType::KeywordElse, lexeme, m_line, start_col};
+    }
+    if (lexeme == "and") {
+        return Token{TokenType::KeywordAnd, lexeme, m_line, start_col};
+    }
+    if (lexeme == "option") {
+        return Token{TokenType::KeywordOption, lexeme, m_line, start_col};
+    }
     return Token{TokenType::Identifier, lexeme, m_line, start_col};
 }
 
