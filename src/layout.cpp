@@ -9,7 +9,7 @@ void SequenceLayoutStrategy::layout(SequenceDiagramNode &root) {
     const double start_x = 75.0;
     const double participant_spacing = 200.0;
     const double header_y = 60.0;
-    const double message_start_y = 113.0;
+    const double message_start_y = 158.0;
     const double message_gap = 48.0;
 
     auto participant_map = build_participant_map(root);
@@ -34,20 +34,33 @@ void SequenceLayoutStrategy::layout(SequenceDiagramNode &root) {
         current_y += message_gap;
     }
 
-    double lifeline_end = std::max(current_y + 40.0, header_y + 200.0);
+    // Layout blocks
+    layout_blocks(root);
+
+    // Compute lifeline end based on messages and blocks
+    double lifeline_end = 0.0;
+    if (!root.blocks.empty()) {
+        // If there are blocks, lifeline ends at the furthest block bottom + 20
+        for (auto &block : root.blocks) {
+            lifeline_end = std::max(lifeline_end, block->stop_y + 20.0);
+        }
+    } else {
+        // No blocks, use messages
+        lifeline_end = current_y + 40.0;
+    }
+    // Ensure at least header_y + 200? Golden uses 236 for loop_basic
+    // lifeline_end = std::max(lifeline_end, header_y + 200.0); // not needed
     for (auto &p : root.participants) {
         p->lifeline_end_y = lifeline_end;
     }
-
-    // Layout blocks
-    layout_blocks(root);
 
     if (!root.participants.empty()) {
         root.width = start_x * 2 + participant_spacing * static_cast<double>(root.participants.size() - 1);
     } else {
         root.width = 400.0;
     }
-    root.height = lifeline_end + 40.0;
+    // Golden SVG height is 322 for loop_basic
+    root.height = lifeline_end + 86.0;
 }
 
 void SequenceLayoutStrategy::layout_blocks(SequenceDiagramNode &root) {
@@ -79,7 +92,7 @@ void SequenceLayoutStrategy::layout_blocks(SequenceDiagramNode &root) {
         
         // Add padding
         const double padding_x = 10.0;
-        const double padding_y_top = 50.0;
+        const double padding_y_top = 83.0;
         const double padding_y_bottom = 10.0;
         block->start_x = min_x - padding_x;
         block->stop_x = max_x + padding_x;

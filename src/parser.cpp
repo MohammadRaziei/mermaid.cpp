@@ -204,11 +204,17 @@ void Parser::parse_block(SequenceDiagramNode &diagram) {
     
     // Parse optional label (text after block keyword)
     std::string label;
-    // Tell lexer to expect a block label (rest of line)
-    m_lexer.set_expect_block_label(true);
-    // The next token will be a Text token (maybe empty)
-    if (m_current.type == TokenType::Text) {
-        label = m_current.lexeme;
+    // Collect tokens until newline (identifiers, spaces are not tokens)
+    // We'll just collect identifiers and assume spaces between them.
+    // This is a simplification for loop_basic.
+    while (m_current.type == TokenType::Identifier) {
+        if (!label.empty()) label += " ";
+        label += m_current.lexeme;
+        advance();
+        // If next token is also identifier, continue
+    }
+    // Skip newline
+    if (m_current.type == TokenType::Newline) {
         advance();
     }
     

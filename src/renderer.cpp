@@ -5,8 +5,18 @@
 namespace mermaid {
 
 void SvgVisitor::emit_header(double width, double height) {
-    // Match JS output for activation_basic test
-    ss << "<svg aria-roledescription=\"sequence\" role=\"graphics-document document\" viewBox=\"-50 -10 450 267\" height=\"267\" xmlns=\"http://www.w3.org/2000/svg\" width=\"450\" id=\"container\">";
+    // Compute viewBox to match golden SVG dimensions
+    // Golden viewBox: "-50 -10 450 322"
+    // width = 450, height = 322
+    // Our width and height may differ; adjust accordingly.
+    double viewBox_x = -50.0;
+    double viewBox_y = -10.0;
+    double viewBox_width = width + 100.0; // 350 + 100 = 450
+    double viewBox_height = height; // 322
+    ss << "<svg aria-roledescription=\"sequence\" role=\"graphics-document document\" viewBox=\""
+       << viewBox_x << " " << viewBox_y << " " << viewBox_width << " " << viewBox_height
+       << "\" height=\"" << viewBox_height << "\" xmlns=\"http://www.w3.org/2000/svg\" width=\""
+       << viewBox_width << "\" id=\"container\">";
     
     // Add CSS styles including actor-man and note styles
     ss << "<style>#container{font-family:\"trebuchet ms\",verdana,arial,sans-serif;font-size:16px;fill:#333;}"
@@ -133,16 +143,15 @@ void SvgVisitor::visit(ParticipantNode &node) {
         const double rect_width = 150.0;
         const double rect_height = 65.0;
 
-        // For simple_alias test, we need both top and bottom rectangles
-        // Top rectangle at y=0, bottom rectangle at y=181
+        // Top rectangle at y=0, bottom rectangle at lifeline_end_y
         double top_rect_x = node.x - rect_width / 2.0;
         double top_rect_y = 0;
         double bottom_rect_x = node.x - rect_width / 2.0;
-        double bottom_rect_y = 181;
+        double bottom_rect_y = node.lifeline_end_y;
         
         // Text positions
         double top_text_y = 32.5;
-        double bottom_text_y = 213.5;
+        double bottom_text_y = bottom_rect_y + rect_height / 2.0;
         
         // Draw bottom rectangle first (appears first in JS output)
         ss << "<g><rect class=\"actor actor-bottom\" ry=\"3\" rx=\"3\" name=\"" << node.label 
@@ -156,7 +165,7 @@ void SvgVisitor::visit(ParticipantNode &node) {
         
         // Draw line and top rectangle in separate group
         ss << "<g><line name=\"" << node.label << "\" stroke=\"#999\" stroke-width=\"0.5px\" "
-           << "class=\"actor-line 200\" y2=\"181\" x2=\"" << node.x 
+           << "class=\"actor-line 200\" y2=\"" << bottom_rect_y << "\" x2=\"" << node.x 
            << "\" y1=\"65\" x1=\"" << node.x << "\" id=\"actor0\"></line>"
            << "<g id=\"root-0\"><rect class=\"actor actor-top\" ry=\"3\" rx=\"3\" name=\"" << node.label 
            << "\" height=\"" << rect_height << "\" width=\"" << rect_width 
@@ -252,16 +261,19 @@ void SvgVisitor::visit(BlockNode &node) {
     
     // Draw label box (trapezoid) at top left corner
     // Based on golden SVG: points "64,75 114,75 114,88 105.6,95 64,95"
-    // We'll approximate with a rectangle for simplicity
     double label_box_width = 50.0;
     double label_box_height = 20.0;
     double label_box_x = x1;
     double label_box_y = y1;
+    double label_box_right = label_box_x + label_box_width;
+    double label_box_bottom = label_box_y + label_box_height;
+    double trapezoid_offset = 8.4; // 114 - 105.6
     ss << "<polygon class=\"labelBox\" points=\""
        << label_box_x << "," << label_box_y << " "
-       << (label_box_x + label_box_width) << "," << label_box_y << " "
-       << (label_box_x + label_box_width) << "," << (label_box_y + label_box_height) << " "
-       << label_box_x << "," << (label_box_y + label_box_height) << "\"></polygon>\n";
+       << label_box_right << "," << label_box_y << " "
+       << label_box_right << "," << (label_box_y + 13) << " "
+       << (label_box_right - trapezoid_offset) << "," << label_box_bottom << " "
+       << label_box_x << "," << label_box_bottom << "\"></polygon>\n";
     
     // Draw block type text inside label box
     double label_text_x = label_box_x + label_box_width / 2.0;
@@ -270,10 +282,10 @@ void SvgVisitor::visit(BlockNode &node) {
        << "alignment-baseline=\"middle\" dominant-baseline=\"middle\" text-anchor=\"middle\" y=\""
        << label_text_y << "\" x=\"" << label_text_x << "\">" << node.type << "</text>\n";
     
-    // Draw block label text at bottom center of rectangle
+    // Draw block label text at top center of rectangle (just below label box)
     if (!node.label.empty()) {
         double loop_text_x = (x1 + x2) / 2.0;
-        double loop_text_y = y2 - 10; // a bit above bottom line
+        double loop_text_y = y1 + 18; // golden y=93, y1=75 => offset 18
         ss << "<text style=\"font-size: 16px; font-weight: 400;\" class=\"loopText\" "
            << "text-anchor=\"middle\" y=\"" << loop_text_y << "\" x=\"" << loop_text_x << "\">"
            << "<tspan x=\"" << loop_text_x << "\">[" << node.label << "]</tspan></text>\n";
