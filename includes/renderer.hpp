@@ -34,6 +34,8 @@ private:
     SequenceDiagramNode *current_sequence{nullptr};
     std::ostringstream ss;
     int message_count{0};
+    int participant_phase{0}; // 0 = bottom rectangles, 1 = line+top rectangles
+    int current_participant_index{0};
 };
 
 } // namespace mermaid

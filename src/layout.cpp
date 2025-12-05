@@ -91,7 +91,7 @@ void SequenceLayoutStrategy::layout_blocks(SequenceDiagramNode &root) {
         }
         
         // Add padding
-        const double padding_x = 10.0;
+        const double padding_x = 11.0;
         const double padding_y_top = 83.0;
         const double padding_y_bottom = 10.0;
         block->start_x = min_x - padding_x;

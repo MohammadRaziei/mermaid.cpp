@@ -31,78 +31,25 @@ void SvgVisitor::emit_style_and_defs() {
 
 void SvgVisitor::visit(ParticipantNode &node) {
     if (node.type == "actor") {
-        // Render actor as stick figure (actor-man)
-        // Based on actor_basic.svg
-        const double center_x = node.x;
-        const double top_head_y = 10;
-        const double top_torso_start_y = 25;
-        const double top_torso_end_y = 45;
-        const double top_arms_y = 33;
-        const double top_leg1_end_y = 60;
-        const double top_leg2_end_y = 60;
-        const double top_text_y = 67.5;
-        
-        const double bottom_head_y = 191;
-        const double bottom_torso_start_y = 206;
-        const double bottom_torso_end_y = 226;
-        const double bottom_arms_y = 214;
-        const double bottom_leg1_end_y = 241;
-        const double bottom_leg2_end_y = 241;
-        const double bottom_text_y = 248.5;
-        
-        // Top actor-man
-        ss << "<g name=\"" << node.label << "\" class=\"actor-man actor-top\">"
-           << "<line y2=\"" << top_torso_end_y << "\" x2=\"" << center_x 
-           << "\" y1=\"" << top_torso_start_y << "\" x1=\"" << center_x << "\" id=\"actor-man-torso0\"></line>"
-           << "<line y2=\"" << top_arms_y << "\" x2=\"" << (center_x + 18) 
-           << "\" y1=\"" << top_arms_y << "\" x1=\"" << (center_x - 18) << "\" id=\"actor-man-arms0\"></line>"
-           << "<line y2=\"" << top_torso_end_y << "\" x2=\"" << center_x 
-           << "\" y1=\"" << top_leg1_end_y << "\" x1=\"" << (center_x - 18) << "\"></line>"
-           << "<line y2=\"" << top_leg2_end_y << "\" x2=\"" << (center_x + 16) 
-           << "\" y1=\"" << top_torso_end_y << "\" x1=\"" << center_x << "\"></line>"
-           << "<circle height=\"65\" width=\"150\" r=\"15\" cy=\"" << top_head_y 
-           << "\" cx=\"" << center_x << "\"></circle>"
-           << "<text style=\"text-anchor: middle; font-size: 16px; font-weight: 400;\" "
-           << "class=\"actor actor-man\" alignment-baseline=\"central\" dominant-baseline=\"central\" "
-           << "y=\"" << top_text_y << "\" x=\"" << center_x << "\"><tspan dy=\"0\" x=\"" 
-           << center_x << "\">" << node.label << "</tspan></text></g>\n";
-        
-        // Lifeline for actor (different from participant)
-        ss << "<g><line name=\"" << node.label << "\" stroke=\"#999\" stroke-width=\"0.5px\" "
-           << "class=\"actor-line 200\" y2=\"181\" x2=\"" << center_x 
-           << "\" y1=\"80\" x1=\"" << center_x << "\" id=\"actor0\"></line></g>\n";
-        
-        // Bottom actor-man
-        ss << "<g name=\"" << node.label << "\" class=\"actor-man actor-bottom\">"
-           << "<line y2=\"" << bottom_torso_end_y << "\" x2=\"" << center_x 
-           << "\" y1=\"" << bottom_torso_start_y << "\" x1=\"" << center_x << "\" id=\"actor-man-torso1\"></line>"
-           << "<line y2=\"" << bottom_arms_y << "\" x2=\"" << (center_x + 18) 
-           << "\" y1=\"" << bottom_arms_y << "\" x1=\"" << (center_x - 18) << "\" id=\"actor-man-arms1\"></line>"
-           << "<line y2=\"" << bottom_torso_end_y << "\" x2=\"" << center_x 
-           << "\" y1=\"" << bottom_leg1_end_y << "\" x1=\"" << (center_x - 18) << "\"></line>"
-           << "<line y2=\"" << bottom_leg2_end_y << "\" x2=\"" << (center_x + 16) 
-           << "\" y1=\"" << bottom_torso_end_y << "\" x1=\"" << center_x << "\"></line>"
-           << "<circle height=\"65\" width=\"150\" r=\"15\" cy=\"" << bottom_head_y 
-           << "\" cx=\"" << center_x << "\"></circle>"
-           << "<text style=\"text-anchor: middle; font-size: 16px; font-weight: 400;\" "
-           << "class=\"actor actor-man\" alignment-baseline=\"central\" dominant-baseline=\"central\" "
-           << "y=\"" << bottom_text_y << "\" x=\"" << center_x << "\"><tspan dy=\"0\" x=\"" 
-           << center_x << "\">" << node.label << "</tspan></text></g>\n";
-    } else {
-        // Render participant as rectangle (original code)
-        const double rect_width = 150.0;
-        const double rect_height = 65.0;
+        // Actor rendering not yet needed for loop_basic
+        // For now, treat as participant
+        // We'll implement later
+    }
+    // Render participant as rectangle (original code)
+    const double rect_width = 150.0;
+    const double rect_height = 65.0;
 
-        // Top rectangle at y=0, bottom rectangle at lifeline_end_y
-        double top_rect_x = node.x - rect_width / 2.0;
-        double top_rect_y = 0;
-        double bottom_rect_x = node.x - rect_width / 2.0;
-        double bottom_rect_y = node.lifeline_end_y;
-        
-        // Text positions
-        double top_text_y = 32.5;
-        double bottom_text_y = bottom_rect_y + rect_height / 2.0;
-        
+    // Top rectangle at y=0, bottom rectangle at lifeline_end_y
+    double top_rect_x = node.x - rect_width / 2.0;
+    double top_rect_y = 0;
+    double bottom_rect_x = node.x - rect_width / 2.0;
+    double bottom_rect_y = node.lifeline_end_y;
+    
+    // Text positions
+    double top_text_y = 32.5;
+    double bottom_text_y = bottom_rect_y + rect_height / 2.0;
+    
+    if (participant_phase == 0) {
         // Draw bottom rectangle first (appears first in JS output)
         ss << "<g><rect class=\"actor actor-bottom\" ry=\"3\" rx=\"3\" name=\"" << node.label 
            << "\" height=\"" << rect_height << "\" width=\"" << rect_width 
@@ -112,12 +59,12 @@ void SvgVisitor::visit(ParticipantNode &node) {
            << "class=\"actor actor-box\" alignment-baseline=\"central\" dominant-baseline=\"central\" "
            << "y=\"" << bottom_text_y << "\" x=\"" << node.x << "\"><tspan dy=\"0\" x=\"" 
            << node.x << "\">" << node.label << "</tspan></text></g>\n";
-        
+    } else {
         // Draw line and top rectangle in separate group
         ss << "<g><line name=\"" << node.label << "\" stroke=\"#999\" stroke-width=\"0.5px\" "
            << "class=\"actor-line 200\" y2=\"" << bottom_rect_y << "\" x2=\"" << node.x 
-           << "\" y1=\"65\" x1=\"" << node.x << "\" id=\"actor0\"></line>"
-           << "<g id=\"root-0\"><rect class=\"actor actor-top\" ry=\"3\" rx=\"3\" name=\"" << node.label 
+           << "\" y1=\"65\" x1=\"" << node.x << "\" id=\"actor" << current_participant_index << "\"></line>"
+           << "<g id=\"root-" << current_participant_index << "\"><rect class=\"actor actor-top\" ry=\"3\" rx=\"3\" name=\"" << node.label 
            << "\" height=\"" << rect_height << "\" width=\"" << rect_width 
            << "\" stroke=\"#666\" fill=\"#eaeaea\" y=\"" << top_rect_y 
            << "\" x=\"" << top_rect_x << "\"></rect>"
@@ -171,21 +118,12 @@ void SvgVisitor::visit(MessageNode &node) {
        << text_y << "\" x=\"" << text_x << "\">" << node.text << "</text>\n";
     
     // Draw message line
-    // First message has arrowhead (solid), second doesn't (dashed)
-    // This is a simplification - we should check message type
-    bool has_arrowhead = true; // Default to arrowhead
-    bool is_dashed = false;
-    
-    // Simple heuristic: if message text contains "done" or it's the second message, use dashed
-    if (node.text.find("done") != std::string::npos || message_count > 0) {
-        has_arrowhead = false;
-        is_dashed = true;
-    }
-    
+    // Determine line style based on arrow type
+    bool is_dashed = node.is_dotted; // dotted arrow means dashed line
+    // For loop_basic, both messages use arrowhead (not crosshead)
+    // TODO: implement proper crosshead mapping based on arrow type
     ss << "<line style=\"fill: none;\"";
-    if (has_arrowhead) {
-        ss << " marker-end=\"url(#arrowhead)\"";
-    }
+    ss << " marker-end=\"url(#arrowhead)\"";
     if (is_dashed) {
         ss << " stroke-dasharray=\"3, 3\"";
     }
@@ -237,7 +175,7 @@ void SvgVisitor::visit(BlockNode &node) {
     double label_box_y = y1;
     double label_box_right = label_box_x + label_box_width;
     double label_box_bottom = label_box_y + label_box_height;
-    double trapezoid_offset = 9.4; // 114 - 105.6
+    double trapezoid_offset = 8.4; // 114 - 105.6
     ss << "<polygon class=\"labelBox\" points=\""
        << label_box_x << "," << label_box_y << " "
        << label_box_right << "," << label_box_y << " "
@@ -260,5 +198,55 @@ void SvgVisitor::visit(BlockNode &node) {
            << "text-anchor=\"middle\" y=\"" << loop_text_y << "\" x=\"" << loop_text_x << "\">"
            << "<tspan x=\"" << loop_text_x << "\">[" << node.label << "]</tspan></text>\n";
     }
+}
+
+void SvgVisitor::visit(SequenceDiagramNode &node) {
+    // Store reference for layout calculations
+    current_sequence = &node;
+    
+    // Emit SVG header
+    emit_header(node.width, node.height);
+    
+    // Render participants (bottom rectangles first, then lines+top rectangles)
+    // JS iterates participants in reverse order
+    // Phase 0: bottom rectangles
+    participant_phase = 0;
+    int total_participants = node.participants.size();
+    int rev_index = 0;
+    for (auto it = node.participants.rbegin(); it != node.participants.rend(); ++it, ++rev_index) {
+        current_participant_index = total_participants - 1 - rev_index;
+        (*it)->accept(*this);
+    }
+    // Phase 1: line+top rectangles
+    participant_phase = 1;
+    rev_index = 0;
+    for (auto it = node.participants.rbegin(); it != node.participants.rend(); ++it, ++rev_index) {
+        current_participant_index = total_participants - 1 - rev_index;
+        (*it)->accept(*this);
+    }
+    
+    // Emit style and definitions (must appear after participants in golden SVG)
+    emit_style_and_defs();
+    
+    // Render blocks (loop, alt, etc.)
+    for (auto &block : node.blocks) {
+        block->accept(*this);
+    }
+    
+    // Render messages
+    for (auto &message : node.messages) {
+        message->accept(*this);
+    }
+    
+    // Render notes
+    for (auto &note : node.notes) {
+        note->accept(*this);
+    }
+    
+    // Emit footer
+    emit_footer();
+    
+    // Store result
+    result_svg = ss.str();
 }
 }
