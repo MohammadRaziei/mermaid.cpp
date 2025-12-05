@@ -21,6 +21,10 @@ void SvgVisitor::emit_header(double width, double height) {
        << "#container .actor-man circle,#container line{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;stroke-width:2px;}"
        << "#container .note{stroke:#aaaa33;fill:#fff5ad;}"
        << "#container .noteText,#container .noteText>tspan{fill:black;stroke:none;}"
+       << "#container .loopLine{stroke-width:2px;stroke-dasharray:2,2;stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);}"
+       << "#container .labelBox{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;}"
+       << "#container .labelText,#container .labelText>tspan{fill:black;stroke:none;}"
+       << "#container .loopText,#container .loopText>tspan{fill:black;stroke:none;}"
        << "</style>";
     
     // Add defs
@@ -46,6 +50,12 @@ void SvgVisitor::visit(SequenceDiagramNode &node) {
 
     // Reset message count for this diagram
     message_count = 0;
+    
+    // Draw blocks (loops, alt, etc.) before messages
+    for (auto &block : node.blocks) {
+        block->accept(*this);
+    }
+
     for (auto &message : node.messages) {
         message->accept(*this);
     }
@@ -224,5 +234,49 @@ void SvgVisitor::visit(NoteNode &node) {
        << "alignment-baseline=\"middle\" dominant-baseline=\"middle\" text-anchor=\"middle\" y=\"" 
        << text_y << "\" x=\"" << text_x << "\"><tspan x=\"" << text_x << "\">" 
        << node.text << "</tspan></text></g>\n";
+}
+
+void SvgVisitor::visit(BlockNode &node) {
+    // Draw loop rectangle with dashed lines
+    // Coordinates from layout
+    double x1 = node.start_x;
+    double y1 = node.start_y;
+    double x2 = node.stop_x;
+    double y2 = node.stop_y;
+    
+    // Draw four lines with class "loopLine"
+    ss << "<g><line class=\"loopLine\" y2=\"" << y1 << "\" x2=\"" << x2 << "\" y1=\"" << y1 << "\" x1=\"" << x1 << "\"></line>"
+       << "<line class=\"loopLine\" y2=\"" << y2 << "\" x2=\"" << x2 << "\" y1=\"" << y1 << "\" x1=\"" << x2 << "\"></line>"
+       << "<line class=\"loopLine\" y2=\"" << y2 << "\" x2=\"" << x2 << "\" y1=\"" << y2 << "\" x1=\"" << x1 << "\"></line>"
+       << "<line class=\"loopLine\" y2=\"" << y2 << "\" x2=\"" << x1 << "\" y1=\"" << y1 << "\" x1=\"" << x1 << "\"></line></g>\n";
+    
+    // Draw label box (trapezoid) at top left corner
+    // Based on golden SVG: points "64,75 114,75 114,88 105.6,95 64,95"
+    // We'll approximate with a rectangle for simplicity
+    double label_box_width = 50.0;
+    double label_box_height = 20.0;
+    double label_box_x = x1;
+    double label_box_y = y1;
+    ss << "<polygon class=\"labelBox\" points=\""
+       << label_box_x << "," << label_box_y << " "
+       << (label_box_x + label_box_width) << "," << label_box_y << " "
+       << (label_box_x + label_box_width) << "," << (label_box_y + label_box_height) << " "
+       << label_box_x << "," << (label_box_y + label_box_height) << "\"></polygon>\n";
+    
+    // Draw block type text inside label box
+    double label_text_x = label_box_x + label_box_width / 2.0;
+    double label_text_y = label_box_y + label_box_height / 2.0;
+    ss << "<text style=\"font-size: 16px; font-weight: 400;\" class=\"labelText\" "
+       << "alignment-baseline=\"middle\" dominant-baseline=\"middle\" text-anchor=\"middle\" y=\""
+       << label_text_y << "\" x=\"" << label_text_x << "\">" << node.type << "</text>\n";
+    
+    // Draw block label text at bottom center of rectangle
+    if (!node.label.empty()) {
+        double loop_text_x = (x1 + x2) / 2.0;
+        double loop_text_y = y2 - 10; // a bit above bottom line
+        ss << "<text style=\"font-size: 16px; font-weight: 400;\" class=\"loopText\" "
+           << "text-anchor=\"middle\" y=\"" << loop_text_y << "\" x=\"" << loop_text_x << "\">"
+           << "<tspan x=\"" << loop_text_x << "\">[" << node.label << "]</tspan></text>\n";
+    }
 }
 }

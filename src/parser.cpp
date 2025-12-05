@@ -188,6 +188,75 @@ Token Parser::consume(TokenType type, const std::string &message) {
     throw std::runtime_error(message);
 }
 
+void Parser::parse_block(SequenceDiagramNode &diagram) {
+    // Determine block type
+    std::string block_type;
+    if (m_current.type == TokenType::KeywordLoop) block_type = "loop";
+    else if (m_current.type == TokenType::KeywordAlt) block_type = "alt";
+    else if (m_current.type == TokenType::KeywordOpt) block_type = "opt";
+    else if (m_current.type == TokenType::KeywordPar) block_type = "par";
+    else if (m_current.type == TokenType::KeywordBreak) block_type = "break";
+    else if (m_current.type == TokenType::KeywordCritical) block_type = "critical";
+    else if (m_current.type == TokenType::KeywordRect) block_type = "rect";
+    else throw std::runtime_error("Unknown block type");
+    
+    advance(); // consume block keyword
+    
+    // Parse optional label (text after block keyword)
+    std::string label;
+    if (m_current.type == TokenType::Text) {
+        label = m_current.lexeme;
+        advance();
+    }
+    
+    // Create block node
+    auto block = std::make_unique<BlockNode>(block_type, label);
+    
+    // Record start message index (number of messages already parsed)
+    block->start_message_index = diagram.messages.size();
+    
+    // For now, just skip until "end"
+    // TODO: Properly parse nested messages and blocks
+    while (m_current.type != TokenType::KeywordEnd && m_current.type != TokenType::Eof) {
+        // Skip newlines
+        if (m_current.type == TokenType::Newline) {
+            advance();
+            continue;
+        }
+        // If we encounter another block start, recursively parse it
+        if (m_current.type == TokenType::KeywordLoop ||
+            m_current.type == TokenType::KeywordAlt ||
+            m_current.type == TokenType::KeywordOpt ||
+            m_current.type == TokenType::KeywordPar ||
+            m_current.type == TokenType::KeywordBreak ||
+            m_current.type == TokenType::KeywordCritical ||
+            m_current.type == TokenType::KeywordRect) {
+            parse_block(diagram);
+            continue;
+        }
+        // If we encounter a message, parse it and add to diagram.messages
+        if (m_current.type == TokenType::Identifier) {
+            parse_message(diagram);
+            continue;
+        }
+        // Skip other tokens (should not happen)
+        advance();
+    }
+    
+    if (m_current.type == TokenType::KeywordEnd) {
+        advance(); // consume "end"
+    }
+    
+    // Record end message index (exclusive)
+    block->end_message_index = diagram.messages.size();
+    
+    // Add block to diagram
+    diagram.blocks.push_back(std::move(block));
+    
+    // Skip newlines after block
+    skip_newlines();
+}
+
 void Parser::skip_newlines() {
     while (m_current.type == TokenType::Newline) {
         advance();

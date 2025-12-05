@@ -17,7 +17,7 @@ public:
 
 private:
     std::unordered_map<std::string, ParticipantNode *> build_participant_map(SequenceDiagramNode &root);
+    void layout_blocks(SequenceDiagramNode &root);
 };
 
 } // namespace mermaid
-

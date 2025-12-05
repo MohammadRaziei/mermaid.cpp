@@ -63,8 +63,12 @@ struct MessageNode : AstNode {
 struct BlockNode : AstNode {
     std::string type; // "loop", "alt", "opt", "par", "break", "critical", "rect"
     std::string label;
+    double start_x{0.0};
     double start_y{0.0};
-    double end_y{0.0};
+    double stop_x{0.0};
+    double stop_y{0.0};
+    size_t start_message_index{0};
+    size_t end_message_index{0};
     std::vector<std::unique_ptr<MessageNode>> messages; // messages inside block
 
     BlockNode(std::string type_, std::string label_)
