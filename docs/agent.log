@@ -35,3 +35,35 @@ JS FUNCTIONS TO PORT:
 - addPar
 - addCritical
 - addRect
+
+2024-12-05 11:57:00 - Phase 3 Progress (Loop Block) - PARTIALLY COMPLETED
+
+ACCOMPLISHED:
+1. Loop block parsing implemented in parser.cpp (parse_loop_block)
+   - Parses "loop" keyword with optional label
+   - Creates BlockNode with type="loop", label, start/stop positions
+   - Integrated into parse_statement
+
+2. Loop block rendering implemented in renderer.cpp (visit(BlockNode))
+   - Draws four dashed lines forming rectangle with class "loopLine"
+   - Draws label box (trapezoid) with class "labelBox"
+   - Draws block type text ("loop") inside label box
+   - Draws optional label text below label box
+
+3. Updated emit_style_and_defs to include all CSS and defs from golden SVG
+   - Extracted style and defs from loop_basic.svg
+   - Fixed raw string truncation issue
+
+4. Build passes, loop_basic test runs but fails due to ordering differences:
+   - Participants vs style order mismatch (golden has participants before style, ours has style before participants)
+   - Participant rendering order: golden outputs bottom rectangles for both participants first, then lines+top rectangles; ours interleaves per participant.
+
+ISSUES:
+1. SVG element ordering mismatch (participants vs style)
+2. Participant rendering order mismatch (bottom rectangles vs lines+top rectangles)
+3. Message line arrowhead/dashed style still not matching golden (second message should have arrowhead? golden shows arrowhead on both messages? Actually golden second message has arrowhead? Need to verify)
+
+NEXT STEPS:
+- Fix ordering issues to pass loop_basic test
+- Implement alt, opt, par, break, critical, rect blocks
+- Continue Phase 3 feature-by-feature porting.

@@ -28,6 +28,7 @@ public:
 
 private:
     void emit_header(double width, double height);
+    void emit_style_and_defs();
     void emit_footer();
 
     SequenceDiagramNode *current_sequence{nullptr};
