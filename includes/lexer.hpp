@@ -48,6 +48,8 @@ public:
 
     Token next();
     const Token &peek();
+    
+    void set_expect_block_label(bool expect) { m_expect_block_label = expect; }
 
 private:
     Token read_token();
@@ -55,6 +57,7 @@ private:
     Token lex_identifier();
     Token lex_arrow();
     Token lex_text();
+    Token lex_block_label();
     void advance();
     bool match(char expected);
 
@@ -65,6 +68,7 @@ private:
     bool m_has_peek{false};
     Token m_peeked{};
     bool m_expect_text{false};
+    bool m_expect_block_label{false};
 };
 
 } // namespace mermaid

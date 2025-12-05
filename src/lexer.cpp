@@ -27,6 +27,9 @@ Token Lexer::read_token() {
     if (m_expect_text) {
         return lex_text();
     }
+    if (m_expect_block_label) {
+        return lex_block_label();
+    }
 
     skip_whitespace();
 
@@ -213,6 +216,29 @@ Token Lexer::lex_text() {
     }
     m_expect_text = false;
     std::string lexeme = m_source.substr(start_pos, m_pos - start_pos);
+    while (!lexeme.empty() && (lexeme.back() == ' ' || lexeme.back() == '\t')) {
+        lexeme.pop_back();
+    }
+    return Token{TokenType::Text, lexeme, m_line, start_col};
+}
+
+Token Lexer::lex_block_label() {
+    // Skip whitespace after keyword (already skipped by skip_whitespace)
+    while (m_pos < m_source.size() && (m_source[m_pos] == ' ' || m_source[m_pos] == '\t')) {
+        advance();
+    }
+    std::size_t start_col = m_column;
+    std::size_t start_pos = m_pos;
+    while (m_pos < m_source.size()) {
+        char c = m_source[m_pos];
+        if (c == '\n') {
+            break;
+        }
+        advance();
+    }
+    m_expect_block_label = false;
+    std::string lexeme = m_source.substr(start_pos, m_pos - start_pos);
+    // Trim trailing whitespace
     while (!lexeme.empty() && (lexeme.back() == ' ' || lexeme.back() == '\t')) {
         lexeme.pop_back();
     }

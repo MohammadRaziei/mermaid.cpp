@@ -1,6 +1,7 @@
 #include "layout.hpp"
 
 #include <algorithm>
+#include <limits>
 
 namespace mermaid {
 

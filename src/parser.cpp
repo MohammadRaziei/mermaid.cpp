@@ -204,6 +204,9 @@ void Parser::parse_block(SequenceDiagramNode &diagram) {
     
     // Parse optional label (text after block keyword)
     std::string label;
+    // Tell lexer to expect a block label (rest of line)
+    m_lexer.set_expect_block_label(true);
+    // The next token will be a Text token (maybe empty)
     if (m_current.type == TokenType::Text) {
         label = m_current.lexeme;
         advance();
