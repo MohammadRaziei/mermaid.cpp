@@ -29,8 +29,9 @@ TEST_CASE("sequence diagrams match golden SVG outputs") {
         fs::path svg_path = mermaid_path;
         svg_path.replace_extension(".svg");
 
-        // Only test loop_basic for now
-        if (mermaid_path.filename().string() != "loop_basic.mermaid") {
+        // Only test loop_basic and alt_else_basic for now
+        std::string filename = mermaid_path.filename().string();
+        if (filename != "loop_basic.mermaid" && filename != "alt_else_basic.mermaid") {
             continue;
         }
 

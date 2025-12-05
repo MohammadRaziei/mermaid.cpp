@@ -63,6 +63,7 @@ struct MessageNode : AstNode {
 struct BlockNode : AstNode {
     std::string type; // "loop", "alt", "opt", "par", "break", "critical", "rect"
     std::string label;
+    std::vector<std::string> section_labels; // for alt, par, critical etc.
     double start_x{0.0};
     double start_y{0.0};
     double stop_x{0.0};

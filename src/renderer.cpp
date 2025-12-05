@@ -21,7 +21,7 @@ void SvgVisitor::emit_header(double width, double height) {
 }
 
 void SvgVisitor::emit_footer() {
-    ss << "</svg>\n";
+    ss << "</svg>";
 }
 
 void SvgVisitor::emit_style_and_defs() {
@@ -58,7 +58,7 @@ void SvgVisitor::visit(ParticipantNode &node) {
            << "<text style=\"text-anchor: middle; font-size: 16px; font-weight: 400;\" "
            << "class=\"actor actor-box\" alignment-baseline=\"central\" dominant-baseline=\"central\" "
            << "y=\"" << bottom_text_y << "\" x=\"" << node.x << "\"><tspan dy=\"0\" x=\"" 
-           << node.x << "\">" << node.label << "</tspan></text></g>\n";
+            << node.x << "\">" << node.label << "</tspan></text></g>";
     } else {
         // Draw line and top rectangle in separate group
         ss << "<g><line name=\"" << node.label << "\" stroke=\"#999\" stroke-width=\"0.5px\" "
@@ -70,8 +70,8 @@ void SvgVisitor::visit(ParticipantNode &node) {
            << "\" x=\"" << top_rect_x << "\"></rect>"
            << "<text style=\"text-anchor: middle; font-size: 16px; font-weight: 400;\" "
            << "class=\"actor actor-box\" alignment-baseline=\"central\" dominant-baseline=\"central\" "
-           << "y=\"" << top_text_y << "\" x=\"" << node.x << "\"><tspan dy=\"0\" x=\"" 
-           << node.x << "\">" << node.label << "</tspan></text></g></g>\n";
+            << "y=\"" << top_text_y << "\" x=\"" << node.x << "\"><tspan dy=\"0\" x=\""
+            << node.x << "\">" << node.label << "</tspan></text></g></g>";
     }
 }
 
@@ -108,14 +108,14 @@ void SvgVisitor::visit(MessageNode &node) {
         double activation_y = message_y;
         
         ss << "<g><rect class=\"activation0\" height=\"" << activation_height 
-           << "\" width=\"" << activation_width << "\" stroke=\"#666\" fill=\"#EDF2AE\" y=\"" 
-           << activation_y << "\" x=\"" << activation_x << "\"></rect></g>\n";
+            << "\" width=\"" << activation_width << "\" stroke=\"#666\" fill=\"#EDF2AE\" y=\""
+            << activation_y << "\" x=\"" << activation_x << "\"></rect></g>";
     }
     
     // Draw message text
     ss << "<text style=\"font-size: 16px; font-weight: 400;\" dy=\"1em\" class=\"messageText\" "
-       << "alignment-baseline=\"middle\" dominant-baseline=\"middle\" text-anchor=\"middle\" y=\"" 
-       << text_y << "\" x=\"" << text_x << "\">" << node.text << "</text>\n";
+        << "alignment-baseline=\"middle\" dominant-baseline=\"middle\" text-anchor=\"middle\" y=\""
+        << text_y << "\" x=\"" << text_x << "\">" << node.text << "</text>";
     
     // Draw message line
     // Determine line style based on arrow type
@@ -129,8 +129,8 @@ void SvgVisitor::visit(MessageNode &node) {
         ss << " style=\"fill: none;\"";
     }
     ss << " marker-end=\"url(#arrowhead)\" stroke=\"none\" stroke-width=\"2\" "
-       << "class=\"messageLine" << (is_dashed ? "1" : "0") << "\" y2=\"" << message_y 
-       << "\" x2=\"" << x2 << "\" y1=\"" << message_y << "\" x1=\"" << x1 << "\"></line>\n";
+       << "class=\"messageLine" << (is_dashed ? "1" : "0") << "\" y2=\"" << message_y
+       << "\" x2=\"" << x2 << "\" y1=\"" << message_y << "\" x1=\"" << x1 << "\"></line>";
     
     message_count++;
 }
@@ -150,8 +150,8 @@ void SvgVisitor::visit(NoteNode &node) {
        << "\" x=\"" << note_x << "\"></rect>"
        << "<text style=\"font-size: 16px; font-weight: 400;\" dy=\"1em\" class=\"noteText\" "
        << "alignment-baseline=\"middle\" dominant-baseline=\"middle\" text-anchor=\"middle\" y=\"" 
-       << text_y << "\" x=\"" << text_x << "\"><tspan x=\"" << text_x << "\">" 
-       << node.text << "</tspan></text></g>\n";
+       << text_y << "\" x=\"" << text_x << "\"><tspan x=\"" << text_x << "\">"
+       << node.text << "</tspan></text></g>";
 }
 
 void SvgVisitor::visit(BlockNode &node) {
@@ -202,8 +202,8 @@ void SvgVisitor::visit(BlockNode &node) {
            << "text-anchor=\"middle\" y=\"" << loop_text_y << "\" x=\"" << loop_text_x << "\">"
            << "<tspan x=\"" << loop_text_x << "\">[" << node.label << "]</tspan></text>";
     }
-    
-    ss << "</g>\n";
+
+    ss << "</g>";
 }
 
 void SvgVisitor::visit(SequenceDiagramNode &node) {
