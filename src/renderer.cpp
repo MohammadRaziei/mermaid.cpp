@@ -195,12 +195,56 @@ void SvgVisitor::visit(BlockNode &node) {
        << label_text_y << "\" x=\"" << label_text_x << "\">" << node.type << "</text>";
     
     // Draw block label text at top center of rectangle (just below label box)
-    if (!node.label.empty()) {
+    // For loop/opt (single section) draw block label.
+    // For alt, draw block label for first section (but not duplicate section label).
+    if (!node.label.empty() && (node.sections.size() <= 1 || node.type == "alt")) {
         double loop_text_x = (x1 + x2) / 2.0 + 25.0; // golden x=200, center=175 + 25
         double loop_text_y = y1 + 18; // golden y=93, y1=75 => offset 18
         ss << "<text style=\"font-size: 16px; font-weight: 400;\" class=\"loopText\" "
            << "text-anchor=\"middle\" y=\"" << loop_text_y << "\" x=\"" << loop_text_x << "\">"
            << "<tspan x=\"" << loop_text_x << "\">[" << node.label << "]</tspan></text>";
+    }
+
+    // Draw sections for alt, par, critical, etc.
+    // If there are multiple sections, draw dashed lines and section labels
+    if (node.sections.size() > 1) {
+        // Use precomputed section boundaries if available (from layout)
+        if (node.section_boundaries.size() == node.sections.size() - 1) {
+            for (double boundary_y : node.section_boundaries) {
+                ss << "<line style=\"stroke-dasharray: 3, 3;\" class=\"loopLine\" y2=\"" << boundary_y
+                   << "\" x2=\"" << x2 << "\" y1=\"" << boundary_y << "\" x1=\"" << x1 << "\"></line>";
+            }
+        } else {
+            // Fallback: equal division
+            for (size_t i = 1; i < node.sections.size(); ++i) {
+                double boundary_y = y1 + (y2 - y1) * i / node.sections.size();
+                ss << "<line style=\"stroke-dasharray: 3, 3;\" class=\"loopLine\" y2=\"" << boundary_y
+                   << "\" x2=\"" << x2 << "\" y1=\"" << boundary_y << "\" x1=\"" << x1 << "\"></line>";
+            }
+        }
+        // Draw section labels
+        // The first section label is already drawn as block label (node.label) at top center.
+        // For alt, we need to draw each section label inside its section.
+        // We'll place each label at the vertical center of each section.
+        for (size_t i = 0; i < node.sections.size(); ++i) {
+            const auto &section = node.sections[i];
+            if (section.label.empty()) continue;
+            // Skip first section label for alt because it's already drawn as block label
+            if (node.type == "alt" && i == 0) continue;
+            // Compute section vertical center based on boundaries
+            double section_top = (i == 0) ? y1 : node.section_boundaries[i - 1];
+            double section_bottom = (i == node.sections.size() - 1) ? y2 : node.section_boundaries[i];
+            // If boundaries not available, use equal division
+            if (node.section_boundaries.size() != node.sections.size() - 1) {
+                section_top = y1 + (y2 - y1) * i / node.sections.size();
+                section_bottom = y1 + (y2 - y1) * (i + 1) / node.sections.size();
+            }
+            double section_center_y = (section_top + section_bottom) / 2.0;
+            double label_x = (x1 + x2) / 2.0;
+            ss << "<text style=\"font-size: 16px; font-weight: 400;\" class=\"loopText\" "
+               << "text-anchor=\"middle\" y=\"" << section_center_y << "\" x=\"" << label_x << "\">"
+               << "<tspan x=\"" << label_x << "\">[" << section.label << "]</tspan></text>";
+        }
     }
 
     ss << "</g>";

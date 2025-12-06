@@ -222,6 +222,11 @@ void Parser::parse_block(SequenceDiagramNode &diagram) {
     // Record start message index (number of messages already parsed)
     block->start_message_index = diagram.messages.size();
     
+    // Start first section with the block label
+    BlockNode::Section current_section;
+    current_section.label = label;
+    current_section.start_message_index = diagram.messages.size();
+    
     // Parse sections (else, and, option)
     while (m_current.type != TokenType::KeywordEnd && m_current.type != TokenType::Eof) {
         // Skip newlines
@@ -233,6 +238,9 @@ void Parser::parse_block(SequenceDiagramNode &diagram) {
         if (m_current.type == TokenType::KeywordElse ||
             m_current.type == TokenType::KeywordAnd ||
             m_current.type == TokenType::KeywordOption) {
+            // Close current section
+            current_section.end_message_index = diagram.messages.size();
+            block->sections.push_back(current_section);
             // Parse section label
             Token section_keyword = m_current;
             advance(); // consume else/and/option
@@ -242,7 +250,10 @@ void Parser::parse_block(SequenceDiagramNode &diagram) {
                 section_label += m_current.lexeme;
                 advance();
             }
-            block->section_labels.push_back(section_label);
+            // Start new section
+            current_section = BlockNode::Section();
+            current_section.label = section_label;
+            current_section.start_message_index = diagram.messages.size();
             // Skip newline after section label
             if (m_current.type == TokenType::Newline) {
                 advance();
@@ -272,6 +283,10 @@ void Parser::parse_block(SequenceDiagramNode &diagram) {
     if (m_current.type == TokenType::KeywordEnd) {
         advance(); // consume "end"
     }
+    
+    // Close last section
+    current_section.end_message_index = diagram.messages.size();
+    block->sections.push_back(current_section);
     
     // Record end message index (exclusive)
     block->end_message_index = diagram.messages.size();

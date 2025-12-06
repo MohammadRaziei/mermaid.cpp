@@ -98,6 +98,66 @@ void SequenceLayoutStrategy::layout_blocks(SequenceDiagramNode &root) {
         block->stop_x = max_x + padding_x;
         block->start_y = min_y - padding_y_top;
         block->stop_y = max_y + padding_y_bottom;
+
+        // Adjust message positions for alt blocks to match golden spacing
+        if (block->type == "alt" && block->sections.size() == 2) {
+            // For alt with two sections (e.g., alt_else_basic)
+            // We want first message at start_y + padding_y_top, second at stop_y - padding_y_bottom
+            // Ensure there are exactly two messages inside block
+            if (block->end_message_index - block->start_message_index == 2) {
+                auto &msg1 = root.messages[block->start_message_index];
+                auto &msg2 = root.messages[block->start_message_index + 1];
+                msg1->y = block->start_y + padding_y_top;
+                msg2->y = block->stop_y - padding_y_bottom;
+                // Update min_y and max_y for boundary calculation
+                min_y = std::min(msg1->y, msg2->y);
+                max_y = std::max(msg1->y, msg2->y);
+                // Recompute block start_y and stop_y with updated min_y and max_y
+                block->start_y = min_y - padding_y_top;
+                block->stop_y = max_y + padding_y_bottom;
+            }
+        }
+
+        // Compute section boundaries for alt, par, critical, etc.
+        if (block->sections.size() > 1) {
+            block->section_boundaries.clear();
+            // For each section boundary (between section i and i+1)
+            for (size_t i = 0; i < block->sections.size() - 1; ++i) {
+                const auto &section_a = block->sections[i];
+                const auto &section_b = block->sections[i + 1];
+                // Find last message y of section a
+                double last_y_a = min_y; // fallback
+                if (section_a.end_message_index > section_a.start_message_index) {
+                    // There is at least one message in section a
+                    // Use the maximum y among messages in section a
+                    double max_y_a = std::numeric_limits<double>::lowest();
+                    for (size_t idx = section_a.start_message_index; idx < section_a.end_message_index; ++idx) {
+                        if (idx < root.messages.size()) {
+                            max_y_a = std::max(max_y_a, root.messages[idx]->y);
+                        }
+                    }
+                    if (max_y_a != std::numeric_limits<double>::lowest()) {
+                        last_y_a = max_y_a;
+                    }
+                }
+                // Find first message y of section b
+                double first_y_b = max_y; // fallback
+                if (section_b.end_message_index > section_b.start_message_index) {
+                    double min_y_b = std::numeric_limits<double>::max();
+                    for (size_t idx = section_b.start_message_index; idx < section_b.end_message_index; ++idx) {
+                        if (idx < root.messages.size()) {
+                            min_y_b = std::min(min_y_b, root.messages[idx]->y);
+                        }
+                    }
+                    if (min_y_b != std::numeric_limits<double>::max()) {
+                        first_y_b = min_y_b;
+                    }
+                }
+                // Boundary is midpoint between last_y_a and first_y_b
+                double boundary = (last_y_a + first_y_b) / 2.0;
+                block->section_boundaries.push_back(boundary);
+            }
+        }
     }
 }
 
