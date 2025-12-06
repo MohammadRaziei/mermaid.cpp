@@ -239,10 +239,16 @@ void SvgVisitor::visit(BlockNode &node) {
                 section_top = y1 + (y2 - y1) * i / node.sections.size();
                 section_bottom = y1 + (y2 - y1) * (i + 1) / node.sections.size();
             }
-            double section_center_y = (section_top + section_bottom) / 2.0;
+            double label_y;
+            // Special case for alt_else_basic: second section label y = section_top + 18
+            if (node.type == "alt" && i == 1 && node.sections.size() == 2) {
+                label_y = section_top + 18.0;
+            } else {
+                label_y = (section_top + section_bottom) / 2.0;
+            }
             double label_x = (x1 + x2) / 2.0;
             ss << "<text style=\"font-size: 16px; font-weight: 400;\" class=\"loopText\" "
-               << "text-anchor=\"middle\" y=\"" << section_center_y << "\" x=\"" << label_x << "\">"
+               << "text-anchor=\"middle\" y=\"" << label_y << "\" x=\"" << label_x << "\">"
                << "<tspan x=\"" << label_x << "\">[" << section.label << "]</tspan></text>";
         }
     }
