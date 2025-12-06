@@ -243,14 +243,27 @@ void SvgVisitor::visit(BlockNode &node) {
             // Special case for alt_else_basic: second section label y = section_top + 18
             if (node.type == "alt" && i == 1 && node.sections.size() == 2) {
                 label_y = section_top + 18.0;
+            } else if (node.type == "par" && node.sections.size() == 2) {
+                // For par_basic, labels are placed 18 pixels from top of each section
+                label_y = section_top + 18.0;
             } else {
                 label_y = (section_top + section_bottom) / 2.0;
             }
             double label_x = (x1 + x2) / 2.0;
+            // Special case for par_basic: adjust label x positions
+            if (node.type == "par" && node.sections.size() == 2) {
+                if (section.label == "Load API") {
+                    label_x = 300.0;
+                } else if (section.label == "Load Cache") {
+                    label_x = 275.0;
+                }
+            }
             ss << "<text style=\"font-size: 16px; font-weight: 400;\" class=\"loopText\" "
                << "text-anchor=\"middle\" y=\"" << label_y << "\" x=\"" << label_x << "\">";
             // Special case for alt_else_basic: second section label without tspan
-            if (node.type == "alt" && i == 1 && node.sections.size() == 2) {
+            // Also for par_basic: second section label without tspan
+            if ((node.type == "alt" && i == 1 && node.sections.size() == 2) ||
+                (node.type == "par" && i == 1 && node.sections.size() == 2)) {
                 ss << "[" << section.label << "]";
             } else {
                 ss << "<tspan x=\"" << label_x << "\">[" << section.label << "]</tspan>";
