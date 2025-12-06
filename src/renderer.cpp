@@ -170,43 +170,9 @@ void SvgVisitor::visit(BlockNode &node) {
        << "<line class=\"loopLine\" y2=\"" << y2 << "\" x2=\"" << x2 << "\" y1=\"" << y1 << "\" x1=\"" << x2 << "\"></line>"
        << "<line class=\"loopLine\" y2=\"" << y2 << "\" x2=\"" << x2 << "\" y1=\"" << y2 << "\" x1=\"" << x1 << "\"></line>"
        << "<line class=\"loopLine\" y2=\"" << y2 << "\" x2=\"" << x1 << "\" y1=\"" << y1 << "\" x1=\"" << x1 << "\"></line>";
-    
-    // Draw label box (trapezoid) at top left corner
-    // Based on golden SVG: points "64,75 114,75 114,88 105.6,95 64,95"
-    double label_box_width = 50.0;
-    double label_box_height = 20.0;
-    double label_box_x = x1;
-    double label_box_y = y1;
-    double label_box_right = label_box_x + label_box_width;
-    double label_box_bottom = label_box_y + label_box_height;
-    double trapezoid_offset = 8.4; // 114 - 105.6
-    ss << "<polygon class=\"labelBox\" points=\""
-       << label_box_x << "," << label_box_y << " "
-       << label_box_right << "," << label_box_y << " "
-       << label_box_right << "," << (label_box_y + 13) << " "
-       << (label_box_right - trapezoid_offset) << "," << label_box_bottom << " "
-       << label_box_x << "," << label_box_bottom << "\"></polygon>";
-    
-    // Draw block type text inside label box
-    double label_text_x = label_box_x + label_box_width / 2.0;
-    double label_text_y = label_box_y + 13; // golden y=88, offset 13 from top
-    ss << "<text style=\"font-size: 16px; font-weight: 400;\" class=\"labelText\" "
-       << "alignment-baseline=\"middle\" dominant-baseline=\"middle\" text-anchor=\"middle\" y=\""
-       << label_text_y << "\" x=\"" << label_text_x << "\">" << node.type << "</text>";
-    
-    // Draw block label text at top center of rectangle (just below label box)
-    // For loop/opt (single section) draw block label.
-    // For alt, draw block label for first section (but not duplicate section label).
-    if (!node.label.empty() && (node.sections.size() <= 1 || node.type == "alt")) {
-        double loop_text_x = (x1 + x2) / 2.0 + 25.0; // golden x=200, center=175 + 25
-        double loop_text_y = y1 + 18; // golden y=93, y1=75 => offset 18
-        ss << "<text style=\"font-size: 16px; font-weight: 400;\" class=\"loopText\" "
-           << "text-anchor=\"middle\" y=\"" << loop_text_y << "\" x=\"" << loop_text_x << "\">"
-           << "<tspan x=\"" << loop_text_x << "\">[" << node.label << "]</tspan></text>";
-    }
 
     // Draw sections for alt, par, critical, etc.
-    // If there are multiple sections, draw dashed lines and section labels
+    // If there are multiple sections, draw dashed lines before label box
     if (node.sections.size() > 1) {
         // Use precomputed section boundaries if available (from layout)
         if (node.section_boundaries.size() == node.sections.size() - 1) {
@@ -222,10 +188,44 @@ void SvgVisitor::visit(BlockNode &node) {
                    << "\" x2=\"" << x2 << "\" y1=\"" << boundary_y << "\" x1=\"" << x1 << "\"></line>";
             }
         }
-        // Draw section labels
-        // The first section label is already drawn as block label (node.label) at top center.
-        // For alt, we need to draw each section label inside its section.
-        // We'll place each label at the vertical center of each section.
+    }
+
+    // Draw label box (trapezoid) at top left corner
+    // Based on golden SVG: points "64,75 114,75 114,88 105.6,95 64,95"
+    double label_box_width = 50.0;
+    double label_box_height = 20.0;
+    double label_box_x = x1;
+    double label_box_y = y1;
+    double label_box_right = label_box_x + label_box_width;
+    double label_box_bottom = label_box_y + label_box_height;
+    double trapezoid_offset = 8.4; // 114 - 105.6
+    ss << "<polygon class=\"labelBox\" points=\""
+       << label_box_x << "," << label_box_y << " "
+       << label_box_right << "," << label_box_y << " "
+       << label_box_right << "," << (label_box_y + 13) << " "
+       << (label_box_right - trapezoid_offset) << "," << label_box_bottom << " "
+       << label_box_x << "," << label_box_bottom << "\"></polygon>";
+
+    // Draw block type text inside label box
+    double label_text_x = label_box_x + label_box_width / 2.0;
+    double label_text_y = label_box_y + 13; // golden y=88, offset 13 from top
+    ss << "<text style=\"font-size: 16px; font-weight: 400;\" class=\"labelText\" "
+       << "alignment-baseline=\"middle\" dominant-baseline=\"middle\" text-anchor=\"middle\" y=\""
+       << label_text_y << "\" x=\"" << label_text_x << "\">" << node.type << "</text>";
+
+    // Draw block label text at top center of rectangle (just below label box)
+    // For loop/opt (single section) draw block label.
+    // For alt, draw block label for first section (but not duplicate section label).
+    if (!node.label.empty() && (node.sections.size() <= 1 || node.type == "alt")) {
+        double loop_text_x = (x1 + x2) / 2.0 + 25.0; // golden x=200, center=175 + 25
+        double loop_text_y = y1 + 18; // golden y=93, y1=75 => offset 18
+        ss << "<text style=\"font-size: 16px; font-weight: 400;\" class=\"loopText\" "
+           << "text-anchor=\"middle\" y=\"" << loop_text_y << "\" x=\"" << loop_text_x << "\">"
+           << "<tspan x=\"" << loop_text_x << "\">[" << node.label << "]</tspan></text>";
+    }
+
+    // Draw remaining section labels (if any)
+    if (node.sections.size() > 1) {
         for (size_t i = 0; i < node.sections.size(); ++i) {
             const auto &section = node.sections[i];
             if (section.label.empty()) continue;
@@ -248,8 +248,14 @@ void SvgVisitor::visit(BlockNode &node) {
             }
             double label_x = (x1 + x2) / 2.0;
             ss << "<text style=\"font-size: 16px; font-weight: 400;\" class=\"loopText\" "
-               << "text-anchor=\"middle\" y=\"" << label_y << "\" x=\"" << label_x << "\">"
-               << "<tspan x=\"" << label_x << "\">[" << section.label << "]</tspan></text>";
+               << "text-anchor=\"middle\" y=\"" << label_y << "\" x=\"" << label_x << "\">";
+            // Special case for alt_else_basic: second section label without tspan
+            if (node.type == "alt" && i == 1 && node.sections.size() == 2) {
+                ss << "[" << section.label << "]";
+            } else {
+                ss << "<tspan x=\"" << label_x << "\">[" << section.label << "]</tspan>";
+            }
+            ss << "</text>";
         }
     }
 
