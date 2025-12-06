@@ -206,12 +206,10 @@ void Parser::parse_block(SequenceDiagramNode &diagram) {
     std::string label;
     // Collect tokens until newline (identifiers, spaces are not tokens)
     // We'll just collect identifiers and assume spaces between them.
-    // This is a simplification for loop_basic.
     while (m_current.type == TokenType::Identifier) {
         if (!label.empty()) label += " ";
         label += m_current.lexeme;
         advance();
-        // If next token is also identifier, continue
     }
     // Skip newline
     if (m_current.type == TokenType::Newline) {
@@ -224,12 +222,31 @@ void Parser::parse_block(SequenceDiagramNode &diagram) {
     // Record start message index (number of messages already parsed)
     block->start_message_index = diagram.messages.size();
     
-    // For now, just skip until "end"
-    // TODO: Properly parse nested messages and blocks
+    // Parse sections (else, and, option)
     while (m_current.type != TokenType::KeywordEnd && m_current.type != TokenType::Eof) {
         // Skip newlines
         if (m_current.type == TokenType::Newline) {
             advance();
+            continue;
+        }
+        // Check for section keywords
+        if (m_current.type == TokenType::KeywordElse ||
+            m_current.type == TokenType::KeywordAnd ||
+            m_current.type == TokenType::KeywordOption) {
+            // Parse section label
+            Token section_keyword = m_current;
+            advance(); // consume else/and/option
+            std::string section_label;
+            while (m_current.type == TokenType::Identifier) {
+                if (!section_label.empty()) section_label += " ";
+                section_label += m_current.lexeme;
+                advance();
+            }
+            block->section_labels.push_back(section_label);
+            // Skip newline after section label
+            if (m_current.type == TokenType::Newline) {
+                advance();
+            }
             continue;
         }
         // If we encounter another block start, recursively parse it
