@@ -112,14 +112,22 @@ void Parser::parse_note(SequenceDiagramNode &diagram) {
         }
     }
     
-    // Parse actor
-    Token actor = consume(TokenType::Identifier, "Expected actor identifier for note");
+    // Parse actor list (identifiers separated by commas)
+    std::string actor;
+    Token first = consume(TokenType::Identifier, "Expected actor identifier for note");
+    actor = first.lexeme;
+    while (m_current.type == TokenType::Comma) {
+        advance(); // consume comma
+        Token next = consume(TokenType::Identifier, "Expected actor identifier after comma");
+        actor += "," + next.lexeme;
+    }
+    
     consume(TokenType::Colon, "Expected ':' after actor");
     
     // Parse note text
     Token text = consume(TokenType::Text, "Expected note text");
     
-    diagram.notes.push_back(std::make_unique<NoteNode>(actor.lexeme, placement, text.lexeme));
+    diagram.notes.push_back(std::make_unique<NoteNode>(actor, placement, text.lexeme));
     
     if (m_current.type == TokenType::Newline) {
         advance();

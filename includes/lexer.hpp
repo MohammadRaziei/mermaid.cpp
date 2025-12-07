@@ -32,6 +32,7 @@ enum class TokenType {
     Plus,              // + (activation)
     Minus,             // - (deactivation)
     Colon,
+    Comma,
     Text,
     Newline,
     Eof

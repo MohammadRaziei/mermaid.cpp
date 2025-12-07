@@ -52,6 +52,11 @@ Token Lexer::read_token() {
         return Token{TokenType::Colon, ":", m_line, m_column - 1};
     }
 
+    if (c == ',') {
+        advance();
+        return Token{TokenType::Comma, ",", m_line, m_column - 1};
+    }
+
     if (c == '+') {
         advance();
         return Token{TokenType::Plus, "+", m_line, m_column - 1};
