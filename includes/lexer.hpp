@@ -22,6 +22,8 @@ enum class TokenType {
     KeywordElse,
     KeywordAnd,
     KeywordOption,
+    KeywordActivate,
+    KeywordDeactivate,
     Identifier,
     ArrowSolid,        // ->
     ArrowSolidCross,   // ->>

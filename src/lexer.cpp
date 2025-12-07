@@ -149,6 +149,12 @@ Token Lexer::lex_identifier() {
     if (lexeme == "option") {
         return Token{TokenType::KeywordOption, lexeme, m_line, start_col};
     }
+    if (lexeme == "activate") {
+        return Token{TokenType::KeywordActivate, lexeme, m_line, start_col};
+    }
+    if (lexeme == "deactivate") {
+        return Token{TokenType::KeywordDeactivate, lexeme, m_line, start_col};
+    }
     return Token{TokenType::Identifier, lexeme, m_line, start_col};
 }
 

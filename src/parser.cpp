@@ -44,6 +44,11 @@ std::unique_ptr<SequenceDiagramNode> Parser::parse_sequence_diagram() {
             parse_block(*diagram);
             continue;
         }
+        if (m_current.type == TokenType::KeywordActivate ||
+            m_current.type == TokenType::KeywordDeactivate) {
+            parse_activation(*diagram);
+            continue;
+        }
         if (m_current.type == TokenType::Identifier) {
             parse_message(*diagram);
             continue;
@@ -302,6 +307,23 @@ void Parser::skip_newlines() {
     while (m_current.type == TokenType::Newline) {
         advance();
     }
+}
+
+void Parser::parse_activation(SequenceDiagramNode &diagram) {
+    // Determine if activate or deactivate
+    bool is_activate = (m_current.type == TokenType::KeywordActivate);
+    advance(); // consume activate/deactivate keyword
+    
+    Token participant = consume(TokenType::Identifier, "Expected participant identifier");
+    
+    // Create activation node
+    auto activation = std::make_unique<ActivationNode>(participant.lexeme, is_activate);
+    diagram.activations.push_back(std::move(activation));
+    
+    if (m_current.type == TokenType::Newline) {
+        advance();
+    }
+    skip_newlines();
 }
 
 } // namespace mermaid

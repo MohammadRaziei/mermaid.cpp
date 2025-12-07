@@ -60,6 +60,18 @@ struct MessageNode : AstNode {
     void accept(AstVisitor &v) override;
 };
 
+struct ActivationNode : AstNode {
+    std::string participant;
+    double start_y{0.0};
+    double end_y{0.0};
+    bool active{true}; // true for activate, false for deactivate? Actually we need pair.
+
+    ActivationNode(std::string participant_, bool active_)
+        : participant(std::move(participant_)), active(active_) {}
+
+    void accept(AstVisitor &v) override;
+};
+
 struct BlockNode : AstNode {
     std::string type; // "loop", "alt", "opt", "par", "break", "critical", "rect"
     std::string label;
@@ -89,6 +101,7 @@ struct SequenceDiagramNode : AstNode {
     std::vector<std::unique_ptr<MessageNode>> messages;
     std::vector<std::unique_ptr<NoteNode>> notes;
     std::vector<std::unique_ptr<BlockNode>> blocks;
+    std::vector<std::unique_ptr<ActivationNode>> activations;
     double width{800.0};
     double height{600.0};
 

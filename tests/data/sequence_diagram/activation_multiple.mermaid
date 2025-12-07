@@ -1,0 +1,10 @@
+sequenceDiagram
+participant A
+participant B
+activate A
+A->>B: msg1
+activate B
+B-->>A: msg2
+deactivate A
+A->>B: msg3
+deactivate B
