@@ -65,12 +65,24 @@ Token Lexer::read_token() {
     if (c == '-') {
         // Could be start of arrow or minus sign
         // Check for -> or --> (dotted arrow starts with --)
-        if ((m_pos + 1) < m_source.size() && m_source[m_pos + 1] == '>') {
-            return lex_arrow();
-        }
-        // Also check for --> where first char is - and second is -
-        if ((m_pos + 2) < m_source.size() && m_source[m_pos + 1] == '-' && m_source[m_pos + 2] == '>') {
-            return lex_arrow();
+        // Also check for -x or --x (cross arrow)
+        if ((m_pos + 1) < m_source.size()) {
+            char next = m_source[m_pos + 1];
+            if (next == '>') {
+                return lex_arrow();
+            }
+            if (next == '-') {
+                // could be --> or --x
+                if ((m_pos + 2) < m_source.size()) {
+                    char after = m_source[m_pos + 2];
+                    if (after == '>' || after == 'x') {
+                        return lex_arrow();
+                    }
+                }
+            }
+            if (next == 'x') {
+                return lex_arrow();
+            }
         }
         advance();
         return Token{TokenType::Minus, "-", m_line, m_column - 1};
@@ -182,14 +194,20 @@ Token Lexer::lex_arrow() {
         advance(); // second '-'
     }
     
-    // Must have '>' after '-'
-    if (m_pos >= m_source.size() || m_source[m_pos] != '>') {
-        throw std::runtime_error("Expected '>' after '-' in arrow");
+    // Determine arrow head character: '>' or 'x'
+    if (m_pos >= m_source.size() || (m_source[m_pos] != '>' && m_source[m_pos] != 'x')) {
+        throw std::runtime_error("Expected '>' or 'x' after '-' in arrow");
     }
-    advance(); // '>'
+    char head = m_source[m_pos];
+    advance(); // consume head
     
-    // Check for cross arrow (>>)
-    bool has_cross = match('>');
+    // For '>' head, check for extra '>' for cross arrow
+    bool has_cross = false;
+    if (head == '>') {
+        has_cross = match('>');
+    } else { // head == 'x'
+        has_cross = true; // 'x' indicates cross arrow
+    }
     
     // Build lexeme
     std::string lexeme;
@@ -198,8 +216,8 @@ Token Lexer::lex_arrow() {
     } else {
         lexeme = "-";
     }
-    lexeme += ">";
-    if (has_cross) {
+    lexeme += head;
+    if (has_cross && head == '>') {
         lexeme += ">";
     }
     
