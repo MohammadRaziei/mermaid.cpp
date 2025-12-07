@@ -37,6 +37,7 @@ TEST_CASE("sequence diagrams match golden SVG outputs") {
         std::string expected_svg = test_utils::load_file_required(svg_path);
         std::string actual_svg = mermaid::render_to_svg(source);
 
-        CHECK(test_utils::normalize(actual_svg) == test_utils::normalize(expected_svg));
+        bool isequal = test_utils::normalize(actual_svg) == test_utils::normalize(expected_svg);
+        CHECK(isequal);
     }
 }
