@@ -85,6 +85,14 @@ void Lexer::skip_whitespace() {
             advance();
             continue;
         }
+        // Handle line comments starting with %%
+        if (c == '%' && (m_pos + 1) < m_source.size() && m_source[m_pos + 1] == '%') {
+            // Skip until newline or end of input
+            while (m_pos < m_source.size() && m_source[m_pos] != '\n') {
+                advance();
+            }
+            continue;
+        }
         break;
     }
 }
