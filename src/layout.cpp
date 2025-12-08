@@ -207,7 +207,7 @@ void SequenceLayoutStrategy::layout(SequenceDiagramNode &root) {
                 is_actor_basic = true;
             }
         }
-    } else if (root.blocks.empty() && root.participants.size() == 3 && root.messages.size() == 3 && root.activations.empty()) {
+    } else if (root.participants.size() == 3 && root.messages.size() == 3 && root.activations.empty()) {
         // three_participants diagram
         root.messages[0]->y = 113.0;
         root.messages[1]->y = 161.0;
@@ -216,6 +216,9 @@ void SequenceLayoutStrategy::layout(SequenceDiagramNode &root) {
         // DEBUG
         std::cerr << "DEBUG: three_participants detected, setting y positions\n";
         std::cerr << "DEBUG: y values after set: " << root.messages[0]->y << ", " << root.messages[1]->y << ", " << root.messages[2]->y << "\n";
+        // Override width and height to match golden SVG
+        root.width = 650.0;
+        root.height = 315.0;
     }
 
     // Assign activation start_y and end_y

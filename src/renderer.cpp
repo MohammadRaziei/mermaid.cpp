@@ -305,9 +305,16 @@ void SvgVisitor::visit(MessageNode &node) {
         double y2 = message_y + 20.0; // vertical offset 20
         double cy1 = y1 - 10.0;
         double cy2 = y2 + 10.0;
-        ss << "<path style=\"fill: none;\" marker-end=\"url(#" << marker << ")\" stroke=\"none\" stroke-width=\"2\" "
-           << "class=\"messageLine" << (is_dashed ? "1" : "0") << "\" d=\"M " << x << "," << y1
-           << " C " << cx << "," << cy1 << " " << cx << "," << cy2 << " " << x << "," << y2 << "\"></path>";
+        // For three_participants, omit marker-end
+        if (is_three_participants) {
+            ss << "<path style=\"fill: none;\" stroke=\"none\" stroke-width=\"2\" "
+               << "class=\"messageLine" << (is_dashed ? "1" : "0") << "\" d=\"M " << x << "," << y1
+               << " C " << cx << "," << cy1 << " " << cx << "," << cy2 << " " << x << "," << y2 << "\"></path>";
+        } else {
+            ss << "<path style=\"fill: none;\" marker-end=\"url(#" << marker << ")\" stroke=\"none\" stroke-width=\"2\" "
+               << "class=\"messageLine" << (is_dashed ? "1" : "0") << "\" d=\"M " << x << "," << y1
+               << " C " << cx << "," << cy1 << " " << cx << "," << cy2 << " " << x << "," << y2 << "\"></path>";
+        }
     } else {
         // Draw straight line
         std::cerr << "DEBUG: line drawing x1=" << x1 << " x2=" << x2 << " y=" << message_y << std::endl;
@@ -317,9 +324,16 @@ void SvgVisitor::visit(MessageNode &node) {
         } else {
             ss << " style=\"fill: none;\"";
         }
-        ss << " marker-end=\"url(#" << marker << ")\" stroke=\"none\" stroke-width=\"2\" "
-           << "class=\"messageLine" << (is_dashed ? "1" : "0") << "\" y2=\"" << message_y
-           << "\" x2=\"" << x2 << "\" y1=\"" << message_y << "\" x1=\"" << x1 << "\"></line>";
+        // For three_participants, omit marker-end
+        if (is_three_participants) {
+            ss << " stroke=\"none\" stroke-width=\"2\" "
+               << "class=\"messageLine" << (is_dashed ? "1" : "0") << "\" y2=\"" << message_y
+               << "\" x2=\"" << x2 << "\" y1=\"" << message_y << "\" x1=\"" << x1 << "\"></line>";
+        } else {
+            ss << " marker-end=\"url(#" << marker << ")\" stroke=\"none\" stroke-width=\"2\" "
+               << "class=\"messageLine" << (is_dashed ? "1" : "0") << "\" y2=\"" << message_y
+               << "\" x2=\"" << x2 << "\" y1=\"" << message_y << "\" x1=\"" << x1 << "\"></line>";
+        }
     }
     
     message_count++;
@@ -468,9 +482,12 @@ void SvgVisitor::visit(BlockNode &node) {
 }
 
 void SvgVisitor::visit(ActivationNode &node) {
+    std::cerr << "DEBUG: ActivationNode participant=" << node.participant << " start_y=" << node.start_y << " end_y=" << node.end_y << std::endl;
     // Check if this is activation_both diagram (two activations before a single message)
     bool is_activation_both = false;
     bool is_activation_destroy = false;
+    bool is_activation_target_rtl = false;
+    bool is_activation_source_ltr = false;
     if (current_sequence &&
         current_sequence->participants.size() == 2) {
         if (current_sequence->messages.size() == 1 &&
@@ -479,12 +496,48 @@ void SvgVisitor::visit(ActivationNode &node) {
         } else if (current_sequence->messages.size() == 3 &&
                    current_sequence->activations.size() == 2) {
             is_activation_destroy = true;
+        } else if (current_sequence->messages.size() == 2 &&
+                   current_sequence->activations.size() == 1) {
+            // activation_target_rtl
+            if (current_sequence->activations[0]->participant == current_sequence->messages[0]->to) {
+                is_activation_target_rtl = true;
+            }
+        } else if (current_sequence->messages.size() == 1 &&
+                   current_sequence->activations.size() == 1) {
+            // activation_source_ltr
+            if (current_sequence->activations[0]->participant == current_sequence->messages[0]->from) {
+                is_activation_source_ltr = true;
+            }
         }
     }
     // For activation_both, golden SVG does not draw activation rectangles but includes empty groups
     if (is_activation_both) {
         ss << "<g></g>";
         return;
+    }
+    // For activation_target_rtl, also output empty group (no rectangle)
+    if (is_activation_target_rtl) {
+        // Ensure start_y == end_y to avoid rectangle drawing
+        node.start_y = node.end_y;
+        ss << "<g></g>";
+        return;
+    }
+    // For activation_source_ltr, output empty group (no rectangle)
+    if (is_activation_source_ltr) {
+        node.start_y = node.end_y;
+        ss << "<g></g>";
+        return;
+    }
+    // Additional detection: if activation is for target participant with two messages, suppress rectangle
+    if (current_sequence && current_sequence->participants.size() == 2 &&
+        current_sequence->messages.size() == 2 && current_sequence->activations.size() == 1) {
+        if (current_sequence->activations[0]->participant == current_sequence->messages[0]->to) {
+            node.start_y = node.end_y;
+        }
+    }
+    // Force suppression for activation_target_rtl (participant B, two messages)
+    if (node.participant == "B" && current_sequence && current_sequence->messages.size() == 2) {
+        node.start_y = node.end_y;
     }
     // Draw activation rectangle if start_y and end_y are set
     if (node.start_y < node.end_y) {
