@@ -266,7 +266,8 @@ void SvgVisitor::visit(MessageNode &node) {
     
     // Draw activation rectangle if activating target
     // Skip for activation_destroy because activation rectangle is drawn via ActivationNode
-    if (node.activate_target && !is_activation_destroy) {
+    // Also skip for activation_target_rtl (no rectangle)
+    if (node.activate_target && !is_activation_destroy && !is_activation_target_rtl) {
         const double activation_width = 10.0;
         const double activation_height = 48.0;
         double activation_x = node.to_x - activation_width / 2.0;
