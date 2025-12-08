@@ -88,11 +88,20 @@ Token Lexer::read_token() {
         return Token{TokenType::Minus, "-", m_line, m_column - 1};
     }
 
-    if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') {
+    if (std::isalnum(static_cast<unsigned char>(c)) || c == '_') {
         return lex_identifier();
     }
 
-    throw std::runtime_error("Unexpected character in input");
+    // Debug: print the unexpected character
+    std::string msg = "Unexpected character in input: '";
+    msg += c;
+    msg += "' (ASCII ";
+    msg += std::to_string(static_cast<int>(c));
+    msg += ") at line ";
+    msg += std::to_string(m_line);
+    msg += ", column ";
+    msg += std::to_string(m_column);
+    throw std::runtime_error(msg);
 }
 
 void Lexer::skip_whitespace() {
@@ -201,13 +210,13 @@ Token Lexer::lex_arrow() {
     char head = m_source[m_pos];
     advance(); // consume head
     
-    // For '>' head, check for extra '>' for cross arrow
-    bool has_cross = false;
+    // For '>' head, check for extra '>' (double arrow head)
+    bool double_head = false;
     if (head == '>') {
-        has_cross = match('>');
-    } else { // head == 'x'
-        has_cross = true; // 'x' indicates cross arrow
+        double_head = match('>');
     }
+    // Cross arrow is indicated by 'x' head, not by extra '>'
+    bool has_cross = (head == 'x');
     
     // Build lexeme
     std::string lexeme;
@@ -217,7 +226,7 @@ Token Lexer::lex_arrow() {
         lexeme = "-";
     }
     lexeme += head;
-    if (has_cross && head == '>') {
+    if (double_head) {
         lexeme += ">";
     }
     

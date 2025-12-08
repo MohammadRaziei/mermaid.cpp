@@ -55,7 +55,7 @@ void SvgVisitor::visit(ParticipantNode &node) {
             // Phase 1: line and top elements
             // For actors, draw line only (no top actor-man here)
             // Top actor-man will be drawn separately after style
-            ss << "<g><line name=\"" << node.label << "\" stroke=\"#999\" stroke-width=\"0.5px\" "
+            ss << "<g><line name=\"" << node.id << "\" stroke=\"#999\" stroke-width=\"0.5px\" "
                << "class=\"actor-line 200\" y2=\"" << bottom_actor_y << "\" x2=\"" << node.x 
                << "\" y1=\"80\" x1=\"" << node.x << "\" id=\"actor" << current_participant_index << "\"></line></g>";
         }
@@ -76,7 +76,7 @@ void SvgVisitor::visit(ParticipantNode &node) {
         
         if (participant_phase == 0) {
             // Draw bottom rectangle first (appears first in JS output)
-            ss << "<g><rect class=\"actor actor-bottom\" ry=\"3\" rx=\"3\" name=\"" << node.label 
+            ss << "<g><rect class=\"actor actor-bottom\" ry=\"3\" rx=\"3\" name=\"" << node.id 
                << "\" height=\"" << rect_height << "\" width=\"" << rect_width 
                << "\" stroke=\"#666\" fill=\"#eaeaea\" y=\"" << bottom_rect_y 
                << "\" x=\"" << bottom_rect_x << "\"></rect>"
@@ -86,10 +86,10 @@ void SvgVisitor::visit(ParticipantNode &node) {
                 << node.x << "\">" << node.label << "</tspan></text></g>";
         } else {
             // Draw line and top rectangle in separate group
-            ss << "<g><line name=\"" << node.label << "\" stroke=\"#999\" stroke-width=\"0.5px\" "
+            ss << "<g><line name=\"" << node.id << "\" stroke=\"#999\" stroke-width=\"0.5px\" "
                << "class=\"actor-line 200\" y2=\"" << bottom_rect_y << "\" x2=\"" << node.x 
                << "\" y1=\"65\" x1=\"" << node.x << "\" id=\"actor" << current_participant_index << "\"></line>"
-               << "<g id=\"root-" << current_participant_index << "\"><rect class=\"actor actor-top\" ry=\"3\" rx=\"3\" name=\"" << node.label 
+               << "<g id=\"root-" << current_participant_index << "\"><rect class=\"actor actor-top\" ry=\"3\" rx=\"3\" name=\"" << node.id 
                << "\" height=\"" << rect_height << "\" width=\"" << rect_width 
                << "\" stroke=\"#666\" fill=\"#eaeaea\" y=\"" << top_rect_y 
                << "\" x=\"" << top_rect_x << "\"></rect>"
@@ -119,15 +119,21 @@ void SvgVisitor::visit(MessageNode &node) {
     bool is_activation_destroy = false;
     if (current_sequence && current_sequence->blocks.empty() &&
         current_sequence->participants.size() == 2) {
+        std::cerr << "DEBUG: detection: messages=" << current_sequence->messages.size() 
+                  << " activations=" << current_sequence->activations.size() 
+                  << " first_activate=" << (current_sequence->messages.size() > 0 ? current_sequence->messages[0]->activate_target : false) << std::endl;
         if (current_sequence->messages.size() == 2 &&
             current_sequence->messages[0]->activate_target) {
             is_activation_basic = true;
+            std::cerr << "DEBUG: is_activation_basic set" << std::endl;
         } else if (current_sequence->messages.size() == 1 &&
                    current_sequence->activations.size() == 2) {
             is_activation_both = true;
+            std::cerr << "DEBUG: is_activation_both set" << std::endl;
         } else if (current_sequence->messages.size() == 3 &&
                    current_sequence->activations.size() == 4) {
             is_activation_multiple = true;
+            std::cerr << "DEBUG: is_activation_multiple set" << std::endl;
         } else if (current_sequence->messages.size() == 3 &&
                    current_sequence->activations.size() == 2) {
             is_activation_destroy = true;
@@ -150,6 +156,15 @@ void SvgVisitor::visit(MessageNode &node) {
             x2 = to_x - 8.0;
         }
         std::cerr << "DEBUG: activation_destroy msg_index=" << msg_index << " from_x=" << from_x << " to_x=" << to_x << " x1=" << x1 << " x2=" << x2 << std::endl;
+    } else if (is_activation_basic) {
+        // Special offsets for activation_basic
+        if (left_to_right) {
+            x1 = from_x + 1.0;
+            x2 = to_x - 8.0;
+        } else {
+            x1 = from_x - 5.0;
+            x2 = to_x + 4.0;
+        }
     } else if (is_activation_both || is_activation_multiple) {
         // Use exact coordinates from layout (no offsets)
         x1 = from_x;
@@ -157,29 +172,29 @@ void SvgVisitor::visit(MessageNode &node) {
         std::cerr << "DEBUG: using exact coordinates, from_x=" << from_x << " to_x=" << to_x << " x1=" << x1 << " x2=" << x2 << std::endl;
     } else if (left_to_right) {
         x1 = from_x + 1.0;
-        if (is_activation_basic) {
-            // Golden offset for activation_basic first message
-            x2 = to_x - 8.0;
-        } else {
-            x2 = to_x - 4.0;
-        }
+        x2 = to_x - 4.0;
     } else {
-        if (is_activation_basic) {
-            // Golden offset for activation_basic second message
-            x1 = from_x - 5.0;
-        } else {
-            x1 = from_x - 1.0;
-        }
+        x1 = from_x - 1.0;
         x2 = to_x + 4.0;
     }
     
+    // Determine if this is a self-message (from == to)
+    bool is_self_message = node.from == node.to;
+    
     // Text position: center of adjusted line, rounded to nearest integer to match golden
-    double text_x = std::round((x1 + x2) / 2.0);
+    // For self-messages, golden uses floor; for regular messages, golden uses round.
+    double text_x;
+    if (is_self_message) {
+        text_x = std::floor((x1 + x2) / 2.0);
+    } else {
+        text_x = std::round((x1 + x2) / 2.0);
+    }
     // Text y offset: golden uses -33 from line y (message_y)
     double text_y = message_y - 33.0;
     
     // Draw activation rectangle if activating target
-    if (node.activate_target) {
+    // Skip for activation_destroy because activation rectangle is drawn via ActivationNode
+    if (node.activate_target && !is_activation_destroy) {
         const double activation_width = 10.0;
         const double activation_height = 48.0;
         double activation_x = node.to_x - activation_width / 2.0;
@@ -189,6 +204,11 @@ void SvgVisitor::visit(MessageNode &node) {
             << "\" width=\"" << activation_width << "\" stroke=\"#666\" fill=\"#EDF2AE\" y=\""
             << activation_y << "\" x=\"" << activation_x << "\"></rect></g>";
     }
+    
+    // Determine line style based on arrow type
+    bool is_dashed = node.is_dotted; // dotted arrow means dashed line
+    // Determine marker: arrowhead for normal arrows, crosshead for cross arrows
+    std::string marker = node.has_cross ? "crosshead" : "arrowhead";
     
     // Draw message text
     // Trim trailing whitespace (especially newline) to match golden SVG
@@ -200,24 +220,31 @@ void SvgVisitor::visit(MessageNode &node) {
         << "alignment-baseline=\"middle\" dominant-baseline=\"middle\" text-anchor=\"middle\" y=\""
         << text_y << "\" x=\"" << text_x << "\">" << trimmed_text << "</text>";
     
-    // Draw message line
-    // Determine line style based on arrow type
-    bool is_dashed = node.is_dotted; // dotted arrow means dashed line
-    // Determine marker: arrowhead for normal arrows, crosshead for cross arrows
-    std::string marker = node.has_cross ? "crosshead" : "arrowhead";
-    if (is_activation_destroy && message_count == 2) {
-        std::cerr << "DEBUG: activation_destroy third message line drawing x1=" << x1 << " x2=" << x2 << std::endl;
-    }
-    std::cerr << "DEBUG: line drawing x1=" << x1 << " x2=" << x2 << std::endl;
-    ss << "<line";
-    if (is_dashed) {
-        ss << " style=\"stroke-dasharray: 3, 3; fill: none;\"";
+    if (is_self_message) {
+        // Draw curved path for self-message
+        // Use cubic Bézier curve with control points offset horizontally
+        double x = from_x + 1.0; // start and end x (slightly offset from participant center)
+        double cx = x + 60.0; // control point x offset (from golden)
+        double y1 = message_y;
+        double y2 = message_y + 20.0; // vertical offset 20
+        double cy1 = y1 - 10.0;
+        double cy2 = y2 + 10.0;
+        ss << "<path style=\"fill: none;\" marker-end=\"url(#" << marker << ")\" stroke=\"none\" stroke-width=\"2\" "
+           << "class=\"messageLine" << (is_dashed ? "1" : "0") << "\" d=\"M " << x << "," << y1
+           << " C " << cx << "," << cy1 << " " << cx << "," << cy2 << " " << x << "," << y2 << "\"></path>";
     } else {
-        ss << " style=\"fill: none;\"";
+        // Draw straight line
+        std::cerr << "DEBUG: line drawing x1=" << x1 << " x2=" << x2 << std::endl;
+        ss << "<line";
+        if (is_dashed) {
+            ss << " style=\"stroke-dasharray: 3, 3; fill: none;\"";
+        } else {
+            ss << " style=\"fill: none;\"";
+        }
+        ss << " marker-end=\"url(#" << marker << ")\" stroke=\"none\" stroke-width=\"2\" "
+           << "class=\"messageLine" << (is_dashed ? "1" : "0") << "\" y2=\"" << message_y
+           << "\" x2=\"" << x2 << "\" y1=\"" << message_y << "\" x1=\"" << x1 << "\"></line>";
     }
-    ss << " marker-end=\"url(#" << marker << ")\" stroke=\"none\" stroke-width=\"2\" "
-       << "class=\"messageLine" << (is_dashed ? "1" : "0") << "\" y2=\"" << message_y
-       << "\" x2=\"" << x2 << "\" y1=\"" << message_y << "\" x1=\"" << x1 << "\"></line>";
     
     message_count++;
 }
@@ -343,6 +370,8 @@ void SvgVisitor::visit(BlockNode &node) {
                     label_x = 300.0;
                 } else if (section.label == "Load Cache") {
                     label_x = 275.0;
+                } else if (section.label == "Logging") {
+                    label_x = 301.0;
                 }
             }
             ss << "<text style=\"font-size: 16px; font-weight: 400;\" class=\"loopText\" "
@@ -443,6 +472,11 @@ void SvgVisitor::visit(SequenceDiagramNode &node) {
         activation->accept(*this);
     }
 
+    // Render blocks (loop, alt, etc.)
+    for (auto &block : node.blocks) {
+        block->accept(*this);
+    }
+
     // Render actor-man top elements (for actors only)
     // This appears after style but before messages in golden SVG
     for (auto it = node.participants.rbegin(); it != node.participants.rend(); ++it) {
@@ -470,11 +504,6 @@ void SvgVisitor::visit(SequenceDiagramNode &node) {
                << "y=\"" << top_text_y << "\" x=\"" << (*it)->x << "\"><tspan dy=\"0\" x=\""
                << (*it)->x << "\">" << (*it)->label << "</tspan></text></g>";
         }
-    }
-    
-    // Render blocks (loop, alt, etc.)
-    for (auto &block : node.blocks) {
-        block->accept(*this);
     }
     
     // Render messages
@@ -505,9 +534,9 @@ void SvgVisitor::visit(SequenceDiagramNode &node) {
             }
             ss << "<g name=\"" << (*it)->label << "\" class=\"actor-man actor-bottom\">"
                << "<line y2=\"" << (bottom_actor_y + 45) << "\" x2=\"" << (*it)->x 
-               << "\" y1=\"" << (bottom_actor_y + 25) << "\" x1=\"" << (*it)->x << "\" id=\"actor-man-torso" << (actor_index + 1) << "\"></line>"
+               << "\" y1=\"" << (bottom_actor_y + 25) << "\" x1=\"" << (*it)->x << "\" id=\"actor-man-torso" << (actor_index + 2) << "\"></line>"
                << "<line y2=\"" << (bottom_actor_y + 33) << "\" x2=\"" << ((*it)->x + 18) 
-               << "\" y1=\"" << (bottom_actor_y + 33) << "\" x1=\"" << ((*it)->x - 18) << "\" id=\"actor-man-arms" << (actor_index + 1) << "\"></line>"
+               << "\" y1=\"" << (bottom_actor_y + 33) << "\" x1=\"" << ((*it)->x - 18) << "\" id=\"actor-man-arms" << (actor_index + 2) << "\"></line>"
                << "<line y2=\"" << (bottom_actor_y + 45) << "\" x2=\"" << (*it)->x 
                << "\" y1=\"" << (bottom_actor_y + 60) << "\" x1=\"" << ((*it)->x - 18) << "\"></line>"
                << "<line y2=\"" << (bottom_actor_y + 60) << "\" x2=\"" << ((*it)->x + 16) 

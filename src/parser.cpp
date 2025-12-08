@@ -103,12 +103,54 @@ void Parser::parse_note(SequenceDiagramNode &diagram) {
     // Parse placement: "right of", "left of", or "over"
     std::string placement = "right of"; // default
     if (m_current.type == TokenType::Identifier) {
-        Token placement_token = consume(TokenType::Identifier, "Expected placement");
-        placement = placement_token.lexeme;
-        if (placement == "right" || placement == "left") {
-            // Expect "of" after "right" or "left"
-            consume(TokenType::Identifier, "Expected 'of' after placement");
-            placement += " of";
+        Token placement_token = m_current;
+        // Peek ahead to see if it's "right" or "left" followed by "of"
+        if (placement_token.lexeme == "right" || placement_token.lexeme == "left") {
+            // Consume placement token
+            advance();
+            // Expect "of"
+            if (m_current.type == TokenType::Identifier && m_current.lexeme == "of") {
+                advance(); // consume "of"
+                placement = placement_token.lexeme + " of";
+            } else {
+                // No "of", treat placement_token as actor identifier (fallback)
+                // We need to backtrack: we already consumed placement_token, but we can treat it as actor
+                // For simplicity, we'll treat it as actor and placement remains default
+                // We'll store actor = placement_token.lexeme and skip placement parsing
+                // This is a hack, but should work for simple cases.
+                std::string actor = placement_token.lexeme;
+                // Check for comma
+                while (m_current.type == TokenType::Comma) {
+                    advance(); // consume comma
+                    Token next = consume(TokenType::Identifier, "Expected actor identifier after comma");
+                    actor += "," + next.lexeme;
+                }
+                consume(TokenType::Colon, "Expected ':' after actor");
+                Token text = consume(TokenType::Text, "Expected note text");
+                diagram.notes.push_back(std::make_unique<NoteNode>(actor, placement, text.lexeme));
+                if (m_current.type == TokenType::Newline) advance();
+                skip_newlines();
+                return;
+            }
+        } else if (placement_token.lexeme == "over") {
+            advance(); // consume "over"
+            placement = "over";
+        } else {
+            // Unknown placement, treat as actor identifier (no placement)
+            // We'll treat placement as default "right of" and actor = placement_token.lexeme
+            std::string actor = placement_token.lexeme;
+            // Check for comma
+            while (m_current.type == TokenType::Comma) {
+                advance(); // consume comma
+                Token next = consume(TokenType::Identifier, "Expected actor identifier after comma");
+                actor += "," + next.lexeme;
+            }
+            consume(TokenType::Colon, "Expected ':' after actor");
+            Token text = consume(TokenType::Text, "Expected note text");
+            diagram.notes.push_back(std::make_unique<NoteNode>(actor, placement, text.lexeme));
+            if (m_current.type == TokenType::Newline) advance();
+            skip_newlines();
+            return;
         }
     }
     
