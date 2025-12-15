@@ -1,6 +1,6 @@
 # mermaid.cpp
 
-<img src="docs/images/mermaid.cpp.svg" alt="mermaid.cpp logo" width="120" />
+<img src="docs/images/mermaid.cpp.tr.svg" alt="mermaid.cpp logo" width="120" />
 
 A **headless**, **lightweight** C++17 implementation of the [Mermaid](https://mermaid.js.org/) diagramming library that runs without a browser, Node.js, or any external dependencies.
 
