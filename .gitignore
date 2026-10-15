@@ -1,7 +1,18 @@
+# IDE
+.idea/
+.vscode/
+
+# Build output
 build/
-node_modules/
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-Makefile
+build_*/
+cmake-build-*/
+dist/
+
+# Logs / temp
+*.log
+*.tmp
+*.bak
+
+# Misc
 Testing/
+__pycache__/

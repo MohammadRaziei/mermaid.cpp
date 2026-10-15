@@ -1,9 +1,0 @@
-sequenceDiagram
-  participant Client
-  participant API
-
-  loop Retry until success
-    Client->>API: Request
-    API-->>Client: Response
-  end
-
