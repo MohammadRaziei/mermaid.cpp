@@ -6,9 +6,9 @@
 
 #include <string_view>
 
-#include "geometry.h"
+#include <mermaid/geometry.h>
 
-namespace mermaidcpp {
+namespace mermaid {
 
 struct TextStyle {
     double font_size = 14.0;       // px (Mermaid 11.16 flowchart default)
@@ -36,4 +36,4 @@ private:
     TextStyle style_;
 };
 
-}  // namespace mermaidcpp
+}  // namespace mermaid

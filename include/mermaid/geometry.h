@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace mermaidcpp {
+namespace mermaid {
 
 struct Point {
     double x = 0;
@@ -50,4 +50,4 @@ struct Rect {
     Rect expanded(double m) const { return {x - m, y - m, width + 2 * m, height + 2 * m}; }
 };
 
-}  // namespace mermaidcpp
+}  // namespace mermaid

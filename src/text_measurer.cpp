@@ -1,8 +1,8 @@
-#include "text_measurer.h"
+#include <mermaid/text_measurer.h>
 
 #include <algorithm>
 
-namespace mermaidcpp {
+namespace mermaid {
 
 Size TextMeasurer::measure(std::string_view text) const {
     double width = 0;
@@ -20,4 +20,4 @@ Size TextMeasurer::measure(std::string_view text) const {
     return {width, lines * style_.line_height()};
 }
 
-}  // namespace mermaidcpp
+}  // namespace mermaid

@@ -6,7 +6,7 @@ Workflow per step: failing test first -> implement -> green -> commit -> zip.
 
 - [x] **S0** scaffold: git (`master`), layout mirroring liburlparser, CMake, vendored `utest.h`, version API (TDD)
 - [x] **S1** geometry value types (`Point`, `Size`, `Rect`) + `TextMeasurer` interface + `ApproxTextMeasurer` (Arial metrics, 14px, 21px line)
-- [ ] **S1b** `StbTextMeasurer`: vendored `stb_truetype.h` (src/stb) + Liberation Sans (OFL, Arial-metric) embedded via `cmake/EmbedFile.cmake`, with kerning
+- [ ] **S1b** (on hold) accurate `TextMeasurer` using the standard approach for fonts; no specific font is vendored and no extra dependency may be added without the owner's approval. Approach to be agreed first
 - [ ] **S2** flowchart `Model` + `StyleParser`
 - [ ] **S3** `ShapeScanner` and `EdgeScanner`
 - [ ] **S4** flowchart `Parser` (statements, chains, `&`, subgraphs, class/style/linkStyle), merman semantic goldens
@@ -29,7 +29,7 @@ Workflow per step: failing test first -> implement -> green -> commit -> zip.
   label height **21px** (1.5 em) and Arial metrics (CSS lists `"Recursive Variable", arial`;
   the font was not installed). Edge label "No" measured 17.90625 px (= Arial 14px);
   "Yes" measured 22.84 px, i.e. Arial **with kerning** (24.1 px without).
-  -> `StbTextMeasurer` must apply kerning; `ApproxTextMeasurer` cannot.
+  -> an accurate measurer must apply kerning; `ApproxTextMeasurer` cannot.
 - Node label `foreignObject` widths in the same SVGs are 120 (fixed?) - find out why.
 
 - The merman layout goldens for `A[Start] --> B{Choice}` give rect = **152 x 45**,

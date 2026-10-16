@@ -1,7 +1,7 @@
-#include "approx_text_measurer.h"
+#include <mermaid/approx_text_measurer.h>
 #include "utest.h"
 
-using namespace mermaidcpp;
+using namespace mermaid;
 
 // Reference widths: Helvetica/Arial advance widths (1000 units/em) at 14 px.
 // The "No" figure is also what real Mermaid 11.16 measured in a browser

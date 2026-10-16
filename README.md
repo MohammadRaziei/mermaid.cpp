@@ -12,13 +12,13 @@ cmake --build build -j
 ctest --test-dir build --output-on-failure
 ```
 
-Coverage (needs `lcov`): `cmake --build build --target mermaidcpp_coverage`.
+Coverage (needs `lcov`): `cmake --build build --target mermaid_coverage`.
 
 ## Use as a CMake dependency
 
 ```cmake
-find_package(mermaidcpp CONFIG REQUIRED)
-target_link_libraries(app PRIVATE mermaidcpp::mermaidcpp)
+find_package(mermaid CONFIG REQUIRED)
+target_link_libraries(app PRIVATE mermaid::mermaid)
 ```
 
 (or `add_subdirectory` / `FetchContent`; the target name is the same.)
@@ -27,4 +27,3 @@ target_link_libraries(app PRIVATE mermaidcpp::mermaidcpp)
 
 - `architecture.md` - design and component map
 - `checklist.md` - roadmap and open questions
-- `vendor/README.md` - third-party reference material

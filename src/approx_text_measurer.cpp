@@ -1,8 +1,8 @@
-#include "approx_text_measurer.h"
+#include <mermaid/approx_text_measurer.h>
 
 #include <array>
 
-namespace mermaidcpp {
+namespace mermaid {
 namespace {
 
 // Advance widths for code points 32..126, in 1/1000 em.
@@ -31,4 +31,4 @@ double ApproxTextMeasurer::line_width(std::string_view line) const {
     return static_cast<double>(units) * style().font_size / 1000.0;
 }
 
-}  // namespace mermaidcpp
+}  // namespace mermaid

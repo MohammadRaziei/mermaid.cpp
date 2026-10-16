@@ -2,22 +2,21 @@
 
 mermaid.cpp turns Mermaid text into SVG with **no JavaScript runtime**. It is a
 from-scratch C++17 port; behaviour is checked against Mermaid **11.16.0**
-(`vendor/mermaid/11.16.0/mermaid.js`, read-only reference) and the Rust port
+(read locally as a reference while developing; it is not part of this repo) and the Rust port
 [merman](https://github.com/Latias94/merman) (`tests/data/merman`, golden files).
 
 Project layout deliberately mirrors
-[liburlparser](https://github.com/mohammadraziei/liburlparser): one public
-header, flat `src/`, `cmake/` helpers, `tests/cpp` with vendored `utest.h`,
+[liburlparser](https://github.com/mohammadraziei/liburlparser): public headers under `include/mermaid/`, flat `src/`, `cmake/` helpers, `tests/cpp` with vendored `utest.h`,
 `examples/`, CI in `.github/workflows`.
 
 ```
-include/mermaidcpp.h    public API + version macros (single source of truth)
-src/*.cpp, src/*.h      implementation; headers here are private
+include/mermaid/*.h     public API (namespace `mermaid`, macros `MERMAID_*`);
+                        mermaid.h holds the version macros (single source of truth)
+src/*.cpp, src/*.h      implementation; headers here are private, never installed
 cmake/                  DynamicVersion, package config, coverage helpers
 tests/cpp/test_*.cpp    unit tests (utest.h), one file per class
 tests/data/             fixtures (merman goldens, ...)
 examples/               small programs using the public API
-vendor/                 third-party reference material (see vendor/README.md)
 ```
 
 ## 1. Pipeline
@@ -48,9 +47,12 @@ each other's internals. That is what makes every stage unit-testable alone.
   their inputs; no globals, no hidden state, no I/O outside the CLI.
 - **Errors are exceptions with positions** (`ParseError{line}`); the layout and
   render stages cannot fail on a valid model.
-- **No third-party runtime dependencies.** Only the C++ standard library.
-- **Public surface is tiny**: `mermaidcpp.h` only. Everything else is private
-  to `src/`.
+- **No third-party runtime dependencies.** Only the C++ standard library and the standard toolchain (CMake, build-essential). Anything beyond that (submodule or vendor) needs the owner's approval first.
+- **Public vs private headers**: everything in `include/mermaid/` is public and
+  is what tests, examples and consumers use. `src/*.h` are private and are not
+  exported; tests do not get `src/` on their include path.
+- **Naming**: namespace `mermaid`, macros `MERMAID_*`, CMake target
+  `mermaid::mermaid`.
 
 ## 3. Components (target design)
 
@@ -86,7 +88,7 @@ each other's internals. That is what makes every stage unit-testable alone.
 
 Levels: unit tests per class -> parser/layout/render integration tests ->
 **golden parity** tests against merman fixtures (semantic model first, then
-layout numbers). `ctest` runs everything; `mermaidcpp_coverage` (lcov) reports
+layout numbers). `ctest` runs everything; `mermaid_coverage` (lcov) reports
 coverage.
 
 ## 5. Out of scope for now

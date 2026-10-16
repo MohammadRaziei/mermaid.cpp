@@ -1,11 +1,11 @@
-#include "mermaidcpp.h"
+#include <mermaid/mermaid.h>
 
-namespace mermaidcpp {
+namespace mermaid {
 
-const char* version() noexcept { return MERMAIDCPP_VERSION_STRING; }
+const char* version() noexcept { return MERMAID_VERSION_STRING; }
 
 const char* mermaid_reference_version() noexcept {
-    return MERMAIDCPP_MERMAID_REFERENCE_VERSION;
+    return MERMAID_REFERENCE_VERSION;
 }
 
-}  // namespace mermaidcpp
+}  // namespace mermaid

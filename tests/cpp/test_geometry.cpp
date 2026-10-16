@@ -1,9 +1,9 @@
-#include "geometry.h"
+#include <mermaid/geometry.h>
 #include "utest.h"
 
-using mermaidcpp::Point;
-using mermaidcpp::Rect;
-using mermaidcpp::Size;
+using mermaid::Point;
+using mermaid::Rect;
+using mermaid::Size;
 
 UTEST(geometry, point_equality_and_arithmetic) {
     ASSERT_TRUE((Point{1, 2} == Point{1, 2}));
@@ -17,7 +17,7 @@ UTEST(geometry, point_equality_and_arithmetic) {
 }
 
 UTEST(geometry, distance) {
-    ASSERT_NEAR(5.0, mermaidcpp::distance(Point{0, 0}, Point{3, 4}), 1e-12);
+    ASSERT_NEAR(5.0, mermaid::distance(Point{0, 0}, Point{3, 4}), 1e-12);
 }
 
 UTEST(geometry, rect_edges_and_center) {

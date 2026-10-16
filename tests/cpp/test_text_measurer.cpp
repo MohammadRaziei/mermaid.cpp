@@ -1,10 +1,10 @@
 #include <memory>
 #include <string_view>
 
-#include "text_measurer.h"
+#include <mermaid/text_measurer.h>
 #include "utest.h"
 
-using namespace mermaidcpp;
+using namespace mermaid;
 
 namespace {
 // 1 px per byte, so the tests exercise only TextMeasurer's own logic.
