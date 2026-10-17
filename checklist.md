@@ -19,14 +19,15 @@ Workflow per step: failing test first -> implement -> green -> commit -> zip.
   - [x] S7d `EdgeRenderer` (paths, markers, labels, invisible edges)
   - [x] S7e `FlowchartRenderer` + `render_svg(source)` (diagram detection, styles, clusters, accessibility)
 - [ ] **S8** facade `mermaid::render_svg(source)` is done (in S7e); still open: `mermaid_cli` target (modelled on mermaid-js/mermaid-cli, SVG only: `-i` file or `-` for stdin, `-o`, `-t` theme, `-h`; own small argument parser, no CLI library), `examples/main.cpp`
-- [ ] **S6f** rewrite the layout as the dagre pipeline (reference: `dagre-d3-es@7.0.14`, `layout.js` `runLayout`; one class per stage, replaces `CycleBreaker`/`Ranker`/`CrossingMinimizer`/`CoordinateAssigner`)
-  - [ ] S6f-1 graph model (compound, multi-edges, edge labels) and `makeSpaceForEdgeLabels` (ranksep / 2, minlen x 2)
-  - [ ] S6f-2 `Acyclic` (cycle removal) and `NetworkSimplexRanker` (feasible tree, cut values, exchange)
-  - [ ] S6f-3 `NestingGraph` (compound graphs), `EdgeNormalizer` (dummy chains, label dummies), `BorderSegments`
-  - [ ] S6f-4 `BarycenterOrderer` (init order, sweeps, crossing count, subgraph sorting)
-  - [ ] S6f-5 `BrandesKopfPositioner` (four alignments, balance) and coordinate-system (LR/RL/BT) transforms
-  - [ ] S6f-6 undo steps, self-edges (two 10 x 10 temporary nodes in mermaid), edge points and node intersections; wire into `LayoutEngine`
-  - Done when: node y matches merman goldens for `classdef_and_inline_classes_003` (see findings below), then the other fixtures
+- [~] **S6f** rewrite the layout as the dagre pipeline (reference: `dagre-d3-es@7.0.14`, `layout.js` `runLayout`; one class per stage). Public API: `include/mermaid/dagre.h` (`mermaid::dagre::layout`)
+  - [x] S6f-1 graph model (`dagre_graph.h`: graphlib-compatible multigraph with nesting and the same visiting order, incl. JS integer-key ordering) and `makeSpaceForEdgeLabels`
+  - [x] S6f-2 `Acyclic` and `NetworkSimplexRanker`
+  - [x] S6f-3 `NestingGraph`, `EdgeNormalizer`, `ParentDummyChains`, `BorderSegments`
+  - [x] S6f-4 `Orderer` (init order, barycenter sweeps, crossing count, subgraph sorting, conflict resolution)
+  - [x] S6f-5 `position` (Brandes-Koepf) and the coordinate system (TB/BT/LR/RL)
+  - [x] S6f-6a self-edges, label placement, border nodes, edge points and node intersections (all in `dagre_layout.cpp`)
+  - [ ] S6f-6b wire `mermaid::dagre::layout` into `LayoutEngine` (replace `layout_steps`, `layered_graph`) and retire the old classes
+  - Verified: `tests/cpp/test_dagre.cpp` has 11 reference cases; a further 300 random graphs (all four directions, compound, labels, cycles, self-loops, multi-edges) were compared against dagre-d3-es and matched to 1e-6. The numbers come from running dagre-d3-es 7.0.14 with a small node script that is kept outside the repo.
 - [ ] **S6g** mermaid layout settings: `nodeSpacing` / `rankSpacing` default 50 in mermaid code, `marginx/marginy` 8, subgraph `ranksep + 25`; reconcile with the 40 / 12 seen in merman goldens
 - [ ] **S6b** clusters stay in their own x-range across layers (today a node outside a subgraph can end up inside its box; see `stress_flowchart_deeply_nested_clusters_019`)
 - [ ] **S6d** `%%{init: ...}%%` directives: flowchart `nodeSpacing` / `rankSpacing` and `themeVariables` (needs a small JSON reader of our own, tests/fixtures 010, 032, 064)
