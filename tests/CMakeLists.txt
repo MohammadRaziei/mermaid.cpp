@@ -12,7 +12,6 @@ add_custom_target(mermaid_coverage
     COMMAND ${CMAKE_COMMAND} -E echo "-- Running coverage ..."
 )
 
-find_package(Threads REQUIRED)
 find_program(LCOV_EXECUTABLE lcov)
 find_program(GENHTML_EXECUTABLE genhtml)
 

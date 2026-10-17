@@ -19,7 +19,6 @@ target_include_directories(test_mermaid_cpp PRIVATE
 target_compile_definitions(test_mermaid_cpp PRIVATE
     MERMAID_TEST_DATA_DIR="${MERMAID_TEST_SOURCE_DIR}/data"
 )
-target_link_libraries(test_mermaid_cpp PRIVATE Threads::Threads)
 
 add_test(NAME test_mermaid_cpp COMMAND $<TARGET_FILE:test_mermaid_cpp>)
 

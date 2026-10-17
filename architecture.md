@@ -1,9 +1,10 @@
 # mermaid.cpp Architecture
 
 mermaid.cpp turns Mermaid text into SVG with **no JavaScript runtime**. It is a
-from-scratch C++17 port; behaviour is checked against Mermaid **11.16.0**
-(read locally as a reference while developing; it is not part of this repo) and the Rust port
-[merman](https://github.com/Latias94/merman) (`tests/data/merman`, golden files).
+from-scratch C++17 implementation; behaviour is checked against Mermaid **11.16.0**
+(read locally as a reference while developing; it is not part of this repo) and the output of
+[merman](https://github.com/Latias94/merman), a Rust implementation (only its golden files live here, in
+`tests/data/merman`). **No Rust, no system libraries**: only the C++17 standard library and CMake.
 
 Project layout deliberately mirrors
 [liburlparser](https://github.com/mohammadraziei/liburlparser): public headers under `include/mermaid/`, flat `src/`, `cmake/` helpers, `tests/cpp` with vendored `utest.h`,
