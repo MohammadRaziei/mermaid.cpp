@@ -115,3 +115,12 @@ Real Mermaid 12.2 output (`fixtures/upstream-svgs/flowchart/*.svg` in merman, re
   - 16 marker definitions (`pointEnd`, `pointEnd-margin`, circle, cross, ...).
   - edges are routed orthogonally with rounded corners (`Q` arcs) and carry `data-edge`, `data-et`, `data-id`, `data-points` (base64 JSON of the points), `data-look="neo"`, `marker-end="...-margin"`, and a dash style; edges stop 4 px short of the node for the marker. Edge labels are `foreignObject` HTML in a `labelBkg` div.
   - Next steps, one per commit, each lowering the difference count: skeleton and viewBox, markers, style CSS, node shapes, edges, labels, then flip fixtures to `pass`.
+
+## The default layout of Mermaid 12.2.0 is ELK, not dagre (found while comparing edges)
+
+- `schemas/config.schema.yaml` (root `layout`): "Defaults to `elk`, which is bundled with mermaid; the `tiny` build falls back to `dagre`". `flowRenderer-v3-unified.ts` takes the root `layout`, and `rendering-util/render.ts` registers `elk` and `dagre`. Flowchart default look is `neo`, theme `redux-color`.
+- merman generates its `fixtures/upstream-svgs` with `@mermaid-js/mermaid-cli` 12.0.0 + `mermaid` 12.2.0 and a config containing only `handDrawnSeed` (`tools/mermaid-cli/mermaid-config.json`), so those SVGs are ELK output.
+- Evidence in the SVG: edge points are orthogonal with the bend 20 px below the source (`basic`: (158.83,268) (158.83,288) (88,288) (88,369)), and out-edges of one node are fanned out (x = 184 -/+ 25.17). Plain dagre-d3-es 7.0.14 on the same graph gives diagonal points ((119.65,264) (84,314.5) (84,365)); our dagre port gives the same, so the port is right and the engine differs.
+- Node positions of simple chains agree between dagre and ELK (that is why `basic` matched); `store` / `reject` in fixture 003 differ.
+- Consequences: (1) references for the dagre engine must be generated with `layout: dagre` (`%%{init: {"layout": "dagre"}}%%` or frontmatter `config: {layout: dagre}`); (2) matching default `mmdc` output needs an ELK layered port (large, not started); (3) layout-independent parity work (svg skeleton, markers, CSS, shapes, labels) is unaffected.
+- Plan: keep dagre as the implemented engine and honour `layout: dagre`; do the layout-independent SVG steps first; ELK is a separate decision.
