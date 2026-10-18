@@ -222,3 +222,29 @@ UTEST(flowchart_layout, fixtures_have_finite_non_overlapping_layouts) {
         }
     }
 }
+
+// Golden: stress_flowchart_classdef_and_inline_classes_003 (LR). Positioning comes from the
+// dagre pipeline (Brandes-Koepf); the first three nodes share one y and fixed x.
+UTEST(flowchart_layout, dagre_positions_match_merman_golden_for_the_main_chain) {
+    Layout l = lay(read_fixture("stress_flowchart_classdef_and_inline_classes_003"));
+    const NodeLayout* in = l.find_node("in");
+    const NodeLayout* parse = l.find_node("parse");
+    const NodeLayout* validate = l.find_node("validate");
+    ASSERT_TRUE(in && parse && validate);
+    ASSERT_NEAR(88.0, in->center.x, 1.0);
+    ASSERT_NEAR(280.0, parse->center.x, 1.0);
+    ASSERT_NEAR(481.5, validate->center.x, 1.0);
+    ASSERT_NEAR(107.112, in->center.y, 1.0);
+    ASSERT_NEAR(107.112, parse->center.y, 1.0);
+    ASSERT_NEAR(107.112, validate->center.y, 1.0);
+}
+
+// Golden: the `store[(Store)]` cylinder of fixture 003 is 144 x 85.149
+// (w = 120 + 24, ry = w/2 / (2.5 + w/50), h = 21 + 24 + 3*ry).
+UTEST(flowchart_layout, cylinder_size_matches_merman_golden) {
+    Layout l = lay("flowchart LR\nstore[(Store)]");
+    const NodeLayout* n = l.find_node("store");
+    ASSERT_TRUE(n != nullptr);
+    ASSERT_NEAR(144.0, n->size.width, 1e-3);
+    ASSERT_NEAR(85.149, n->size.height, 1e-3);
+}

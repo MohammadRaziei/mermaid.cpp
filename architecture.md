@@ -1,7 +1,7 @@
 # mermaid.cpp Architecture
 
 mermaid.cpp turns Mermaid text into SVG with **no JavaScript runtime**. It is a
-from-scratch C++17 implementation; behaviour is checked against Mermaid **11.16.0**
+from-scratch C++17 implementation; behaviour is checked against Mermaid **12.2.0** (the latest release; the layout library `dagre-d3-es` 7.0.14 is the same as in 11.16.0)
 (read locally as a reference while developing; it is not part of this repo) and the output of
 [merman](https://github.com/Latias94/merman), a Rust implementation (only its golden files live here, in
 `tests/data/merman`). **No Rust, no system libraries**: only the C++17 standard library and CMake.
@@ -68,14 +68,15 @@ each other's internals. That is what makes every stage unit-testable alone.
 | flowchart | `Parser` | statements, chains, `&` groups, subgraph stack, directives |
 | text | `TextMeasurer` (interface), `ApproxTextMeasurer` | text width/height |
 | layout | `NodeSizer` | node box from label + shape (+ padding) |
-| layout | `CycleBreaker` | reverse back edges so the graph is acyclic |
-| layout | `Ranker` | longest-path layering |
-| layout | `DummyInserter` | split long edges into per-rank chains; label sits on a dummy |
-| layout | `CrossingMinimizer` | barycenter sweeps |
-| layout | `CoordinateAssigner` | cross-axis placement (isotonic regression) |
-| layout | `EdgeRouter` | clip chains to node borders, self loops |
-| layout | `ClusterBoxer` | subgraph rectangles |
-| layout | `LayoutEngine` | runs the steps in order, applies direction |
+| layout | `dagre::layout` (public, `include/mermaid/dagre.h`) | the dagre pipeline, one class per stage (below); verified against `dagre-d3-es` |
+| dagre | `Acyclic` | reverse back edges (depth-first) so the graph is acyclic |
+| dagre | `NestingGraph` | root node, border nodes and nesting edges for compound nodes |
+| dagre | `NetworkSimplexRanker` | rank assignment (feasible tree, cut values, exchanges) |
+| dagre | `EdgeNormalizer`, `ParentDummyChains`, `BorderSegments` | dummy chains for long edges (label on its own rank), border columns per compound node |
+| dagre | `Orderer` | barycenter sweeps with crossing count, subgraph sorting, conflict resolution |
+| dagre | `position` (Brandes-Koepf) | y from ranks, x from four balanced alignments, then direction |
+| layout | `LayoutEngine` | flowchart model -> `dagre::layout` input (sizes from `NodeSizer`), result -> geometry (S6f-6b done: every layout number comes from dagre; edge label rank = label + `edge_label_pad` per side; collinear edge points are dropped) |
+| layout | cluster boxes | subgraph rectangles still come from the member boxes plus padding and title (S6b will take them from dagre's compound nodes) |
 | render | `SvgWriter` | tiny XML builder with escaping and number formatting |
 | render | `Theme` | colours, font, stroke widths |
 | render | `ShapeRenderer` family | one class per node shape |

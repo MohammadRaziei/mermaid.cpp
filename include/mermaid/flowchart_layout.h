@@ -22,6 +22,9 @@ struct LayoutOptions {
     // are never narrower than this. (Source of the 120 not yet understood.)
     double min_label_width = 120;
     double cluster_pad = 8;
+    // Goldens of merman reserve the label plus this much on every side in the label rank
+    // (basic: 101 = 40 + 21 + 40; fixture 003: 99.74 = 40 + 19.74 + 40). Cause not yet confirmed.
+    double edge_label_pad = 20;
 };
 
 struct NodeLayout {

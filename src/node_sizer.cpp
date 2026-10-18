@@ -28,8 +28,12 @@ Size NodeSizer::size(const Node& node) const {
         case Shape::Trapezoid:
         case Shape::InvTrapezoid:
             return {box_w + box_h / 2, box_h};
-        case Shape::Cylinder:
-            return {box_w, box_h + 16};
+        case Shape::Cylinder: {
+            const double pad = 2 * options_.pad_y;  // 24 in the neo look, like the box height padding
+            const double w = text_w + pad;
+            const double ry = (w / 2) / (2.5 + w / 50);  // the two ellipses add 3 * ry to the height
+            return {w, text_h + pad + 3 * ry};
+        }
         case Shape::Default:
         case Shape::Square:
         case Shape::Round:

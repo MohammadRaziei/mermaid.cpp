@@ -11,7 +11,7 @@ Workflow per step: failing test first -> implement -> green -> commit -> zip.
 - [x] **S3** shape and edge scanning (folded into the parser)
 - [x] **S4** flowchart `Parser` (statements, chains, `&`, subgraphs, class/style/linkStyle), merman semantic goldens
 - [x] **S5** `NodeSizer` (rect and diamond from goldens; other shapes approximate)
-- [x] **S6** layout steps (simplified, NOT a dagre port: longest-path ranks, barycenter order, order-keeping relaxation for x; to be replaced by S6f): `CycleBreaker`, `Ranker`, `DummyInserter`, `CrossingMinimizer`, `CoordinateAssigner`, `EdgeRouter`, `ClusterBoxer`, `LayoutEngine`
+- [x] **S6** first simplified layout (longest-path ranks, barycenter order); retired in S6f-6b, replaced by the dagre pipeline
 - [x] **S7** render (tests: `test_render.cpp`; private classes are covered through the public `render_svg`, tests never include `src/`)
   - [x] S7a `SvgWriter` (escaping, number formatting, balanced tags)
   - [x] S7b `Theme` (default, dark, forest, neutral; unknown name throws)
@@ -26,9 +26,13 @@ Workflow per step: failing test first -> implement -> green -> commit -> zip.
   - [x] S6f-4 `Orderer` (init order, barycenter sweeps, crossing count, subgraph sorting, conflict resolution)
   - [x] S6f-5 `position` (Brandes-Koepf) and the coordinate system (TB/BT/LR/RL)
   - [x] S6f-6a self-edges, label placement, border nodes, edge points and node intersections (all in `dagre_layout.cpp`)
-  - [ ] S6f-6b wire `mermaid::dagre::layout` into `LayoutEngine` (replace `layout_steps`, `layered_graph`) and retire the old classes
+  - [x] S6f-6b `LayoutEngine` runs `mermaid::dagre::layout`; `layout_steps` / `layered_graph` removed. Edge labels get `edge_label_pad` (20) on every side in the label rank (matches the basic and 003 goldens; cause not confirmed), cylinder size follows the golden formula, collinear edge points are dropped. 87 tests pass
   - Verified: `tests/cpp/test_dagre.cpp` has 11 reference cases; a further 300 random graphs (all four directions, compound, labels, cycles, self-loops, multi-edges) were compared against dagre-d3-es and matched to 1e-6. The numbers come from running dagre-d3-es 7.0.14 with a small node script that is kept outside the repo.
-- [ ] **S6g** mermaid layout settings: `nodeSpacing` / `rankSpacing` default 50 in mermaid code, `marginx/marginy` 8, subgraph `ranksep + 25`; reconcile with the 40 / 12 seen in merman goldens
+- [ ] **S6g** mermaid layout settings. Findings (Mermaid 12.2.0 source read, plus the real-browser SVGs in merman `fixtures/upstream-svgs/flowchart`):
+  - Code defaults: `flowchart.nodeSpacing` / `rankSpacing` 50 (`schemas/config.schema.yaml`, `flowRenderer-v3-unified.ts`), dagre `marginx/marginy` 8 (`dagre/index.js`, `prepareLayoutForDagre`), `diagramPadding` 8, subgraph `ranksep + 25`.
+  - The real-browser SVG of `basic` has exactly the golden node positions (A 184,34.5; B 184,182.5; C 88,391.5; D 280,391.5; viewBox `4 4 360 418`), so the merman goldens equal real Mermaid output. Drawn node rects equal the golden sizes (152 x 45).
+  - Open: the gap between ranks is 40 (A -> B) and the label rank is 40 taller than the label on each side, which the code defaults (50) do not explain. The mechanism (a look/theme setting, or node sizes handed to dagre differing from the drawn ones) is not found yet. Until then `LayoutOptions` keeps 40 / 12 / `edge_label_pad` 20 because they reproduce real output.
+  - Cylinder: `ry = rx / (2.5 + w / 50)`, height adds `3 * ry` (read in `shapes/cylinder.ts`; same as the golden).
 - [ ] **S6b** clusters stay in their own x-range across layers (today a node outside a subgraph can end up inside its box; see `stress_flowchart_deeply_nested_clusters_019`)
 - [ ] **S6d** `%%{init: ...}%%` directives: flowchart `nodeSpacing` / `rankSpacing` and `themeVariables` (needs a small JSON reader of our own, tests/fixtures 010, 032, 064)
 - [ ] **S6e** per-subgraph `direction` (fixture 019)
@@ -66,13 +70,15 @@ Workflow per step: failing test first -> implement -> green -> commit -> zip.
 | basic | 4 | 4 | 4 |
 | class_style | 2 | 2 | 2 |
 | amp_groups_edge_ids_034 | 5 | 5 | 5 |
-| classdef_and_inline_classes_003 | 5 | 4 | 0 (x matches, y is 9.6 px off) |
+| classdef_and_inline_classes_003 | 5 | 5 | 3 (x of `store`/`reject` differ) |
 | comments_and_directives_010 | 5 | 5 | 0 (init directive, cluster) |
 | deeply_nested_clusters_019 | 10 | 10 | 0 (subgraph directions, clusters) |
 | dense_parallel_edges_002 | 9 | 8 | 0 |
 | directives_comments_blank_lines_032 | 4 | 4 | 0 (init spacing) |
 | edge_label_position_064 | 3 | 3 | 0 (init spacing) |
 | escape_sequences_and_quotes_012 | 5 | 3 | 4 |
+
+(Recomputed after S6f-6b with the dagre layout; tolerance 1 px.)
 
 ## Findings from reading mermaid 11.16.0 and dagre-d3-es 7.0.14 (graphify + code)
 
