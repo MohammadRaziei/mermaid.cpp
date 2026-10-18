@@ -8,6 +8,7 @@
 #include <mermaid/dagre.h>
 
 #include "node_sizer.h"
+#include <mermaid/macros.h>
 
 namespace mermaid::flowchart {
 
@@ -168,7 +169,7 @@ private:
             e.v = model_.nodes[static_cast<size_t>(edges_[i].from)].id;
             e.w = model_.nodes[static_cast<size_t>(edges_[i].to)].id;
             e.name = std::to_string(i);
-            e.minlen = std::max(1, model_.edges[i].length);
+            e.minlen = MERMAID_MAX(1, model_.edges[i].length);
             if (edges_[i].label.width > 0 || edges_[i].label.height > 0) {
                 e.width = edges_[i].label.width + 2 * options_.edge_label_pad;
                 e.height = edges_[i].label.height + 2 * options_.edge_label_pad;

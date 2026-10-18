@@ -5,6 +5,7 @@
 #include <limits>
 #include <unordered_map>
 #include <unordered_set>
+#include <mermaid/macros.h>
 
 namespace mermaid::dagre::detail {
 
@@ -64,7 +65,7 @@ void merge_entries(Mapped& target, Mapped& source) {
     target.vs = std::move(joined);
     target.barycenter = sum / weight;
     target.weight = weight;
-    target.i = std::min(source.i, target.i);
+    target.i = MERMAID_MIN(source.i, target.i);
     source.merged = true;
 }
 
@@ -393,7 +394,7 @@ Layers Orderer::initial_order() const {
         if (!g_.has_children(v)) simple.push_back(v);
 
     double top = 0;
-    for (const std::string& v : simple) top = std::max(top, *g_.node(v)->rank);
+    for (const std::string& v : simple) top = MERMAID_MAX(top, *g_.node(v)->rank);
     Layers layers(static_cast<size_t>(top) + 1);
 
     std::stable_sort(simple.begin(), simple.end(),

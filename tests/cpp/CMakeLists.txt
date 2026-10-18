@@ -1,3 +1,12 @@
+# pugixml: XML parser used by the SVG comparison helper (tests only).
+include(FetchContent)
+FetchContent_Declare(pugixml
+    GIT_REPOSITORY https://github.com/zeux/pugixml.git
+    GIT_TAG v1.14
+)
+set(PUGIXML_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(pugixml)
+
 # Find all test source files matching test_*.cpp pattern
 file(GLOB MERMAID_TEST_SOURCES_CPP CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/test_*.cpp
@@ -10,6 +19,8 @@ add_executable(test_mermaid_cpp
     ${SOURCES}
     ${MERMAID_TEST_SOURCE_DIR}/utest/utest_main.cxx
 )
+
+target_link_libraries(test_mermaid_cpp PRIVATE pugixml::pugixml)
 
 target_include_directories(test_mermaid_cpp PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}

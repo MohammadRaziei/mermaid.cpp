@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+#include <mermaid/macros.h>
 
 namespace mermaid::dagre::detail {
 
@@ -39,7 +40,7 @@ LayoutGraph simplify(const LayoutGraph& g) {
         const EdgeLabelPtr label = g.edge(e);
         auto merged = std::make_shared<EdgeLabel>();
         merged->weight = weight + label->weight;
-        merged->minlen = std::max(minlen, label->minlen);
+        merged->minlen = MERMAID_MAX(minlen, label->minlen);
         simplified.set_edge(e.v, e.w, merged);
     }
     return simplified;
@@ -82,7 +83,7 @@ Layers build_layer_matrix(const LayoutGraph& g) {
 void normalize_ranks(LayoutGraph& g) {
     double lowest = std::numeric_limits<double>::infinity();
     for (const std::string& v : g.nodes())
-        if (const auto& rank = g.node(v)->rank) lowest = std::min(lowest, *rank);
+        if (const auto& rank = g.node(v)->rank) lowest = MERMAID_MIN(lowest, *rank);
     for (const std::string& v : g.nodes()) {
         const auto node = g.node(v);
         if (node->rank) *node->rank -= lowest;
@@ -92,7 +93,7 @@ void normalize_ranks(LayoutGraph& g) {
 void remove_empty_ranks(LayoutGraph& g) {
     double offset = std::numeric_limits<double>::infinity();
     for (const std::string& v : g.nodes())
-        if (const auto& rank = g.node(v)->rank) offset = std::min(offset, *rank);
+        if (const auto& rank = g.node(v)->rank) offset = MERMAID_MIN(offset, *rank);
 
     // A rank that is not a whole number never lands in a layer (as in dagre).
     std::vector<std::vector<std::string>> layers;

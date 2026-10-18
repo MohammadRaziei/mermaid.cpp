@@ -93,3 +93,25 @@ Workflow per step: failing test first -> implement -> green -> commit -> zip.
 ## Portability
 
 - Tests include `utest.h`, which pulls in `<windows.h>` on MSVC: never name identifiers `near`, `far`, `small`, `big` (macros there). CI (windows-latest) caught `near` in `test_dagre.cpp` and `small` in `test_approx_text_measurer.cpp`.
+
+## Look of the output (found by comparing with real Mermaid SVGs)
+
+Real Mermaid 12.2 output (`fixtures/upstream-svgs/flowchart/*.svg` in merman, rendered in a browser) versus `mermaid::render_svg`:
+
+- Real default look is `neo` (`data-look="neo"`): font `"Recursive Variable", arial, sans-serif`, text colour `#28253D`, a `<style>` with the edge animation keyframes, svg `class="flowchart"`, svg id = diagram id (`basic`).
+- viewBox of the real SVG is `4 4 360 418` for `basic` (content bounds 12..356 plus `diagramPadding` 8); ours is `0 0 368 426`.
+- Edge paths stop short of the node by the marker offset (`M184,57L184,93`, node top at 97).
+- Ours still draws the classic theme (`#ECECFF` fill, `#9370DB` stroke, trebuchet). Theme/look work is a separate step (take colours from Mermaid's `themes/theme-default.js`, neo styles from `rendering-elements/shapes`).
+- `mmdc` itself cannot run in the sandbox (no browser). The browser SVGs above are the comparison source.
+
+## SVG parity with Mermaid (tests/data/mermaid_js, tests/cpp/test_svg_parity.cpp)
+
+- `svg_compare.h` (pugixml via FetchContent, tests only): same element tree, same attribute names, same text, numbers inside any attribute may differ by 0.5. `parity.tsv` marks each fixture `pass` (must match) or `todo` (differences are printed).
+- Current state: `basic`, `003`, `034` are `todo` (8 top-level differences each, the comparison stops at the first mismatching child).
+- What the real 12.2 output does that ours does not yet (read from `basic.svg`):
+  - svg: `xmlns:xlink`, `class="flowchart"`, viewBox = content bounds + 8 padding (`4 4 360 418`), `max-width` from it.
+  - `<style>` is 22 KB: the full neo theme CSS (port `getStyles` / neo theme from Mermaid source, not copy the text).
+  - one `<g>` holding the markers first, then `<g class="root">` with `clusters`, `edges edgePaths`, `edgeLabels`, `nodes`.
+  - 16 marker definitions (`pointEnd`, `pointEnd-margin`, circle, cross, ...).
+  - edges are routed orthogonally with rounded corners (`Q` arcs) and carry `data-edge`, `data-et`, `data-id`, `data-points` (base64 JSON of the points), `data-look="neo"`, `marker-end="...-margin"`, and a dash style; edges stop 4 px short of the node for the marker. Edge labels are `foreignObject` HTML in a `labelBkg` div.
+  - Next steps, one per commit, each lowering the difference count: skeleton and viewBox, markers, style CSS, node shapes, edges, labels, then flip fixtures to `pass`.

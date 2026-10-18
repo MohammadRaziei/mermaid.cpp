@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <functional>
 #include <vector>
+#include <mermaid/macros.h>
 
 namespace mermaid::detail {
 
@@ -56,7 +57,7 @@ public:
     void draw(SvgWriter& out, const Rect& b, const std::string& style) const override {
         const double rx = b.width / 2;
         const double ry = rx / (2.5 + b.width / 50);
-        const double body = std::max(0.0, b.height - 2 * ry);
+        const double body = MERMAID_MAX(0.0, b.height - 2 * ry);
         const std::string arc = "a" + n(rx) + " " + n(ry) + " 0 0 0 ";
         out.leaf("path", with_style({{"d", "M" + n(b.x) + " " + n(b.y + ry) + " " + arc + n(b.width) + " 0 " + arc +
                                               n(-b.width) + " 0 l0 " + n(body) + " " + arc + n(b.width) + " 0 l0 " +
@@ -70,11 +71,11 @@ public:
     explicit CircleShape(bool doubled) : doubled_(doubled) {}
 
     void draw(SvgWriter& out, const Rect& b, const std::string& style) const override {
-        const double r = std::max(b.width, b.height) / 2;
+        const double r = MERMAID_MAX(b.width, b.height) / 2;
         const Point c = b.center();
         out.leaf("circle", with_style({{"cx", n(c.x)}, {"cy", n(c.y)}, {"r", n(r)}}, style));
         if (doubled_)
-            out.leaf("circle", with_style({{"cx", n(c.x)}, {"cy", n(c.y)}, {"r", n(std::max(0.0, r - 5))}}, style));
+            out.leaf("circle", with_style({{"cx", n(c.x)}, {"cy", n(c.y)}, {"r", n(MERMAID_MAX(0.0, r - 5))}}, style));
     }
 
 private:

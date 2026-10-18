@@ -14,5 +14,5 @@ UTEST(version, function_matches_macro) {
 }
 
 UTEST(version, pinned_mermaid_reference) {
-    ASSERT_STREQ("11.16.0", mermaid::mermaid_reference_version());
+    ASSERT_STREQ("12.2.0", mermaid::mermaid_reference_version());
 }

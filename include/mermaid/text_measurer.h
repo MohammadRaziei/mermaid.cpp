@@ -11,7 +11,7 @@
 namespace mermaid {
 
 struct TextStyle {
-    double font_size = 14.0;       // px (Mermaid 11.16 flowchart default)
+    double font_size = 14.0;       // px (Mermaid 12.2 flowchart default)
     double line_height_em = 1.5;   // 14px * 1.5 = 21px, as in upstream SVG labels
 
     double line_height() const { return font_size * line_height_em; }

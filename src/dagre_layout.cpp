@@ -15,6 +15,7 @@
 #include "dagre_position.h"
 #include "dagre_rank.h"
 #include "dagre_util.h"
+#include <mermaid/macros.h>
 
 namespace mermaid::dagre {
 
@@ -315,10 +316,10 @@ private:
         const double margin_y = graph.marginy;
 
         auto extremes = [&](double x, double y, double w, double h) {
-            min_x = std::min(min_x, x - w / 2);
-            max_x = std::max(max_x, x + w / 2);
-            min_y = std::min(min_y, y - h / 2);
-            max_y = std::max(max_y, y + h / 2);
+            min_x = MERMAID_MIN(min_x, x - w / 2);
+            max_x = MERMAID_MAX(max_x, x + w / 2);
+            min_y = MERMAID_MIN(min_y, y - h / 2);
+            max_y = MERMAID_MAX(max_y, y + h / 2);
         };
         for (const std::string& v : g_.nodes()) {
             const NodeLabelPtr n = g_.node(v);

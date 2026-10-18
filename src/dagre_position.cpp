@@ -6,6 +6,7 @@
 #include <limits>
 #include <unordered_map>
 #include <unordered_set>
+#include <mermaid/macros.h>
 
 namespace mermaid::dagre::detail {
 
@@ -224,7 +225,7 @@ private:
                     const std::string& u_root = a.root.at(u);
                     const auto previous = block.edge(u_root, v_root);
                     block.set_edge(u_root, v_root,
-                                   std::make_shared<double>(std::max(separation(v, u, reverse_sep), previous ? *previous : 0.0)));
+                                   std::make_shared<double>(MERMAID_MAX(separation(v, u, reverse_sep), previous ? *previous : 0.0)));
                 }
                 u = v;
             }
@@ -256,15 +257,15 @@ private:
 
         auto pass1 = [&](const std::string& elem) {
             double best = 0;
-            for (const EdgeObj& e : block.in_edges(elem)) best = std::max(best, xs[e.v] + *block.edge(e));
+            for (const EdgeObj& e : block.in_edges(elem)) best = MERMAID_MAX(best, xs[e.v] + *block.edge(e));
             xs[elem] = best;
         };
         auto pass2 = [&](const std::string& elem) {
             double least = std::numeric_limits<double>::infinity();
-            for (const EdgeObj& e : block.out_edges(elem)) least = std::min(least, xs[e.w] - *block.edge(e));
+            for (const EdgeObj& e : block.out_edges(elem)) least = MERMAID_MIN(least, xs[e.w] - *block.edge(e));
             const NodeLabelPtr node = g_.node(elem);
             if (least != std::numeric_limits<double>::infinity() && node->border_side != border_side)
-                xs[elem] = std::max(xs[elem], least);
+                xs[elem] = MERMAID_MAX(xs[elem], least);
         };
 
         iterate(pass1, [&](const std::string& v) { return block.predecessors(v); });
@@ -286,8 +287,8 @@ private:
             double min = std::numeric_limits<double>::infinity();
             for (const auto& entry : xss[i]) {
                 const double half = width_of(entry.first) / 2;
-                max = std::max(entry.second + half, max);
-                min = std::min(entry.second - half, min);
+                max = MERMAID_MAX(entry.second + half, max);
+                min = MERMAID_MIN(entry.second - half, min);
             }
             if (max - min < best_width) {
                 best_width = max - min;
@@ -301,8 +302,8 @@ private:
         double to_min = std::numeric_limits<double>::infinity();
         double to_max = -std::numeric_limits<double>::infinity();
         for (const auto& entry : xss[align_to]) {
-            to_min = std::min(to_min, entry.second);
-            to_max = std::max(to_max, entry.second);
+            to_min = MERMAID_MIN(to_min, entry.second);
+            to_max = MERMAID_MAX(to_max, entry.second);
         }
         for (size_t i = 0; i < xss.size(); ++i) {
             if (i == align_to) continue;
@@ -310,8 +311,8 @@ private:
             double min = std::numeric_limits<double>::infinity();
             double max = -std::numeric_limits<double>::infinity();
             for (const auto& entry : xss[i]) {
-                min = std::min(min, entry.second);
-                max = std::max(max, entry.second);
+                min = MERMAID_MIN(min, entry.second);
+                max = MERMAID_MAX(max, entry.second);
             }
             const double delta = left ? to_min - min : to_max - max;
             if (delta != 0)
@@ -339,7 +340,7 @@ void position_y(LayoutGraph& g) {
     double prev_y = 0;
     for (const auto& layer : layering) {
         double max_height = -std::numeric_limits<double>::infinity();
-        for (const std::string& v : layer) max_height = std::max(max_height, g.node(v)->height);
+        for (const std::string& v : layer) max_height = MERMAID_MAX(max_height, g.node(v)->height);
         for (const std::string& v : layer) g.node(v)->y = prev_y + max_height / 2;
         prev_y += max_height + rank_sep;
     }

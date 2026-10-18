@@ -1,6 +1,7 @@
 #include "dagre_nesting.h"
 
 #include <functional>
+#include <mermaid/macros.h>
 
 namespace mermaid::dagre::detail {
 
@@ -15,7 +16,7 @@ void NestingGraph::run() {
     for (const std::string& v : g_.children()) measure(v, 1);
 
     int deepest = 0;
-    for (const auto& entry : depths) deepest = std::max(deepest, entry.second);
+    for (const auto& entry : depths) deepest = MERMAID_MAX(deepest, entry.second);
     const int height = deepest - 1;
     const double node_sep = 2.0 * height + 1;
 

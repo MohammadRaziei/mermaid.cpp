@@ -1,0 +1,138 @@
+// svg_compare.h - structural comparison of two SVG documents (tests only).
+//
+// Two documents are equal when they have the same element tree: same element names in the same
+// order, the same attribute names, the same text, and attribute values that are equal after
+// splitting them into numbers and other text, where numbers may differ by `tolerance`.
+// Whitespace-only text, comments and the XML declaration are ignored.
+#pragma once
+
+#include <cmath>
+#include <cstdlib>
+#include <string>
+#include <vector>
+
+#include <pugixml.hpp>
+
+namespace svgtest {
+
+class SvgComparer {
+public:
+    explicit SvgComparer(double tolerance = 0.5) : tolerance_(tolerance) {}
+
+    // Returns one line per difference; empty means the documents match.
+    std::vector<std::string> compare(const std::string& expected, const std::string& actual) const {
+        std::vector<std::string> out;
+        pugi::xml_document a, b;
+        if (!a.load_string(expected.c_str())) return {"expected is not valid XML"};
+        if (!b.load_string(actual.c_str())) return {"actual is not valid XML"};
+        compare_node(a.document_element(), b.document_element(), "/" + std::string(a.document_element().name()), out);
+        return out;
+    }
+
+private:
+    struct Token {
+        bool is_number = false;
+        double number = 0;
+        std::string text;
+    };
+
+    static std::vector<Token> tokenize(const std::string& s) {
+        std::vector<Token> tokens;
+        size_t i = 0;
+        std::string text;
+        auto flush = [&] {
+            if (!text.empty()) {
+                Token t;
+                t.text = text;
+                tokens.push_back(t);
+                text.clear();
+            }
+        };
+        while (i < s.size()) {
+            const char c = s[i];
+            const bool digit = c >= '0' && c <= '9';
+            const bool sign_start = (c == '-' || c == '+' || c == '.') && i + 1 < s.size() &&
+                                    ((s[i + 1] >= '0' && s[i + 1] <= '9') || (c != '.' && s[i + 1] == '.'));
+            if (digit || sign_start) {
+                char* end = nullptr;
+                const double v = std::strtod(s.c_str() + i, &end);
+                const size_t len = static_cast<size_t>(end - (s.c_str() + i));
+                if (len > 0) {
+                    flush();
+                    Token t;
+                    t.is_number = true;
+                    t.number = v;
+                    tokens.push_back(t);
+                    i += len;
+                    continue;
+                }
+            }
+            text += c;
+            ++i;
+        }
+        flush();
+        return tokens;
+    }
+
+    bool values_match(const std::string& x, const std::string& y) const {
+        if (x == y) return true;
+        const std::vector<Token> a = tokenize(x), b = tokenize(y);
+        if (a.size() != b.size()) return false;
+        for (size_t i = 0; i < a.size(); ++i) {
+            if (a[i].is_number != b[i].is_number) return false;
+            if (a[i].is_number ? std::fabs(a[i].number - b[i].number) > tolerance_ : a[i].text != b[i].text)
+                return false;
+        }
+        return true;
+    }
+
+    static std::vector<pugi::xml_node> significant_children(const pugi::xml_node& n) {
+        std::vector<pugi::xml_node> out;
+        for (pugi::xml_node c : n.children()) {
+            if (c.type() == pugi::node_element) out.push_back(c);
+            else if (c.type() == pugi::node_pcdata || c.type() == pugi::node_cdata) {
+                std::string t = c.value();
+                if (t.find_first_not_of(" \t\r\n") != std::string::npos) out.push_back(c);
+            }
+        }
+        return out;
+    }
+
+    void compare_node(const pugi::xml_node& a, const pugi::xml_node& b, const std::string& path,
+                      std::vector<std::string>& out) const {
+        if (a.type() != b.type()) {
+            out.push_back(path + ": node kind differs");
+            return;
+        }
+        if (a.type() != pugi::node_element) {
+            if (!values_match(a.value(), b.value()))
+                out.push_back(path + ": text \"" + a.value() + "\" vs \"" + b.value() + "\"");
+            return;
+        }
+        if (std::string(a.name()) != b.name()) {
+            out.push_back(path + ": element <" + a.name() + "> vs <" + b.name() + ">");
+            return;
+        }
+        for (pugi::xml_attribute at : a.attributes()) {
+            pugi::xml_attribute other = b.attribute(at.name());
+            if (!other) out.push_back(path + ": attribute " + at.name() + " missing");
+            else if (!values_match(at.value(), other.value()))
+                out.push_back(path + "@" + at.name() + ": \"" + at.value() + "\" vs \"" + other.value() + "\"");
+        }
+        for (pugi::xml_attribute at : b.attributes())
+            if (!a.attribute(at.name())) out.push_back(path + ": unexpected attribute " + at.name());
+
+        const std::vector<pugi::xml_node> ca = significant_children(a), cb = significant_children(b);
+        if (ca.size() != cb.size())
+            out.push_back(path + ": " + std::to_string(ca.size()) + " children vs " + std::to_string(cb.size()));
+        const size_t n = ca.size() < cb.size() ? ca.size() : cb.size();
+        for (size_t i = 0; i < n; ++i) {
+            std::string label = ca[i].type() == pugi::node_element ? ca[i].name() : "#text";
+            compare_node(ca[i], cb[i], path + "/" + label + "[" + std::to_string(i) + "]", out);
+        }
+    }
+
+    double tolerance_;
+};
+
+}  // namespace svgtest

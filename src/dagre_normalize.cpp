@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <unordered_map>
+#include <mermaid/macros.h>
 
 namespace mermaid::dagre::detail {
 
@@ -105,8 +106,8 @@ void ParentDummyChains::run() {
     auto find_path = [&](const std::string& v, const std::string& w) {
         Path path;
         std::vector<std::string> w_path;
-        const int low = std::min(nums.at(v).low, nums.at(w).low);
-        const int high = std::max(nums.at(v).lim, nums.at(w).lim);
+        const int low = MERMAID_MIN(nums.at(v).low, nums.at(w).low);
+        const int high = MERMAID_MAX(nums.at(v).lim, nums.at(w).lim);
 
         std::string parent = v;
         do {

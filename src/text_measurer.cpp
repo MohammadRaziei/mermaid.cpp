@@ -1,6 +1,7 @@
 #include <mermaid/text_measurer.h>
 
 #include <algorithm>
+#include <mermaid/macros.h>
 
 namespace mermaid {
 
@@ -12,7 +13,7 @@ Size TextMeasurer::measure(std::string_view text) const {
         const size_t nl = text.find('\n', start);
         const std::string_view line =
             text.substr(start, nl == std::string_view::npos ? std::string_view::npos : nl - start);
-        width = std::max(width, line_width(line));
+        width = MERMAID_MAX(width, line_width(line));
         ++lines;
         if (nl == std::string_view::npos) break;
         start = nl + 1;

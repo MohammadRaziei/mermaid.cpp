@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <mermaid/macros.h>
 
 namespace mermaid {
 
@@ -42,8 +43,8 @@ struct Rect {
     }
 
     Rect united(const Rect& o) const {
-        const double l = std::min(x, o.x), t = std::min(y, o.y);
-        const double r = std::max(right(), o.right()), b = std::max(bottom(), o.bottom());
+        const double l = MERMAID_MIN(x, o.x), t = MERMAID_MIN(y, o.y);
+        const double r = MERMAID_MAX(right(), o.right()), b = MERMAID_MAX(bottom(), o.bottom());
         return {l, t, r - l, b - t};
     }
 

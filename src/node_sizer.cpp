@@ -1,12 +1,13 @@
 #include "node_sizer.h"
 
 #include <algorithm>
+#include <mermaid/macros.h>
 
 namespace mermaid::flowchart::detail {
 
 Size NodeSizer::size(const Node& node) const {
     const Size label = measurer_.measure(node.label);
-    const double text_w = std::max(label.width, options_.min_label_width);
+    const double text_w = MERMAID_MAX(label.width, options_.min_label_width);
     const double text_h = label.height;
 
     const double box_w = text_w + 2 * options_.pad_x;

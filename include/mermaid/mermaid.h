@@ -1,7 +1,7 @@
 // mermaid.h - public API of mermaid.cpp
 //
 // A dependency-free C++17 implementation of Mermaid diagrams.
-// Behavioural reference: Mermaid 11.16.0 (see vendor/mermaid and the merman
+// Behavioural reference: Mermaid 12.2.0 (see vendor/mermaid and the merman
 // project).
 //
 // Version: single source of truth is the three macros below.
@@ -25,7 +25,7 @@
                             MERMAID_VERSION_PATCH)
 
 /* Mermaid release this library tracks (merman pins the same one). */
-#define MERMAID_REFERENCE_VERSION "11.16.0"
+#define MERMAID_REFERENCE_VERSION "12.2.0"
 
 namespace mermaid {
 
