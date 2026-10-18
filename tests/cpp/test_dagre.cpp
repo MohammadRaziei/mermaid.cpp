@@ -30,19 +30,19 @@ Edge edge(const char* v, const char* w, const char* name, double minlen, double 
     return e;
 }
 
-bool near(double a, double b) { return std::fabs(a - b) <= kTol; }
+bool close_to(double a, double b) { return std::fabs(a - b) <= kTol; }
 
 // Returns "" when the layout matches, otherwise a description of the first difference.
 std::string check(const Input& in, const Expect& ex) {
     const Result r = layout(in);
-    if (!near(ex.width, r.width) || !near(ex.height, r.height))
+    if (!close_to(ex.width, r.width) || !close_to(ex.height, r.height))
         return "graph size " + std::to_string(r.width) + " x " + std::to_string(r.height) + " expected " +
                std::to_string(ex.width) + " x " + std::to_string(ex.height);
     if (ex.nodes.size() != r.nodes.size()) return "node count";
     for (const NodeExpect& n : ex.nodes) {
         const NodeResult* got = r.find_node(n.id);
         if (!got) return std::string("missing node ") + n.id;
-        if (!near(n.x, got->x) || !near(n.y, got->y) || !near(n.w, got->width) || !near(n.h, got->height))
+        if (!close_to(n.x, got->x) || !close_to(n.y, got->y) || !close_to(n.w, got->width) || !close_to(n.h, got->height))
             return std::string("node ") + n.id + " at (" + std::to_string(got->x) + ", " + std::to_string(got->y) +
                    ") expected (" + std::to_string(n.x) + ", " + std::to_string(n.y) + ")";
     }
@@ -53,11 +53,11 @@ std::string check(const Input& in, const Expect& ex) {
         if (!got) return "missing " + name;
         if (e.points.size() != got->points.size()) return name + ": point count";
         for (size_t i = 0; i < e.points.size(); ++i)
-            if (!near(e.points[i].x, got->points[i].x) || !near(e.points[i].y, got->points[i].y))
+            if (!close_to(e.points[i].x, got->points[i].x) || !close_to(e.points[i].y, got->points[i].y))
                 return name + ": point " + std::to_string(i);
         if (e.has_label != got->has_label) return name + ": label presence";
-        if (e.has_label && (!near(e.lx, got->label.x) || !near(e.ly, got->label.y) ||
-                            !near(e.lw, got->label_width) || !near(e.lh, got->label_height)))
+        if (e.has_label && (!close_to(e.lx, got->label.x) || !close_to(e.ly, got->label.y) ||
+                            !close_to(e.lw, got->label_width) || !close_to(e.lh, got->label_height)))
             return name + ": label";
     }
     return "";

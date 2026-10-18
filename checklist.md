@@ -89,3 +89,7 @@ Workflow per step: failing test first -> implement -> green -> commit -> zip.
 - The constant 120 is `flowchart.minNodeWidth` (default 120, new in 12.x; absent in 11.16.0): labels narrower than that are widened to it and the node padding is added on top (120 + 32 = 152, the width of `in`/`parse` in the goldens). `wrappingWidth` is 120 too. `NodeSizer` should read both from the config instead of hard-coding `min_label_width`.
 - Mermaid 12.2.0 and merman defaults: `nodeSpacing`/`rankSpacing` 50, dagre `marginx/marginy` 8, `diagramPadding` 8; the goldens show 40 and 12. Still unexplained (S6g): find what config the golden generation uses.
 - The fixture headers say Mermaid@11.12.2; that is only a comment, the goldens come from merman (12.2.0).
+
+## Portability
+
+- Tests include `utest.h`, which pulls in `<windows.h>` on MSVC: never name identifiers `near`, `far`, `small`, `big` (macros there). CI (windows-latest) caught `near` in `test_dagre.cpp` and `small` in `test_approx_text_measurer.cpp`.

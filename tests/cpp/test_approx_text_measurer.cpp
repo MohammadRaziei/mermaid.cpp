@@ -19,9 +19,9 @@ UTEST(approx_text_measurer, close_to_real_browser_measurement) {
 }
 
 UTEST(approx_text_measurer, scales_linearly_with_font_size) {
-    ApproxTextMeasurer small(TextStyle{14.0, 1.5});
-    ApproxTextMeasurer big(TextStyle{28.0, 1.5});
-    ASSERT_NEAR(2.0 * small.line_width("Hello"), big.line_width("Hello"), 1e-9);
+    ApproxTextMeasurer narrow(TextStyle{14.0, 1.5});
+    ApproxTextMeasurer wide(TextStyle{28.0, 1.5});
+    ASSERT_NEAR(2.0 * narrow.line_width("Hello"), wide.line_width("Hello"), 1e-9);
 }
 
 UTEST(approx_text_measurer, empty_line_has_zero_width) {
