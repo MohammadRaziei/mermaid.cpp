@@ -42,6 +42,7 @@ struct Node {
     Shape shape = Shape::Default;
     std::vector<std::string> classes;
     Style style;  // from `style` statements
+    int dom_index = 0;  // n of the DOM id `flowchart-<id>-<n>` (Mermaid's vertex counter at first sight)
 };
 
 struct Edge {

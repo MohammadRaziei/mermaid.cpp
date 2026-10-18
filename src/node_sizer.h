@@ -16,6 +16,7 @@ public:
         : measurer_(measurer), options_(options) {}
 
     Size size(const Node& node) const;
+    Size label_size(const Node& node) const;
 
 private:
     const TextMeasurer& measurer_;

@@ -56,11 +56,11 @@ std::string read_fixture(const std::string& name) {
 
 }  // namespace
 
-UTEST(render, produces_a_well_formed_svg_with_golden_size) {
+UTEST(render, produces_a_well_formed_svg_with_mermaid_viewbox) {
     std::string svg = render_svg(read_fixture("basic"));
     ASSERT_TRUE(svg.rfind("<svg", 0) == 0);
     ASSERT_TRUE(well_formed(svg));
-    ASSERT_TRUE(has(svg, "viewBox=\"0 0 368 426\""));
+    ASSERT_TRUE(has(svg, "viewBox=\"4 4 360 418\""));
     ASSERT_TRUE(has(svg, "xmlns=\"http://www.w3.org/2000/svg\""));
     ASSERT_TRUE(has(svg, ">Start<"));
     ASSERT_TRUE(has(svg, ">Choice<"));
@@ -126,10 +126,11 @@ UTEST(render, class_and_inline_styles_reach_the_shapes) {
     std::string svg = render_svg(
         "flowchart TD\nclassDef hot fill:#ffdddd,stroke:#cc0000,color:#330000\n"
         "A:::hot --> B\nstyle B fill:#abcdef\nlinkStyle 0 stroke:#0066cc");
-    ASSERT_TRUE(has(svg, "fill:#ffdddd"));
-    ASSERT_TRUE(has(svg, "stroke:#cc0000"));
-    ASSERT_TRUE(has(svg, "fill:#330000"));  // text colour
-    ASSERT_TRUE(has(svg, "fill:#abcdef"));
+    ASSERT_TRUE(has(svg, "fill:#ffdddd !important"));
+    ASSERT_TRUE(has(svg, "stroke:#cc0000 !important"));
+    ASSERT_TRUE(has(svg, "color:#330000 !important"));  // text colour (label group and span)
+    ASSERT_TRUE(has(svg, "color: rgb(51, 0, 0) !important"));  // as the browser reports it on the div
+    ASSERT_TRUE(has(svg, "fill:#abcdef !important"));
     ASSERT_TRUE(has(svg, "stroke:#0066cc"));
 }
 
@@ -158,9 +159,9 @@ UTEST(render, accessibility_title_and_description) {
     ASSERT_TRUE(has(svg, "My desc"));
 }
 
-UTEST(render, multiline_labels_use_one_tspan_per_line) {
+UTEST(render, multiline_labels_are_one_html_paragraph_with_line_breaks) {
     std::string svg = render_svg("flowchart TD\nA[\"one<br/>two<br/>three\"]");
-    ASSERT_EQ(3u, count(svg, "<tspan"));
+    ASSERT_TRUE(has(svg, "<p>one<br />two<br />three</p>"));
 }
 
 UTEST(render, subgraph_titles_are_drawn) {

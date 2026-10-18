@@ -158,8 +158,17 @@ public:
         Node n;
         n.id = id;
         n.label = id;
+        n.dom_index = vertex_counter_;
         model.nodes.push_back(std::move(n));
         return model.nodes.back();
+    }
+
+    // Mermaid's addVertex: a node mentioned in a statement (or by `style`). Every call advances the
+    // counter that names the DOM ids, whether or not the node is new.
+    Node& mention_node(const std::string& id) {
+        Node& node = upsert_node(id);
+        ++vertex_counter_;
+        return node;
     }
 
     bool has_node(const std::string& id) const { return index_.count(id) != 0; }
@@ -218,6 +227,7 @@ public:
 
 private:
     std::map<std::string, size_t> index_;
+    int vertex_counter_ = 0;
     std::map<std::string, int> pair_count_;
     std::vector<size_t> stack_;
     std::vector<int> open_lines_;
@@ -370,7 +380,7 @@ private:
             return id;
         }
 
-        Node& node = b_.upsert_node(id);
+        Node& node = b_.mention_node(id);
         if (peek() == '@' && peek(1) == '{') parse_data_block(node);
 
         static const std::vector<std::pair<const char*, std::vector<Close>>> shapes = {
@@ -680,7 +690,7 @@ Model Parser::parse(std::string_view source) const {
             size_t sp = 0;
             while (sp < rest.size() && !is_space(rest[sp])) ++sp;
             if (sp == 0 || sp >= rest.size()) throw ParseError("style needs a node id and declarations", line);
-            Node& n = b.upsert_node(rest.substr(0, sp));
+            Node& n = b.mention_node(rest.substr(0, sp));
             Style st = parse_style(rest.substr(sp));
             n.style.insert(n.style.end(), st.begin(), st.end());
         } else if (starts_with_word(t, "linkStyle")) {

@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "edge_renderer.h"
+#include "node_renderer.h"
 #include "shape_renderer.h"
 #include "style_css.h"
 #include "svg_writer.h"
@@ -27,26 +28,36 @@ public:
 
     std::string render() {
         open_svg();
-        write_defs();
+        write_style();
+        out_.open("g");  // holds the markers and the root group
+        edges_.write_markers(out_);
         out_.open("g", {{"class", "root"}});
         write_clusters();
         write_edge_paths();
         write_edge_labels();
         write_nodes();
         out_.close();  // root
+        out_.close();  // marker group
+        write_filters();
         out_.close();  // svg
         return out_.str();
     }
 
 private:
     void open_svg() {
-        const std::string w = SvgWriter::num(layout_.size.width);
+        // Mermaid: viewBox = content bounds + `diagramPadding` (8) on every side.
+        constexpr double kDiagramPadding = 8;
+        const Rect& b = layout_.bounds;
+        const std::string w = SvgWriter::num(b.width + 2 * kDiagramPadding);
         const std::string id = options_.svg_id;
         SvgWriter::Attrs attrs{{"id", id},
-                               {"xmlns", "http://www.w3.org/2000/svg"},
                                {"width", "100%"},
-                               {"viewBox", "0 0 " + w + " " + SvgWriter::num(layout_.size.height)},
+                               {"xmlns", "http://www.w3.org/2000/svg"},
+                               {"xmlns:xlink", "http://www.w3.org/1999/xlink"},
+                               {"class", "flowchart"},
                                {"style", "max-width: " + w + "px; background-color: " + options_.background + ";"},
+                               {"viewBox", SvgWriter::num(b.x - kDiagramPadding) + " " + SvgWriter::num(b.y - kDiagramPadding) + " " +
+                                               w + " " + SvgWriter::num(b.height + 2 * kDiagramPadding)},
                                {"role", "graphics-document document"},
                                {"aria-roledescription", "flowchart-v2"}};
         if (!model_.acc_title.empty()) attrs.emplace_back("aria-labelledby", "chart-title-" + id);
@@ -71,13 +82,30 @@ private:
         return css;
     }
 
-    void write_defs() {
+    void write_style() {
         out_.open("style");
         out_.raw(style_sheet());
         out_.close();
-        out_.open("defs");
-        edges_.write_markers(out_);
-        out_.close();
+    }
+
+    // Drop shadows of the neo look (one <defs> per filter, as Mermaid writes them).
+    void write_filters() {
+        struct Filter {
+            const char* suffix;
+            const char* size;
+            const char* offset;
+        };
+        for (const Filter& f : {Filter{"drop-shadow", "130%", "4"}, Filter{"drop-shadow-small", "150%", "2"}}) {
+            out_.open("defs");
+            out_.open("filter", {{"id", options_.svg_id + "-" + f.suffix}, {"height", f.size}, {"width", f.size}});
+            out_.leaf("feDropShadow", {{"dx", f.offset},
+                                       {"dy", f.offset},
+                                       {"stdDeviation", "0"},
+                                       {"flood-opacity", "0.06"},
+                                       {"flood-color", "#000000"}});
+            out_.close();
+            out_.close();
+        }
     }
 
     void write_clusters() {
@@ -125,17 +153,11 @@ private:
 
     void write_nodes() {
         out_.open("g", {{"class", "nodes"}});
+        const detail::NodeRenderer renderer(options_.svg_id);
         for (const NodeLayout& nl : layout_.nodes) {
             const Node* node = model_.find_node(nl.id);
             if (!node) continue;
-            std::string classes = "node default";
-            for (const std::string& cls : node->classes) classes += " " + cls;
-            const Style style = resolved_style(*node);
-
-            out_.open("g", {{"class", classes}, {"id", "flowchart-" + nl.id}});
-            detail::ShapeRenderer::for_shape(nl.shape).draw(out_, nl.rect(), detail::shape_declarations(style));
-            detail::write_text_block(out_, nl.center, node->label, line_height_, detail::text_declarations(style));
-            out_.close();
+            renderer.write(out_, *node, nl, resolved_style(*node));
         }
         out_.close();
     }

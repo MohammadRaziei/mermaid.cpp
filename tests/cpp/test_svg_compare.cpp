@@ -36,3 +36,23 @@ UTEST(svg_compare, element_names_child_counts_and_text_differ) {
 UTEST(svg_compare, whitespace_between_elements_and_comments_are_ignored) {
     ASSERT_TRUE(SvgComparer().compare("<svg>\n  <g/>\n  <!-- c -->\n</svg>", "<svg><g/></svg>").empty());
 }
+
+UTEST(svg_compare, pruned_elements_are_compared_by_attributes_only) {
+    SvgComparer c;
+    c.prune("style").prune("g.root");
+    ASSERT_TRUE(c.compare("<svg><style>a</style><g class=\"x root\"><rect/></g></svg>",
+                          "<svg><style>b</style><g class=\"x root\"><circle/><circle/></g></svg>")
+                    .empty());
+    ASSERT_FALSE(c.compare("<svg><g class=\"root\"/></svg>", "<svg><g class=\"other\"/></svg>").empty());
+    ASSERT_FALSE(c.compare("<svg><g class=\"root\"><a/></g><g><a/></g></svg>",
+                           "<svg><g class=\"root\"/><g/></svg>").empty());
+}
+
+UTEST(svg_compare, compare_within_looks_at_the_first_matching_element_only) {
+    SvgComparer c;
+    const std::string a = "<svg><g class=\"a\"><r x=\"1\"/></g><g class=\"nodes\"><n id=\"1\"/></g></svg>";
+    const std::string b = "<svg><g class=\"zz\"/><g class=\"nodes\"><n id=\"1\"/></g></svg>";
+    ASSERT_TRUE(c.compare_within("g.nodes", a, b).empty());
+    ASSERT_FALSE(c.compare_within("g.nodes", a, "<svg><g class=\"nodes\"><n id=\"2\"/></g></svg>").empty());
+    ASSERT_FALSE(c.compare_within("g.missing", a, b).empty());
+}

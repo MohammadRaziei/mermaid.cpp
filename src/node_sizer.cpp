@@ -5,6 +5,11 @@
 
 namespace mermaid::flowchart::detail {
 
+Size NodeSizer::label_size(const Node& node) const {
+    const Size text = measurer_.measure(node.label);
+    return {MERMAID_MAX(text.width, options_.min_label_width), text.height};
+}
+
 Size NodeSizer::size(const Node& node) const {
     const Size label = measurer_.measure(node.label);
     const double text_w = MERMAID_MAX(label.width, options_.min_label_width);

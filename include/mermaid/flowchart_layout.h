@@ -32,6 +32,7 @@ struct NodeLayout {
     Shape shape = Shape::Default;
     Point center;
     Size size;
+    Size label;  // the label box inside the outline (text, at least `min_label_width` wide)
     Rect rect() const { return Rect::from_center(center, size); }
 };
 

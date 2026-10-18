@@ -123,7 +123,10 @@ public:
 
     Layout build() {
         const detail::NodeSizer sizer(measurer_, options_);
-        for (const Node& n : model_.nodes) sizes_.push_back(sizer.size(n));
+        for (const Node& n : model_.nodes) {
+            sizes_.push_back(sizer.size(n));
+            labels_.push_back(sizer.label_size(n));
+        }
         for (const Edge& e : model_.edges) {
             EdgeInfo info;
             info.from = topology_.leaf_of(e.from);
@@ -183,7 +186,7 @@ private:
         Layout layout;
         for (size_t i = 0; i < model_.nodes.size(); ++i) {
             const dagre::NodeResult* r = result.find_node(model_.nodes[i].id);
-            layout.nodes.push_back({model_.nodes[i].id, model_.nodes[i].shape, {r->x, r->y}, sizes_[i]});
+            layout.nodes.push_back({model_.nodes[i].id, model_.nodes[i].shape, {r->x, r->y}, sizes_[i], labels_[i]});
         }
         for (size_t i = 0; i < model_.edges.size(); ++i) {
             EdgeLayout out{model_.edges[i].id, {}, false, {}};
@@ -267,6 +270,7 @@ private:
     const LayoutOptions& options_;
     Topology topology_;
     std::vector<Size> sizes_;
+    std::vector<Size> labels_;
     std::vector<EdgeInfo> edges_;
 };
 

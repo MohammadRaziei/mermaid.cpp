@@ -13,4 +13,14 @@ std::string shape_declarations(const flowchart::Style& style);
 // "fill:<color>;" plus font properties, for the label text.
 std::string text_declarations(const flowchart::Style& style);
 
+// Mermaid's html-label node styles: "fill:#fff !important;stroke:#000 !important" (no trailing
+// semicolon), `color` and font properties left out.
+std::string important_shape_style(const flowchart::Style& style);
+
+// "color:#001122 !important" for the label group and span; empty without a `color`.
+std::string important_label_style(const flowchart::Style& style);
+
+// The same colour as the browser reports it on the div: "color: rgb(0, 17, 34) !important; ".
+std::string computed_label_color(const flowchart::Style& style);
+
 }  // namespace mermaid::detail

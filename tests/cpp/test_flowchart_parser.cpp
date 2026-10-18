@@ -305,3 +305,21 @@ UTEST(flowchart_parser, matches_merman_semantic_goldens) {
     }
     ASSERT_TRUE(checked >= 10);
 }
+
+// Mermaid's flowDb gives every vertex the DOM id `flowchart-<id>-<n>` where n is the number of
+// addVertex calls made before the vertex was first seen (every mention counts, repeated or not).
+UTEST(flowchart_parser, dom_index_counts_every_vertex_mention_before_the_first_one) {
+    Model m = Parser().parse("flowchart TD\nA[Start] --> B{Choice}\nB -->|Yes| C[OK]\nB -->|No| D[Fail]");
+    ASSERT_EQ(0, m.find_node("A")->dom_index);
+    ASSERT_EQ(1, m.find_node("B")->dom_index);
+    ASSERT_EQ(3, m.find_node("C")->dom_index);
+    ASSERT_EQ(5, m.find_node("D")->dom_index);
+}
+
+UTEST(flowchart_parser, dom_index_counts_ampersand_groups_and_style_statements) {
+    Model m = Parser().parse("flowchart TD\nA & B --> C\nstyle C fill:#fff\nC --> D");
+    ASSERT_EQ(0, m.find_node("A")->dom_index);
+    ASSERT_EQ(1, m.find_node("B")->dom_index);
+    ASSERT_EQ(2, m.find_node("C")->dom_index);
+    ASSERT_EQ(5, m.find_node("D")->dom_index);  // A B C, style C, then C D
+}
