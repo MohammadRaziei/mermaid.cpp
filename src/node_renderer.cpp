@@ -15,7 +15,7 @@ std::string translate(double x, double y) {
 
 }  // namespace
 
-void NodeRenderer::write(SvgWriter& out, const flowchart::Node& node, const flowchart::NodeLayout& layout,
+void node_renderer::write(SvgWriter& out, const flowchart::Node& node, const flowchart::NodeLayout& layout,
                          const flowchart::Style& style) const {
     std::string classes = "node default";
     for (const std::string& cls : node.classes) classes += " " + cls;
@@ -29,7 +29,7 @@ void NodeRenderer::write(SvgWriter& out, const flowchart::Node& node, const flow
     out.close();
 }
 
-void NodeRenderer::write_outline(SvgWriter& out, Shape shape, const Size& size, const flowchart::Style& style) const {
+void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size, const flowchart::Style& style) const {
     const std::string inline_style = important_shape_style(style);
     const Rect box{-size.width / 2, -size.height / 2, size.width, size.height};
 
@@ -55,7 +55,7 @@ void NodeRenderer::write_outline(SvgWriter& out, Shape shape, const Size& size, 
     }
 }
 
-void NodeRenderer::write_label(SvgWriter& out, const std::string& text, const Size& label, const flowchart::Style& style) const {
+void node_renderer::write_label(SvgWriter& out, const std::string& text, const Size& label, const flowchart::Style& style) const {
     // addHtmlSpan (createText.ts): a table-cell div that is widened to the minimum label width.
     const std::string color = important_label_style(style);
     out.open("g", {{"class", "label"},

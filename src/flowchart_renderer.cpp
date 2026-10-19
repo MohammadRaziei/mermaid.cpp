@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "edge_renderer.h"
+#include "flowchart_css.h"
 #include "node_renderer.h"
 #include "shape_renderer.h"
 #include "style_css.h"
@@ -37,6 +38,7 @@ public:
         write_edge_labels();
         write_nodes();
         out_.close();  // root
+        edges_.write_colored_markers(out_);
         out_.close();  // marker group
         write_filters();
         out_.close();  // svg
@@ -68,6 +70,8 @@ private:
     }
 
     std::string style_sheet() const {
+        if (options_.theme == "default")
+            return detail::flowchart_stylesheet(detail::theme_variables::redux_color(), options_.svg_id, model_, options_.css);
         const std::string id = "#" + options_.svg_id;
         std::string css;
         css += id + "{font-family:" + theme_.font_family + ";font-size:" + SvgWriter::num(theme_.font_size) +
@@ -90,12 +94,12 @@ private:
 
     // Drop shadows of the neo look (one <defs> per filter, as Mermaid writes them).
     void write_filters() {
-        struct Filter {
+        struct filter_spec {
             const char* suffix;
             const char* size;
             const char* offset;
         };
-        for (const Filter& f : {Filter{"drop-shadow", "130%", "4"}, Filter{"drop-shadow-small", "150%", "2"}}) {
+        for (const filter_spec& f : {filter_spec{"drop-shadow", "130%", "4"}, filter_spec{"drop-shadow-small", "150%", "2"}}) {
             out_.open("defs");
             out_.open("filter", {{"id", options_.svg_id + "-" + f.suffix}, {"height", f.size}, {"width", f.size}});
             out_.leaf("feDropShadow", {{"dx", f.offset},
@@ -125,10 +129,18 @@ private:
     }
 
     void write_edge_paths() {
-        out_.open("g", {{"class", "edgePaths"}});
-        for (size_t i = 0; i < model_.edges.size() && i < layout_.edges.size(); ++i)
-            edges_.write_path(out_, model_.edges[i], layout_.edges[i]);
+        out_.open("g", {{"class", "edges edgePaths"}});
+        for (size_t i = 0; i < model_.edges.size() && i < layout_.edges.size(); ++i) {
+            const Edge& edge = model_.edges[i];
+            edges_.write_path(out_, edge, layout_.edges[i], find_layout(edge.from), find_layout(edge.to));
+        }
         out_.close();
+    }
+
+    const NodeLayout* find_layout(const std::string& id) const {
+        for (const NodeLayout& nl : layout_.nodes)
+            if (nl.id == id) return &nl;
+        return nullptr;  // a subgraph
     }
 
     void write_edge_labels() {
@@ -153,7 +165,7 @@ private:
 
     void write_nodes() {
         out_.open("g", {{"class", "nodes"}});
-        const detail::NodeRenderer renderer(options_.svg_id);
+        const detail::node_renderer renderer(options_.svg_id);
         for (const NodeLayout& nl : layout_.nodes) {
             const Node* node = model_.find_node(nl.id);
             if (!node) continue;

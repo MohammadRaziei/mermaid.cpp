@@ -671,6 +671,7 @@ Model Parser::parse(std::string_view source) const {
             if (sp == 0 || sp >= rest.size()) throw ParseError("classDef needs a name and a style", line);
             Style style = parse_style(rest.substr(sp));
             for (const std::string& name : split_commas(rest.substr(0, sp))) {
+                if (!b.model.class_defs.count(name)) b.model.class_def_order.push_back(name);
                 ClassDef& cd = b.model.class_defs[name];
                 cd.name = name;
                 cd.style = style;
@@ -725,11 +726,24 @@ Model Parser::parse(std::string_view source) const {
 
     if (b.in_subgraph()) throw ParseError("subgraph is never closed with 'end'", b.unclosed_line());
 
+    // flowDb.updateLink: `linkStyle default` is the base style of every edge; an indexed
+    // linkStyle replaces the edge's own style (the last one wins) and adds `fill:none` unless the
+    // style sets a fill.
+    Style default_style;
+    std::vector<Style> own(b.model.edges.size());
     for (const LinkStyle& ls : link_styles) {
-        auto apply = [&](Edge& e) { e.style.insert(e.style.end(), ls.style.begin(), ls.style.end()); };
-        if (ls.all) for (Edge& e : b.model.edges) apply(e);
-        for (int idx : ls.indices)
-            if (static_cast<size_t>(idx) < b.model.edges.size()) apply(b.model.edges[idx]);
+        if (ls.all) default_style = ls.style;
+        for (int idx : ls.indices) {
+            if (idx < 0 || static_cast<size_t>(idx) >= own.size()) continue;
+            own[idx] = ls.style;
+            const bool has_fill = std::any_of(ls.style.begin(), ls.style.end(), [](const auto& d) { return d.first.compare(0, 4, "fill") == 0; });
+            if (!ls.style.empty() && !has_fill) own[idx].emplace_back("fill", "none");
+        }
+    }
+    for (size_t i = 0; i < own.size(); ++i) {
+        Edge& e = b.model.edges[i];
+        e.style = default_style;
+        e.style.insert(e.style.end(), own[i].begin(), own[i].end());
     }
     return std::move(b.model);
 }

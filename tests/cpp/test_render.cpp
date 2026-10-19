@@ -81,7 +81,9 @@ UTEST(render, all_fixtures_render_well_formed) {
     for (const char* name : names) {
         std::string svg = render_svg(read_fixture(name));
         ASSERT_TRUE(well_formed(svg));
-        ASSERT_TRUE(!has(svg, "nan") && !has(svg, "inf"));
+        // (the stylesheet legitimately contains words like "infinite")
+        ASSERT_TRUE(!has(svg, "=\"nan") && !has(svg, "=\"-nan") && !has(svg, "(nan") && !has(svg, ",nan") &&
+                    !has(svg, " nan") && !has(svg, "=\"inf") && !has(svg, "=\"-inf") && !has(svg, ",inf") && !has(svg, " inf "));
     }
 }
 
@@ -98,7 +100,7 @@ UTEST(render, themes_change_colours_and_unknown_theme_throws) {
     std::string d = render_svg("flowchart TD\nA-->B", dark);
     std::string def = render_svg("flowchart TD\nA-->B");
     ASSERT_TRUE(d != def);
-    ASSERT_TRUE(has(def, "#ECECFF"));
+    ASSERT_TRUE(has(def, "#28253D"));  // the default theme is redux-color (neo)
     for (const char* t : {"forest", "neutral"}) {
         RenderOptions o;
         o.theme = t;
@@ -119,7 +121,7 @@ UTEST(render, background_id_and_css_options) {
     std::string svg = render_svg("flowchart TD\nA-->B", o);
     ASSERT_TRUE(has(svg, "id=\"diagram-1\""));
     ASSERT_TRUE(has(svg, "background-color: transparent"));
-    ASSERT_TRUE(has(svg, ".node{opacity:.5}"));
+    ASSERT_TRUE(has(svg, "#diagram-1 .node{opacity:.5;}"));  // user css is compiled under the diagram id
 }
 
 UTEST(render, class_and_inline_styles_reach_the_shapes) {
@@ -139,7 +141,7 @@ UTEST(render, arrow_heads_and_invisible_edges) {
     ASSERT_TRUE(has(svg, "marker-start"));
     ASSERT_TRUE(has(svg, "marker-end"));
     ASSERT_TRUE(has(svg, "crossEnd"));
-    ASSERT_EQ(2u, count(svg, "class=\"flowchart-link"));  // the ~~~ edge is not drawn
+    ASSERT_EQ(2u, count(svg, "flowchart-link\""));  // the ~~~ edge is not drawn
 }
 
 UTEST(render, every_shape_renders) {
@@ -182,4 +184,12 @@ UTEST(render, unsupported_and_invalid_input) {
 UTEST(render, init_directive_and_frontmatter_do_not_break_detection) {
     std::string svg = render_svg("---\ntitle: x\n---\n%%{init: {\"theme\":\"dark\"}}%%\ngraph TD\nA-->B");
     ASSERT_TRUE(well_formed(svg));
+}
+
+UTEST(render, edge_style_text_follows_mermaid) {
+    const std::string svg = render_svg("flowchart TD\nA --> B\nA -.-> C\nlinkStyle 0 stroke:#333,stroke-width:2px");
+    ASSERT_TRUE(has(svg, ";stroke:#333;stroke-width:2px;fill:none;;;stroke:#333;stroke-width:2px;fill:none\""));
+    ASSERT_TRUE(has(svg, "stroke-dashoffset: 0;;\""));          // no linkStyle: pathStyle is ";"
+    ASSERT_TRUE(has(svg, "edge-pattern-dotted edge-thickness-normal edge-pattern-solid flowchart-link"));
+    ASSERT_TRUE(has(svg, "pointEnd-margin__333"));
 }

@@ -199,7 +199,17 @@ UTEST(flowchart_parser, classes_styles_and_link_styles) {
     ASSERT_STREQ("cold", m.find_node("B")->classes[0].c_str());
     ASSERT_STREQ("cold", m.find_node("C")->classes[0].c_str());
     ASSERT_STREQ("stroke-width", m.find_node("A")->style[0].first.c_str());
-    ASSERT_EQ(2u, m.edges[0].style.size());
+    ASSERT_EQ(3u, m.edges[0].style.size());  // flowDb adds fill:none to an indexed linkStyle
+    ASSERT_STREQ("fill", m.edges[0].style[2].first.c_str());
+    ASSERT_STREQ("none", m.edges[0].style[2].second.c_str());
+}
+
+UTEST(flowchart_parser, indexed_link_style_replaces_and_default_comes_first) {
+    Model m = parse("flowchart TD\nA --> B\nB --> C\nlinkStyle 0 stroke:red\nlinkStyle default stroke:blue\nlinkStyle 0 stroke:green,fill:#fff");
+    ASSERT_EQ(3u, m.edges[0].style.size());  // default + the last linkStyle 0 (it sets a fill, so no fill:none)
+    ASSERT_STREQ("blue", m.edges[0].style[0].second.c_str());
+    ASSERT_STREQ("green", m.edges[0].style[1].second.c_str());
+    ASSERT_EQ(1u, m.edges[1].style.size());
 }
 
 UTEST(flowchart_parser, link_style_default_applies_to_every_edge) {
@@ -322,4 +332,13 @@ UTEST(flowchart_parser, dom_index_counts_ampersand_groups_and_style_statements) 
     ASSERT_EQ(1, m.find_node("B")->dom_index);
     ASSERT_EQ(2, m.find_node("C")->dom_index);
     ASSERT_EQ(5, m.find_node("D")->dom_index);  // A B C, style C, then C D
+}
+
+// Mermaid keeps classes in the order they were first defined; the stylesheet follows that order.
+UTEST(flowchart_parser, class_defs_keep_their_first_definition_order) {
+    Model m = Parser().parse("flowchart TD\nclassDef hot fill:#f00\nclassDef cold fill:#00f\nclassDef hot,mild fill:#0f0\nA-->B");
+    ASSERT_EQ(3u, m.class_def_order.size());
+    ASSERT_STREQ("hot", m.class_def_order[0].c_str());
+    ASSERT_STREQ("cold", m.class_def_order[1].c_str());
+    ASSERT_STREQ("mild", m.class_def_order[2].c_str());
 }

@@ -12,9 +12,9 @@
 
 namespace mermaid::detail {
 
-class NodeRenderer {
+class node_renderer {
 public:
-    explicit NodeRenderer(std::string svg_id) : svg_id_(std::move(svg_id)) {}
+    explicit node_renderer(std::string svg_id) : svg_id_(std::move(svg_id)) {}
 
     // `style` is the node's resolved style (classDef, then `style` statements).
     void write(SvgWriter& out, const flowchart::Node& node, const flowchart::NodeLayout& layout,

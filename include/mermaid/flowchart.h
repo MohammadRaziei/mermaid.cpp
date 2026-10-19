@@ -75,6 +75,7 @@ struct Model {
     std::vector<Edge> edges;
     std::vector<Subgraph> subgraphs;
     std::map<std::string, ClassDef> class_defs;
+    std::vector<std::string> class_def_order;  // names in first-definition order
     std::string acc_title;
     std::string acc_descr;
 

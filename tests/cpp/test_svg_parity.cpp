@@ -35,7 +35,7 @@ UTEST(svg_parity, fixtures_marked_pass_match_mermaid_js_and_todo_ones_report_pro
         mermaid::RenderOptions options;
         options.svg_id = name == "basic" ? "basic" : name;
         const std::string actual = mermaid::render_svg(read_all(kData + "/merman/" + name + ".mmd"), options);
-        const auto diffs = svgtest::SvgComparer(0.5).compare(read_all(kData + "/mermaid_js/" + name + ".svg"), actual);
+        const auto diffs = svgtest::svg_comparer(0.5).compare(read_all(kData + "/mermaid_js/" + name + ".svg"), actual);
 
         if (status == "pass") {
             for (size_t i = 0; i < diffs.size() && i < 10; ++i) std::cout << "  " << name << ": " << diffs[i] << "\n";
@@ -56,7 +56,7 @@ UTEST(svg_parity, svg_frame_matches_mermaid_js_outside_style_and_root_content) {
         mermaid::RenderOptions options;
         options.svg_id = name;
         const std::string actual = mermaid::render_svg(read_all(kData + "/merman/" + name + ".mmd"), options);
-        svgtest::SvgComparer cmp(0.5);
+        svgtest::svg_comparer cmp(0.5);
         cmp.prune("style").prune("g.root");
         const auto diffs = cmp.compare(read_all(kData + "/mermaid_js/" + name + ".svg"), actual);
         for (size_t i = 0; i < diffs.size() && i < 10; ++i) std::cout << "  " << name << ": " << diffs[i] << "\n";
@@ -69,7 +69,77 @@ UTEST(svg_parity, nodes_of_basic_match_mermaid_js) {
     mermaid::RenderOptions options;
     options.svg_id = "basic";
     const std::string actual = mermaid::render_svg(read_all(kData + "/merman/basic.mmd"), options);
-    const auto diffs = svgtest::SvgComparer(0.5).compare_within("g.nodes", read_all(kData + "/mermaid_js/basic.svg"), actual);
+    const auto diffs = svgtest::svg_comparer(0.5).compare_within("g.nodes", read_all(kData + "/mermaid_js/basic.svg"), actual);
     for (size_t i = 0; i < diffs.size() && i < 10; ++i) std::cout << "  " << diffs[i] << "\n";
     EXPECT_EQ(0u, diffs.size());
+}
+
+// The stylesheet text (theme variables, flowchart styles, neo look rules, classDef rules).
+UTEST(svg_parity, stylesheet_of_basic_matches_mermaid_js) {
+    mermaid::RenderOptions options;
+    options.svg_id = "basic";
+    const std::string actual = mermaid::render_svg(read_all(kData + "/merman/basic.mmd"), options);
+    const auto diffs = svgtest::svg_comparer(0.5).compare_within("style", read_all(kData + "/mermaid_js/basic.svg"), actual);
+    for (size_t i = 0; i < diffs.size() && i < 5; ++i) std::cout << "  " << diffs[i] << "\n";
+    EXPECT_EQ(0u, diffs.size());
+}
+
+UTEST(svg_parity, stylesheet_with_class_defs_matches_mermaid_js) {
+    const std::string name = "stress_flowchart_classdef_and_inline_classes_003";
+    mermaid::RenderOptions options;
+    options.svg_id = name;
+    const std::string actual = mermaid::render_svg(read_all(kData + "/merman/" + name + ".mmd"), options);
+    const auto diffs = svgtest::svg_comparer(0.5).compare_within("style", read_all(kData + "/mermaid_js/" + name + ".svg"), actual);
+    for (size_t i = 0; i < diffs.size() && i < 5; ++i) std::cout << "  " << diffs[i] << "\n";
+    EXPECT_EQ(0u, diffs.size());
+}
+
+// The edge group of `basic`: ids, classes, data-* attributes, markers. Geometry (`d`,
+// `data-points`) and the dash lengths in `style` depend on the layout engine (the reference was
+// laid out by ELK, we use dagre), so only their presence is compared here; the geometry itself is
+// covered by test_edge_geometry.
+UTEST(svg_parity, edge_paths_of_basic_match_mermaid_js_markup) {
+    mermaid::RenderOptions options;
+    options.svg_id = "basic";
+    const std::string actual = mermaid::render_svg(read_all(kData + "/merman/basic.mmd"), options);
+    svgtest::svg_comparer cmp(0.5);
+    cmp.ignore_attribute("d").ignore_attribute("data-points").ignore_attribute("style");
+    const auto diffs = cmp.compare_within("g.edgePaths", read_all(kData + "/mermaid_js/basic.svg"), actual);
+    for (size_t i = 0; i < diffs.size() && i < 10; ++i) std::cout << "  " << diffs[i] << "\n";
+    EXPECT_EQ(0u, diffs.size());
+}
+
+// The edge labels of `basic`. The label width (and so `width` and the centring `transform`)
+// comes from the browser's font metrics, which ApproxTextMeasurer does not reproduce.
+UTEST(svg_parity, edge_labels_of_basic_match_mermaid_js_markup) {
+    mermaid::RenderOptions options;
+    options.svg_id = "basic";
+    const std::string actual = mermaid::render_svg(read_all(kData + "/merman/basic.mmd"), options);
+    svgtest::svg_comparer cmp(0.5);
+    cmp.ignore_attribute("width").ignore_attribute("transform");
+    const auto diffs = cmp.compare_within("g.edgeLabels", read_all(kData + "/mermaid_js/basic.svg"), actual);
+    for (size_t i = 0; i < diffs.size() && i < 10; ++i) std::cout << "  " << diffs[i] << "\n";
+    EXPECT_EQ(0u, diffs.size());
+}
+
+// linkStyle colours: markup, style text and coloured marker copies (after <g class="root">).
+UTEST(svg_parity, edge_paths_and_markers_with_link_style_match_mermaid_js_markup) {
+    const std::string name = "stress_flowchart_amp_groups_edge_ids_034";
+    mermaid::RenderOptions options;
+    options.svg_id = name;
+    const std::string actual = mermaid::render_svg(read_all(kData + "/merman/" + name + ".mmd"), options);
+    const std::string expected = read_all(kData + "/mermaid_js/" + name + ".svg");
+    svgtest::svg_comparer paths(0.5);
+    // the dash lengths in `style` differ with the route; the style text is checked in test_render
+    paths.ignore_attribute("d").ignore_attribute("data-points").ignore_attribute("style");
+    const auto diffs = paths.compare_within("g.edgePaths", expected, actual);
+    for (size_t i = 0; i < diffs.size() && i < 10; ++i) std::cout << "  " << diffs[i] << "\n";
+    EXPECT_EQ(0u, diffs.size());
+
+    // 12 markers + root + 3 coloured copies = 16 children of the marker group
+    svgtest::svg_comparer markers(0.5);
+    markers.prune("g.root").prune("style");
+    const auto mdiffs = markers.compare(expected, actual);
+    for (size_t i = 0; i < mdiffs.size() && i < 10; ++i) std::cout << "  " << mdiffs[i] << "\n";
+    EXPECT_EQ(0u, mdiffs.size());
 }

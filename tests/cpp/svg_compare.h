@@ -15,15 +15,22 @@
 
 namespace svgtest {
 
-class SvgComparer {
+class svg_comparer {
 public:
-    explicit SvgComparer(double tolerance = 0.5) : tolerance_(tolerance) {}
+    explicit svg_comparer(double tolerance = 0.5) : tolerance_(tolerance) {}
 
     // Compares only the attributes of matching elements named like `selector` (their children are
     // skipped). A selector is an element name (`style`) or `name.class` (`g.root`). Used to check
     // one part of the document while the rest is still being built.
-    SvgComparer& prune(std::string selector) {
+    svg_comparer& prune(std::string selector) {
         pruned_.push_back(std::move(selector));
+        return *this;
+    }
+
+    // Skips the value (not the presence) of every attribute called `name`. Used where the value
+    // depends on the layout engine (path geometry) while the rest of the markup must match.
+    svg_comparer& ignore_attribute(std::string name) {
+        ignored_attributes_.push_back(std::move(name));
         return *this;
     }
 
@@ -109,6 +116,14 @@ private:
         return true;
     }
 
+    // Both values around the first position where they differ (they can be long).
+    static std::string first_difference(const std::string& x, const std::string& y) {
+        size_t i = 0;
+        while (i < x.size() && i < y.size() && x[i] == y[i]) ++i;
+        const size_t from = i > 40 ? i - 40 : 0;
+        return "\"..." + x.substr(from, 100) + "\" vs \"..." + y.substr(from, 100) + "\"";
+    }
+
     static std::vector<pugi::xml_node> significant_children(const pugi::xml_node& n) {
         std::vector<pugi::xml_node> out;
         for (pugi::xml_node c : n.children()) {
@@ -138,6 +153,12 @@ private:
         return {};
     }
 
+    bool is_ignored(const std::string& attribute) const {
+        for (const std::string& n : ignored_attributes_)
+            if (n == attribute) return true;
+        return false;
+    }
+
     bool is_pruned(const pugi::xml_node& n) const {
         for (const std::string& sel : pruned_)
             if (matches(n, sel)) return true;
@@ -151,8 +172,7 @@ private:
             return;
         }
         if (a.type() != pugi::node_element) {
-            if (!values_match(a.value(), b.value()))
-                out.push_back(path + ": text \"" + a.value() + "\" vs \"" + b.value() + "\"");
+            if (!values_match(a.value(), b.value())) out.push_back(path + ": text " + first_difference(a.value(), b.value()));
             return;
         }
         if (std::string(a.name()) != b.name()) {
@@ -162,8 +182,8 @@ private:
         for (pugi::xml_attribute at : a.attributes()) {
             pugi::xml_attribute other = b.attribute(at.name());
             if (!other) out.push_back(path + ": attribute " + at.name() + " missing");
-            else if (!values_match(at.value(), other.value()))
-                out.push_back(path + "@" + at.name() + ": \"" + at.value() + "\" vs \"" + other.value() + "\"");
+            else if (!is_ignored(at.name()) && !values_match(at.value(), other.value()))
+                out.push_back(path + "@" + at.name() + ": " + first_difference(at.value(), other.value()));
         }
         for (pugi::xml_attribute at : b.attributes())
             if (!a.attribute(at.name())) out.push_back(path + ": unexpected attribute " + at.name());
@@ -181,6 +201,7 @@ private:
 
     double tolerance_;
     std::vector<std::string> pruned_;
+    std::vector<std::string> ignored_attributes_;
 };
 
 }  // namespace svgtest
