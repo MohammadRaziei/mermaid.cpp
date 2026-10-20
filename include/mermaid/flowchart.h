@@ -55,6 +55,7 @@ struct Edge {
     Head end = Head::Arrow;
     int length = 1;  // extra dashes make an edge span more ranks
     Style style;     // from `linkStyle`
+    std::string curve;  // from `e1@{curve: ...}`; empty = the default (basis)
 };
 
 struct Subgraph {

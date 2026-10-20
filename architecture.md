@@ -66,7 +66,7 @@ each other's internals. That is what makes every stage unit-testable alone.
 | flowchart | `ShapeScanner` | after an id: `[..]`, `(..)`, `{..}` ... -> shape + label |
 | flowchart | `EdgeScanner` | `-->`, `-.->`, `==>`, `--x`, `-- text -->` ... -> edge spec |
 | flowchart | `Parser` | statements, chains, `&` groups, subgraph stack, directives |
-| text | `TextMeasurer` (interface), `ApproxTextMeasurer` | text width/height |
+| text | `TextMeasurer` (interface), `browser_text_measurer` | text width/height |
 | layout | `NodeSizer` | node box from label + shape (+ padding) |
 | layout | `dagre::layout` (public, `include/mermaid/dagre.h`) | the dagre pipeline, one class per stage (below); verified against `dagre-d3-es` |
 | dagre | `Acyclic` | reverse back edges (depth-first) so the graph is acyclic |

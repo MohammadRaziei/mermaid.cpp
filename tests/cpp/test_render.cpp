@@ -193,3 +193,20 @@ UTEST(render, edge_style_text_follows_mermaid) {
     ASSERT_TRUE(has(svg, "edge-pattern-dotted edge-thickness-normal edge-pattern-solid flowchart-link"));
     ASSERT_TRUE(has(svg, "pointEnd-margin__333"));
 }
+
+// shapes/cylinder.ts: the path is drawn from 0,0 and moved into place; the label sits lower by padding / 1.5.
+UTEST(render, cylinder_follows_mermaid_markup) {
+    const std::string svg = render_svg("flowchart LR\nA[(Store)]");
+    ASSERT_TRUE(has(svg, "class=\"basic label-container outer-path\""));
+    ASSERT_TRUE(has(svg, " 0,0,0 "));                   // arcs are written "a<rx>,<ry> 0,0,0 <dx>,0"
+    ASSERT_TRUE(has(svg, "d=\"M0,"));                   // starts at x = 0
+    ASSERT_TRUE(has(svg, "transform=\"translate(-60, -0.5)\""));  // label: -(21 / 2) + 15 / 1.5
+}
+
+// Mermaid keeps the styles of a node in an object: a repeated property keeps its first position but
+// takes the last value (userNodeOverrides / styles2String).
+UTEST(render, repeated_style_properties_collapse_to_the_last_value) {
+    const std::string svg = render_svg(
+        "flowchart TD\nclassDef a fill:#111,stroke:#222\nclassDef b fill:#333,stroke-width:2px\nA:::a --> B\nclass A b");
+    ASSERT_TRUE(has(svg, "style=\"fill:#333 !important;stroke:#222 !important;stroke-width:2px !important\""));
+}

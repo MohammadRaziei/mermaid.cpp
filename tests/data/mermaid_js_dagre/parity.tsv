@@ -1,7 +1,7 @@
-basic	todo
+basic	pass
 class_style	pass
-stress_flowchart_amp_groups_edge_ids_034	todo
-stress_flowchart_classdef_and_inline_classes_003	todo
+stress_flowchart_amp_groups_edge_ids_034	pass
+stress_flowchart_classdef_and_inline_classes_003	pass
 stress_flowchart_comments_and_directives_010	todo
 stress_flowchart_deeply_nested_clusters_019	todo
 stress_flowchart_dense_parallel_edges_002	todo

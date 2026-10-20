@@ -331,7 +331,9 @@ private:
         return text;
     }
 
-    void parse_data_block(Node& node) {
+    // `@{ key: value, ... }`; the block configures `node`, or - when `node` is null - is only
+    // collected into `raw`.
+    void parse_data_block(Node* node, std::vector<std::pair<std::string, std::string>>* raw = nullptr) {
         // at '@{'
         i_ += 2;
         std::string body;
@@ -349,11 +351,13 @@ private:
             if (colon == std::string::npos) return;
             std::string key = lower(trim(item.substr(0, colon)));
             std::string value = trim(item.substr(colon + 1));
-            if (key == "label") node.label = clean_label(value);
+            if (raw) raw->emplace_back(key, value);
+            if (!node) return;
+            if (key == "label") node->label = clean_label(value);
             else if (key == "shape") {
                 if (value.size() >= 2 && value.front() == '"' && value.back() == '"')
                     value = value.substr(1, value.size() - 2);
-                node.shape = shape_from_data_name(value);
+                node->shape = shape_from_data_name(value);
             }
         };
         for (char c : body) {
@@ -375,13 +379,17 @@ private:
 
         // `e1@{curve: basis}` configures an edge, it is not a node.
         if (peek() == '@' && peek(1) == '{' && !b_.has_node(id) && b_.has_edge_id(id)) {
-            Node scratch;
-            parse_data_block(scratch);
+            std::vector<std::pair<std::string, std::string>> raw;
+            parse_data_block(nullptr, &raw);
+            for (auto& edge : b_.model.edges)
+                if (edge.id == id)
+                    for (const auto& [key, value] : raw)
+                        if (key == "curve") edge.curve = value;
             return id;
         }
 
         Node& node = b_.mention_node(id);
-        if (peek() == '@' && peek(1) == '{') parse_data_block(node);
+        if (peek() == '@' && peek(1) == '{') parse_data_block(&node);
 
         static const std::vector<std::pair<const char*, std::vector<Close>>> shapes = {
             {"(((", {{")))", Shape::DoubleCircle}}},
@@ -417,8 +425,7 @@ private:
             std::string cls = s_.substr(start, i_ - start);
             if (cls.empty()) fail("expected a class name after ':::'");
             Node& again = b_.upsert_node(id);
-            if (std::find(again.classes.begin(), again.classes.end(), cls) == again.classes.end())
-                again.classes.push_back(cls);
+            again.classes.push_back(cls);  // flowDb does not deduplicate
         }
         b_.note_member(id);
         return id;
@@ -683,8 +690,7 @@ Model Parser::parse(std::string_view source) const {
             std::string cls = trim(rest.substr(sp));
             for (const std::string& id : split_commas(rest.substr(0, sp))) {
                 Node& n = b.upsert_node(id);
-                if (std::find(n.classes.begin(), n.classes.end(), cls) == n.classes.end())
-                    n.classes.push_back(cls);
+                n.classes.push_back(cls);  // flowDb does not deduplicate
             }
         } else if (starts_with_word(t, "style")) {
             std::string rest = rest_after(t, "style");

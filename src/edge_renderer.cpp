@@ -183,12 +183,12 @@ void EdgeRenderer::write_path(SvgWriter& out, const flowchart::Edge& edge, const
     if (!is_drawn(edge, layout)) return;
 
     // Route as Mermaid draws it: clipped to the outlines, pulled back from the arrow tips, rounded.
-    // (the default `basis` curve of dagre layouts, after fixCorners)
+    // (the edge's curve, `basis` unless set, after fixCorners)
     std::vector<Point> route = layout.points;
     if (tail && head) route = edge_geometry::clip_to_nodes(route, *tail, *head);
     const std::vector<Point> drawn =
         edge_geometry::shorten_ends(edge_geometry::fix_corners(route), path_offset(edge.start), path_offset(edge.end));
-    const double length = edge_geometry::basis_length(drawn);
+    const double length = edge_geometry::curve_length(edge.curve, drawn);
 
     // thickness picks the first class pair; the pattern is `solid` unless the stroke is dotted
     // (flowDb passes the stroke as the pattern, which only `dotted` and `dashed` recognise).
@@ -201,7 +201,7 @@ void EdgeRenderer::write_path(SvgWriter& out, const flowchart::Edge& edge, const
     const std::string style = "stroke-dasharray: " + dash_array(length, dash_offset(edge.start), dash_offset(edge.end), dotted) +
                               "; stroke-dashoffset: 0;" + style_text;
 
-    SvgWriter::Attrs attrs{{"d", edge_geometry::basis_path(drawn)},
+    SvgWriter::Attrs attrs{{"d", edge_geometry::curve_path(edge.curve, drawn)},
                            {"id", svg_id_ + "-" + edge.id},
                            {"class", classes},
                            {"style", style},

@@ -2,7 +2,7 @@
 #include <fstream>
 #include <sstream>
 
-#include <mermaid/approx_text_measurer.h>
+#include <mermaid/browser_text_measurer.h>
 #include <mermaid/flowchart_layout.h>
 #include <mermaid/flowchart_parser.h>
 #include "utest.h"
@@ -13,7 +13,7 @@ using namespace mermaid::flowchart;
 namespace {
 
 Layout lay(const std::string& src, LayoutOptions opt = {}) {
-    static ApproxTextMeasurer measurer;
+    static browser_text_measurer measurer;
     return LayoutEngine(measurer, opt).layout(Parser().parse(src));
 }
 
@@ -248,4 +248,14 @@ UTEST(flowchart_layout, cylinder_size_matches_merman_golden) {
     ASSERT_TRUE(n != nullptr);
     ASSERT_NEAR(144.0, n->size.width, 1e-3);
     ASSERT_NEAR(85.149, n->size.height, 1e-3);
+}
+
+// shapes/stadium.ts: h = text + 24; w = max(label + h / 4 + 40, ...). A short label is widened to 120 first,
+// so the node is 120 + 11.25 + 40 wide (171.25; Mermaid's drawn bbox is 0.02 narrower).
+UTEST(flowchart_layout, stadium_is_wider_than_a_box_by_the_cap_allowance) {
+    const Layout l = lay("flowchart LR\nA([end])");
+    const NodeLayout* a = l.find_node("A");
+    ASSERT_TRUE(a != nullptr);
+    ASSERT_NEAR(171.25, a->size.width, 0.05);
+    ASSERT_NEAR(45.0, a->size.height, 1e-9);
 }

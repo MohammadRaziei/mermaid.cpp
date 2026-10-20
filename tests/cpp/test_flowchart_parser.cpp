@@ -342,3 +342,16 @@ UTEST(flowchart_parser, class_defs_keep_their_first_definition_order) {
     ASSERT_STREQ("cold", m.class_def_order[1].c_str());
     ASSERT_STREQ("mild", m.class_def_order[2].c_str());
 }
+
+UTEST(flowchart_parser, edge_data_block_sets_the_curve_of_that_edge) {
+    Model m = parse("flowchart TD\nA e1@--> B\nB e2@--> C\nB --> D\ne1@{curve: cardinal}\ne2@{ curve: linear }");
+    ASSERT_STREQ("cardinal", m.edges[0].curve.c_str());
+    ASSERT_STREQ("linear", m.edges[1].curve.c_str());
+    ASSERT_STREQ("", m.edges[2].curve.c_str());
+    ASSERT_EQ(4u, m.nodes.size());  // the data blocks did not create nodes
+}
+
+UTEST(flowchart_parser, a_class_given_twice_stays_twice_like_in_flowdb) {
+    Model m = parse("flowchart TD\nA:::cold --> B\nclass A cold");
+    ASSERT_EQ(2u, m.nodes[0].classes.size());
+}

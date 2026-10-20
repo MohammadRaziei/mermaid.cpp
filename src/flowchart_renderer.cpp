@@ -160,7 +160,15 @@ private:
         add("default");
         for (const std::string& cls : node.classes) add(cls);
         merged.insert(merged.end(), node.style.begin(), node.style.end());
-        return merged;
+
+        // Mermaid keeps these in an object: a repeated property keeps its first place and takes the last value.
+        Style unique;
+        for (const auto& declaration : merged) {
+            const auto same = std::find_if(unique.begin(), unique.end(), [&](const auto& d) { return d.first == declaration.first; });
+            if (same == unique.end()) unique.push_back(declaration);
+            else same->second = declaration.second;
+        }
+        return unique;
     }
 
     void write_nodes() {

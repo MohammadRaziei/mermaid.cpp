@@ -1,6 +1,8 @@
 // Expected values come from Mermaid 12.2's own SVG of fixture `basic` (tests/data/mermaid_js).
 #include <mermaid/edge_geometry.h>
 
+#include <cmath>
+
 #include "utest.h"
 
 using namespace mermaid;
@@ -75,18 +77,18 @@ UTEST(edge_geometry, points_attribute_is_base64_json_as_in_mermaid) {
 
 UTEST(edge_geometry, basis_path_of_a_straight_three_point_route) {
     const std::vector<Point> p{{185, 53}, {185, 78}, {185, 99}};
-    ASSERT_STREQ("M185,53L185,57.167C185,61.333,185,69.667,185,77.333C185,85,185,92,185,95.5L185,99", edge_geometry::basis_path(p).c_str());
+    ASSERT_STREQ("M185,53L185,57.167C185,61.333,185,69.667,185,77.333C185,85,185,92,185,95.5L185,99", edge_geometry::curve_path("basis", p).c_str());
 }
 
 UTEST(edge_geometry, basis_path_of_a_bent_route_and_its_length) {
     const std::vector<Point> p{{146.10135135135135, 235.10135135135135}, {84, 309.5}, {84, 341}};
     ASSERT_STREQ("M146.101,235.101L135.751,247.501C125.401,259.901,104.7,284.7,94.35,302.35C84,320,84,330.5,84,335.75L84,341",
-                 edge_geometry::basis_path(p).c_str());
-    ASSERT_NEAR(121.61546325683594 + 4, edge_geometry::basis_length(p), 0.01);  // dasharray 0 0 121.615 4
+                 edge_geometry::curve_path("basis", p).c_str());
+    ASSERT_NEAR(121.61546325683594 + 4, edge_geometry::curve_length("basis", p), 0.01);  // dasharray 0 0 121.615 4
 }
 
 UTEST(edge_geometry, basis_path_of_two_points_is_a_line) {
-    ASSERT_STREQ("M0,0L10,20", edge_geometry::basis_path({{0, 0}, {10, 20}}).c_str());
+    ASSERT_STREQ("M0,0L10,20", edge_geometry::curve_path("basis", {{0, 0}, {10, 20}}).c_str());
 }
 
 UTEST(edge_geometry, fix_corners_pre_rounds_right_angles_only) {
@@ -99,4 +101,24 @@ UTEST(edge_geometry, fix_corners_pre_rounds_right_angles_only) {
     ASSERT_NEAR(100.0, fixed[3].y, 1e-9);
     const auto same = edge_geometry::fix_corners({{0, 0}, {50, 50}, {100, 0}});
     ASSERT_EQ(3u, same.size());
+}
+
+// ---- other curves (`e2@{curve: cardinal}`); numbers from tests/data/mermaid_js_dagre/stress_flowchart_amp_groups_edge_ids_034.svg ----
+
+UTEST(edge_geometry, cardinal_path_and_length) {
+    const std::vector<Point> p{{232.8421052631579, 148}, {286, 173}, {286, 194}};
+    ASSERT_STREQ("M232.842,148C232.842,148,277.14,165.333,286,173C294.86,180.667,286,194,286,194",
+                 edge_geometry::curve_path("cardinal", p).c_str());
+    ASSERT_NEAR(77.80570983886719 + 4, edge_geometry::curve_length("cardinal", p), 0.01);
+}
+
+UTEST(edge_geometry, linear_path_joins_the_points) {
+    ASSERT_STREQ("M0,0L10,20L30,20", edge_geometry::curve_path("linear", {{0, 0}, {10, 20}, {30, 20}}).c_str());
+    ASSERT_NEAR(std::sqrt(500.0) + 20.0, edge_geometry::curve_length("linear", {{0, 0}, {10, 20}, {30, 20}}), 1e-9);
+}
+
+UTEST(edge_geometry, unknown_curve_names_fall_back_to_basis) {
+    const std::vector<Point> p{{0, 0}, {10, 30}, {40, 40}};
+    ASSERT_STREQ(edge_geometry::curve_path("basis", p).c_str(), edge_geometry::curve_path("", p).c_str());
+    ASSERT_STREQ(edge_geometry::curve_path("basis", p).c_str(), edge_geometry::curve_path("nonsense", p).c_str());
 }

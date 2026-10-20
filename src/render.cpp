@@ -3,7 +3,7 @@
 #include <array>
 #include <cctype>
 
-#include <mermaid/approx_text_measurer.h>
+#include <mermaid/browser_text_measurer.h>
 #include <mermaid/error.h>
 #include <mermaid/flowchart_layout.h>
 #include <mermaid/flowchart_parser.h>
@@ -48,7 +48,7 @@ std::string render_svg(std::string_view source, const RenderOptions& options) {
     }
 
     const flowchart::Model model = flowchart::Parser().parse(source);
-    const ApproxTextMeasurer measurer;
+    const browser_text_measurer measurer;
     const flowchart::Layout layout = flowchart::LayoutEngine(measurer).layout(model);
     return flowchart::render_svg(model, layout, options);
 }

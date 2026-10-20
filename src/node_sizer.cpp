@@ -1,9 +1,14 @@
 #include "node_sizer.h"
 
 #include <algorithm>
+#include <cmath>
 #include <mermaid/macros.h>
 
 namespace mermaid::flowchart::detail {
+
+namespace {
+constexpr double M_PI_ = 3.14159265358979323846;
+}
 
 Size NodeSizer::label_size(const Node& node) const {
     const Size text = measurer_.measure(node.label);
@@ -34,6 +39,15 @@ Size NodeSizer::size(const Node& node) const {
         case Shape::Trapezoid:
         case Shape::InvTrapezoid:
             return {box_w + box_h / 2, box_h};
+        case Shape::Stadium: {
+            // shapes/stadium.ts (neo): paddingX 40, paddingY 24; the arcs are sampled with 50 points,
+            // so their inscribed circle is a little smaller than the circle.
+            const double h = text_h + 24;
+            const double inscribed = h * std::cos(M_PI_ / (2 * 49));
+            const double cap = std::sqrt(MERMAID_MAX(0.0, inscribed * inscribed - text_h * text_h));
+            const double w = MERMAID_MAX(MERMAID_MAX(text_w + h / 4 + 40, 1.5 * h + (h - inscribed)), text_w + 40 + h - cap);
+            return {w, h};
+        }
         case Shape::Cylinder: {
             const double pad = 2 * options_.pad_y;  // 24 in the neo look, like the box height padding
             const double w = text_w + pad;
@@ -43,7 +57,6 @@ Size NodeSizer::size(const Node& node) const {
         case Shape::Default:
         case Shape::Square:
         case Shape::Round:
-        case Shape::Stadium:
         case Shape::Subroutine:
             break;
     }

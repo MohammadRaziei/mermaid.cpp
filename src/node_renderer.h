@@ -22,7 +22,8 @@ public:
 
 private:
     void write_outline(SvgWriter& out, flowchart::Shape shape, const Size& size, const flowchart::Style& style) const;
-    void write_label(SvgWriter& out, const std::string& text, const Size& label, const flowchart::Style& style) const;
+    void write_label(SvgWriter& out, const std::string& text, const Size& label, const flowchart::Style& style, double dy) const;
+    static double label_shift(flowchart::Shape shape);
 
     std::string svg_id_;
 };

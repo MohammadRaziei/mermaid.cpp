@@ -35,11 +35,12 @@ public:
     // the corner, and the corner itself is pulled in, before a curve is fitted through the route.
     static std::vector<Point> fix_corners(const std::vector<Point>& points);
 
-    // d3 `curveBasis` through the points, written like d3-path with 3 digits (the dagre default).
-    static std::string basis_path(const std::vector<Point>& points);
+    // The path d3 draws through the points for an edge `curve` name ("basis" - the default -,
+    // "linear" or "cardinal"; any other name draws "basis"), written like d3-path with 3 digits.
+    static std::string curve_path(const std::string& curve, const std::vector<Point>& points);
 
-    // Length of the basis path (what getTotalLength() reports), measured numerically.
-    static double basis_length(const std::vector<Point>& points);
+    // Length of that path (what getTotalLength() reports), measured numerically.
+    static double curve_length(const std::string& curve, const std::vector<Point>& points);
 
     // The `data-points` value: base64 of the JSON list of points.
     static std::string points_attribute(const std::vector<Point>& points);

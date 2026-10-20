@@ -109,14 +109,12 @@ UTEST(svg_parity, edge_paths_of_basic_match_mermaid_js_markup) {
     EXPECT_EQ(0u, diffs.size());
 }
 
-// The edge labels of `basic`. The label width (and so `width` and the centring `transform`)
-// comes from the browser's font metrics, which ApproxTextMeasurer does not reproduce.
+// The edge labels of `basic`, position and size included.
 UTEST(svg_parity, edge_labels_of_basic_match_mermaid_js_markup) {
     mermaid::RenderOptions options;
     options.svg_id = "basic";
     const std::string actual = mermaid::render_svg(read_all(kData + "/merman/basic.mmd"), options);
     svgtest::svg_comparer cmp(0.5);
-    cmp.ignore_attribute("width").ignore_attribute("transform");
     const auto diffs = cmp.compare_within("g.edgeLabels", read_all(kData + "/mermaid_js_dagre/basic.svg"), actual);
     for (size_t i = 0; i < diffs.size() && i < 10; ++i) std::cout << "  " << diffs[i] << "\n";
     EXPECT_EQ(0u, diffs.size());
