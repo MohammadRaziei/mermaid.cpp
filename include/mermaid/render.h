@@ -14,6 +14,7 @@ struct RenderOptions {
     std::string background = "white";   // CSS colour or "transparent"
     std::string svg_id = "my-svg";
     std::string css;                    // extra CSS appended to <style>
+    int hand_drawn_seed = 1;            // seed of rough.js outlines (Mermaid's handDrawnSeed; 0 would be random there, here it means 1)
 };
 
 // Throws ParseError, UnsupportedDiagram or std::invalid_argument (bad theme).

@@ -173,7 +173,7 @@ private:
 
     void write_nodes() {
         out_.open("g", {{"class", "nodes"}});
-        const detail::node_renderer renderer(options_.svg_id);
+        const detail::node_renderer renderer(options_.svg_id, detail::theme_variables::redux_color(), options_.hand_drawn_seed);
         for (const NodeLayout& nl : layout_.nodes) {
             const Node* node = model_.find_node(nl.id);
             if (!node) continue;

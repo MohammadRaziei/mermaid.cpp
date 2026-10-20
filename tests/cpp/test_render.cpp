@@ -210,3 +210,20 @@ UTEST(render, repeated_style_properties_collapse_to_the_last_value) {
         "flowchart TD\nclassDef a fill:#111,stroke:#222\nclassDef b fill:#333,stroke-width:2px\nA:::a --> B\nclass A b");
     ASSERT_TRUE(has(svg, "style=\"fill:#333 !important;stroke:#222 !important;stroke-width:2px !important\""));
 }
+
+// shapes/stadium.ts draws a rough.js path (roughness 0, solid fill, seed 1): a fill path and a stroke path made
+// of cubic segments whose control points come from rough.js's seeded generator. Numbers from
+// tests/data/mermaid_js_dagre/stress_flowchart_escape_sequences_and_quotes_012.svg.
+UTEST(render, stadium_is_a_rough_js_path_with_the_seeded_control_points) {
+    const std::string svg = render_svg("flowchart LR\nA([end])");
+    ASSERT_TRUE(has(svg, "<g class=\"basic label-container outer-path\"><path d=\"M-63.125 -22.5 C-29.942233963520266 -22.5, 3.2405320729594678 -22.5, 63.125 -22.5 C63.125 -22.5, 63.125 -22.5, 63.125 -22.5"));
+    ASSERT_TRUE(has(svg, "stroke=\"none\" stroke-width=\"0\" fill=\"#ffffff\" style=\"\"/>"));
+    ASSERT_TRUE(has(svg, "<path d=\"M-63.125 -22.5 C-37.87443243211601 -22.5, -12.623864864232019 -22.5, 63.125 -22.5 M-63.125 -22.5 C-35.17932365403976 -22"));
+    ASSERT_TRUE(has(svg, "stroke=\"#28253D\" stroke-width=\"1.3\" fill=\"none\" stroke-dasharray=\"0 0\" style=\"\"/>"));
+}
+
+UTEST(render, stadium_takes_fill_stroke_and_width_from_its_styles) {
+    const std::string svg = render_svg("flowchart LR\nA([end])\nstyle A fill:#f00,stroke:#00f,stroke-width:3px");
+    ASSERT_TRUE(has(svg, "stroke=\"none\" stroke-width=\"0\" fill=\"#f00\""));
+    ASSERT_TRUE(has(svg, "stroke=\"#00f\" stroke-width=\"3\" fill=\"none\""));
+}
