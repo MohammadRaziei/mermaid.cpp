@@ -183,10 +183,12 @@ void EdgeRenderer::write_path(SvgWriter& out, const flowchart::Edge& edge, const
     if (!is_drawn(edge, layout)) return;
 
     // Route as Mermaid draws it: clipped to the outlines, pulled back from the arrow tips, rounded.
+    // (the default `basis` curve of dagre layouts, after fixCorners)
     std::vector<Point> route = layout.points;
     if (tail && head) route = edge_geometry::clip_to_nodes(route, *tail, *head);
-    const std::vector<Point> drawn = edge_geometry::shorten_ends(route, path_offset(edge.start), path_offset(edge.end));
-    const double length = edge_geometry::rounded_length(drawn, 5);
+    const std::vector<Point> drawn =
+        edge_geometry::shorten_ends(edge_geometry::fix_corners(route), path_offset(edge.start), path_offset(edge.end));
+    const double length = edge_geometry::basis_length(drawn);
 
     // thickness picks the first class pair; the pattern is `solid` unless the stroke is dotted
     // (flowDb passes the stroke as the pattern, which only `dotted` and `dashed` recognise).
@@ -199,7 +201,7 @@ void EdgeRenderer::write_path(SvgWriter& out, const flowchart::Edge& edge, const
     const std::string style = "stroke-dasharray: " + dash_array(length, dash_offset(edge.start), dash_offset(edge.end), dotted) +
                               "; stroke-dashoffset: 0;" + style_text;
 
-    SvgWriter::Attrs attrs{{"d", edge_geometry::rounded_path(drawn, 5)},
+    SvgWriter::Attrs attrs{{"d", edge_geometry::basis_path(drawn)},
                            {"id", svg_id_ + "-" + edge.id},
                            {"class", classes},
                            {"style", style},
@@ -214,30 +216,35 @@ void EdgeRenderer::write_path(SvgWriter& out, const flowchart::Edge& edge, const
 }
 
 void EdgeRenderer::write_label(SvgWriter& out, const flowchart::Edge& edge, const flowchart::EdgeLayout& layout) const {
-    if (!is_drawn(edge, layout) || !layout.has_label || edge.label.empty()) return;
+    if (!is_drawn(edge, layout)) return;
+
+    const auto translate = [](double x, double y) { return "translate(" + SvgWriter::num(x) + ", " + SvgWriter::num(y) + ")"; };
+    const bool labelled = layout.has_label && !edge.label.empty();
+    const Rect box = labelled ? layout.label : Rect{0, 0, 0, 0};
 
     // edges.js insertEdgeLabel: a group at the label centre, the HTML label centred inside it.
-    const Point c = layout.label.center();
-    const auto translate = [](double x, double y) { return "translate(" + SvgWriter::num(x) + ", " + SvgWriter::num(y) + ")"; };
-    out.open("g", {{"class", "edgeLabel"}, {"transform", translate(c.x, c.y)}});
-    out.open("g", {{"class", "label"},
-                   {"data-id", edge.id},
-                   {"transform", translate(-layout.label.width / 2, -layout.label.height / 2)}});
-    out.open("foreignObject", {{"width", SvgWriter::num(layout.label.width)}, {"height", SvgWriter::num(layout.label.height)}});
+    // An edge without a label gets the same markup, empty, with no position.
+    SvgWriter::Attrs group{{"class", "edgeLabel"}};
+    if (labelled) group.emplace_back("transform", translate(box.center().x, box.center().y));
+    out.open("g", group);
+    out.open("g", {{"class", "label"}, {"data-id", edge.id}, {"transform", translate(-box.width / 2, -box.height / 2)}});
+    out.open("foreignObject", {{"width", SvgWriter::num(box.width)}, {"height", SvgWriter::num(box.height)}});
     out.open("div", {{"xmlns", "http://www.w3.org/1999/xhtml"},
                      {"class", "labelBkg"},
                      {"style", "display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"}});
     out.open("span", {{"class", "edgeLabel"}});
-    out.open("p");
-    size_t start = 0;
-    while (true) {
-        const size_t end = edge.label.find('\n', start);
-        out.text(edge.label.substr(start, end == std::string::npos ? end : end - start));
-        if (end == std::string::npos) break;
-        out.raw("<br />");
-        start = end + 1;
+    if (labelled) {
+        out.open("p");
+        size_t start = 0;
+        while (true) {
+            const size_t end = edge.label.find('\n', start);
+            out.text(edge.label.substr(start, end == std::string::npos ? end : end - start));
+            if (end == std::string::npos) break;
+            out.raw("<br />");
+            start = end + 1;
+        }
+        out.close();  // p
     }
-    out.close();  // p
     out.close();  // span
     out.close();  // div
     out.close();  // foreignObject

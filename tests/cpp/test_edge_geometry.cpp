@@ -70,3 +70,33 @@ UTEST(edge_geometry, rounded_length_matches_the_browsers_total_length) {
 UTEST(edge_geometry, points_attribute_is_base64_json_as_in_mermaid) {
     ASSERT_STREQ("W3sieCI6MTg0LCJ5Ijo1N30seyJ4IjoxODQsInkiOjk3fV0=", edge_geometry::points_attribute({{184, 57}, {184, 97}}).c_str());
 }
+
+// ---- curveBasis (the default curve of dagre layouts); numbers from tests/data/mermaid_js_dagre/basic.svg ----
+
+UTEST(edge_geometry, basis_path_of_a_straight_three_point_route) {
+    const std::vector<Point> p{{185, 53}, {185, 78}, {185, 99}};
+    ASSERT_STREQ("M185,53L185,57.167C185,61.333,185,69.667,185,77.333C185,85,185,92,185,95.5L185,99", edge_geometry::basis_path(p).c_str());
+}
+
+UTEST(edge_geometry, basis_path_of_a_bent_route_and_its_length) {
+    const std::vector<Point> p{{146.10135135135135, 235.10135135135135}, {84, 309.5}, {84, 341}};
+    ASSERT_STREQ("M146.101,235.101L135.751,247.501C125.401,259.901,104.7,284.7,94.35,302.35C84,320,84,330.5,84,335.75L84,341",
+                 edge_geometry::basis_path(p).c_str());
+    ASSERT_NEAR(121.61546325683594 + 4, edge_geometry::basis_length(p), 0.01);  // dasharray 0 0 121.615 4
+}
+
+UTEST(edge_geometry, basis_path_of_two_points_is_a_line) {
+    ASSERT_STREQ("M0,0L10,20", edge_geometry::basis_path({{0, 0}, {10, 20}}).c_str());
+}
+
+UTEST(edge_geometry, fix_corners_pre_rounds_right_angles_only) {
+    // edges.js fixCorners: a right angle with both legs > 5 is cut 5 from the corner and the corner pulled in.
+    const auto fixed = edge_geometry::fix_corners({{0, 0}, {0, 100}, {100, 100}});
+    ASSERT_EQ(5u, fixed.size());
+    ASSERT_NEAR(0.0, fixed[1].x - 0.0, 1e-9);
+    ASSERT_NEAR(95.0, fixed[1].y, 1e-9);
+    ASSERT_NEAR(5.0, fixed[3].x, 1e-9);
+    ASSERT_NEAR(100.0, fixed[3].y, 1e-9);
+    const auto same = edge_geometry::fix_corners({{0, 0}, {50, 50}, {100, 0}});
+    ASSERT_EQ(3u, same.size());
+}

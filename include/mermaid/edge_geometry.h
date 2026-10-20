@@ -31,6 +31,16 @@ public:
     // Length of the rounded path (what the browser reports for getTotalLength()).
     static double rounded_length(const std::vector<Point>& points, double radius);
 
+    // `fixCorners` (edges.js): right-angle corners (both legs longer than 5) are cut 5 units from
+    // the corner, and the corner itself is pulled in, before a curve is fitted through the route.
+    static std::vector<Point> fix_corners(const std::vector<Point>& points);
+
+    // d3 `curveBasis` through the points, written like d3-path with 3 digits (the dagre default).
+    static std::string basis_path(const std::vector<Point>& points);
+
+    // Length of the basis path (what getTotalLength() reports), measured numerically.
+    static double basis_length(const std::vector<Point>& points);
+
     // The `data-points` value: base64 of the JSON list of points.
     static std::string points_attribute(const std::vector<Point>& points);
 };

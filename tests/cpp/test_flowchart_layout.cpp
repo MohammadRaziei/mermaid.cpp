@@ -32,8 +32,8 @@ bool overlaps(const Rect& a, const Rect& b) {
 
 }  // namespace
 
-// Numbers below come from merman's layout goldens (tests/data/merman/*.layout.golden.json).
-UTEST(flowchart_layout, basic_matches_merman_golden_nodes) {
+// Numbers below come from the real Mermaid 12.2.0 with `layout: dagre` (tests/data/mermaid_js_dagre).
+UTEST(flowchart_layout, basic_matches_mermaid_dagre_nodes) {
     Layout l = lay(read_fixture("basic"));
     ASSERT_EQ(4u, l.nodes.size());
     const NodeLayout* a = l.find_node("A");
@@ -41,45 +41,46 @@ UTEST(flowchart_layout, basic_matches_merman_golden_nodes) {
     const NodeLayout* c = l.find_node("C");
     const NodeLayout* d = l.find_node("D");
     ASSERT_TRUE(a && b && c && d);
-    ASSERT_NEAR(184.0, a->center.x, 1e-6);
-    ASSERT_NEAR(34.5, a->center.y, 1e-6);
+    ASSERT_NEAR(185.0, a->center.x, 1e-6);
+    ASSERT_NEAR(30.5, a->center.y, 1e-6);
     ASSERT_NEAR(152.0, a->size.width, 1e-6);
     ASSERT_NEAR(45.0, a->size.height, 1e-6);
-    ASSERT_NEAR(184.0, b->center.x, 1e-6);
-    ASSERT_NEAR(182.5, b->center.y, 1e-6);
+    ASSERT_NEAR(185.0, b->center.x, 1e-6);
+    ASSERT_NEAR(188.5, b->center.y, 1e-6);
     ASSERT_NEAR(171.0, b->size.width, 1e-6);
     ASSERT_NEAR(171.0, b->size.height, 1e-6);
-    ASSERT_NEAR(88.0, c->center.x, 1e-6);
-    ASSERT_NEAR(391.5, c->center.y, 1e-6);
-    ASSERT_NEAR(280.0, d->center.x, 1e-6);
-    ASSERT_NEAR(391.5, d->center.y, 1e-6);
+    ASSERT_NEAR(84.0, c->center.x, 1e-6);
+    ASSERT_NEAR(367.5, c->center.y, 1e-6);
+    ASSERT_NEAR(286.0, d->center.x, 1e-6);
+    ASSERT_NEAR(367.5, d->center.y, 1e-6);
 }
 
-UTEST(flowchart_layout, basic_matches_merman_golden_bounds_and_edge) {
+UTEST(flowchart_layout, basic_matches_mermaid_dagre_bounds_and_edge) {
     Layout l = lay(read_fixture("basic"));
-    ASSERT_NEAR(12.0, l.bounds.x, 1e-6);
-    ASSERT_NEAR(12.0, l.bounds.y, 1e-6);
-    ASSERT_NEAR(356.0, l.bounds.right(), 1e-6);
-    ASSERT_NEAR(414.0, l.bounds.bottom(), 1e-6);
-    ASSERT_NEAR(368.0, l.size.width, 1e-6);
-    ASSERT_NEAR(426.0, l.size.height, 1e-6);
+    ASSERT_NEAR(8.0, l.bounds.x, 1e-6);
+    ASSERT_NEAR(8.0, l.bounds.y, 1e-6);
+    ASSERT_NEAR(362.0, l.bounds.right(), 1e-6);
+    ASSERT_NEAR(390.0, l.bounds.bottom(), 1e-6);
+    ASSERT_NEAR(370.0, l.size.width, 1e-6);
+    ASSERT_NEAR(398.0, l.size.height, 1e-6);
     const EdgeLayout& e = l.edges[0];
     ASSERT_STREQ("L_A_B_0", e.id.c_str());
-    ASSERT_EQ(2u, e.points.size());
-    ASSERT_NEAR(184.0, e.points[0].x, 1e-6);
-    ASSERT_NEAR(57.0, e.points[0].y, 1e-6);
-    ASSERT_NEAR(184.0, e.points[1].x, 1e-6);
-    ASSERT_NEAR(97.0, e.points[1].y, 1e-6);
+    ASSERT_EQ(3u, e.points.size());  // Mermaid keeps the point on the empty label rank
+    ASSERT_NEAR(185.0, e.points[0].x, 1e-6);
+    ASSERT_NEAR(53.0, e.points[0].y, 1e-6);
+    ASSERT_NEAR(78.0, e.points[1].y, 1e-6);
+    ASSERT_NEAR(185.0, e.points[2].x, 1e-6);
+    ASSERT_NEAR(103.0, e.points[2].y, 1e-6);
 }
 
-UTEST(flowchart_layout, class_style_matches_merman_golden) {
+UTEST(flowchart_layout, class_style_matches_mermaid_dagre) {
     Layout l = lay(read_fixture("class_style"));
     const NodeLayout* a = l.find_node("A");
     const NodeLayout* b = l.find_node("B");
-    ASSERT_NEAR(88.0, a->center.x, 1e-6);
-    ASSERT_NEAR(34.5, a->center.y, 1e-6);
-    ASSERT_NEAR(88.0, b->center.x, 1e-6);
-    ASSERT_NEAR(119.5, b->center.y, 1e-6);
+    ASSERT_NEAR(84.0, a->center.x, 1e-6);
+    ASSERT_NEAR(30.5, a->center.y, 1e-6);
+    ASSERT_NEAR(84.0, b->center.x, 1e-6);
+    ASSERT_NEAR(125.5, b->center.y, 1e-6);
 }
 
 UTEST(flowchart_layout, labeled_edges_get_a_label_box_between_the_ranks) {
@@ -105,14 +106,14 @@ UTEST(flowchart_layout, direction_changes_the_flow_axis) {
     ASSERT_TRUE(rl.find_node("B")->center.x < rl.find_node("A")->center.x);
     ASSERT_NEAR(lr.find_node("A")->center.y, lr.find_node("B")->center.y, 1e-6);
     // LR flows along x: gap between boxes is rank_sep.
-    ASSERT_NEAR(40.0, lr.find_node("B")->rect().x - lr.find_node("A")->rect().right(), 1e-6);
+    ASSERT_NEAR(50.0, lr.find_node("B")->rect().x - lr.find_node("A")->rect().right(), 1e-6);
 }
 
 UTEST(flowchart_layout, single_node_sits_at_the_margin) {
     Layout l = lay("flowchart TD\nA");
     ASSERT_EQ(1u, l.nodes.size());
-    ASSERT_NEAR(12.0, l.nodes[0].rect().x, 1e-6);
-    ASSERT_NEAR(12.0, l.nodes[0].rect().y, 1e-6);
+    ASSERT_NEAR(8.0, l.nodes[0].rect().x, 1e-6);
+    ASSERT_NEAR(8.0, l.nodes[0].rect().y, 1e-6);
 }
 
 UTEST(flowchart_layout, options_are_respected) {
@@ -225,18 +226,18 @@ UTEST(flowchart_layout, fixtures_have_finite_non_overlapping_layouts) {
 
 // Golden: stress_flowchart_classdef_and_inline_classes_003 (LR). Positioning comes from the
 // dagre pipeline (Brandes-Koepf); the first three nodes share one y and fixed x.
-UTEST(flowchart_layout, dagre_positions_match_merman_golden_for_the_main_chain) {
+UTEST(flowchart_layout, dagre_positions_match_mermaid_dagre_for_the_main_chain) {
     Layout l = lay(read_fixture("stress_flowchart_classdef_and_inline_classes_003"));
     const NodeLayout* in = l.find_node("in");
     const NodeLayout* parse = l.find_node("parse");
     const NodeLayout* validate = l.find_node("validate");
     ASSERT_TRUE(in && parse && validate);
-    ASSERT_NEAR(88.0, in->center.x, 1.0);
-    ASSERT_NEAR(280.0, parse->center.x, 1.0);
-    ASSERT_NEAR(481.5, validate->center.x, 1.0);
-    ASSERT_NEAR(107.112, in->center.y, 1.0);
-    ASSERT_NEAR(107.112, parse->center.y, 1.0);
-    ASSERT_NEAR(107.112, validate->center.y, 1.0);
+    ASSERT_NEAR(84.0, in->center.x, 1e-3);
+    ASSERT_NEAR(286.0, parse->center.x, 1e-3);
+    ASSERT_NEAR(497.5, validate->center.x, 1e-3);
+    ASSERT_NEAR(108.1115, in->center.y, 1e-3);
+    ASSERT_NEAR(108.1115, parse->center.y, 1e-3);
+    ASSERT_NEAR(108.1115, validate->center.y, 1e-3);
 }
 
 // Golden: the `store[(Store)]` cylinder of fixture 003 is 144 x 85.149

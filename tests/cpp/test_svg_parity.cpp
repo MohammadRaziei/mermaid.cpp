@@ -1,4 +1,4 @@
-// Compares mermaid::render_svg with the real Mermaid SVGs in tests/data/mermaid_js.
+// Compares mermaid::render_svg with real Mermaid 12.2.0 SVGs (layout: dagre) in tests/data/mermaid_js_dagre.
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -22,7 +22,7 @@ const std::string kData = MERMAID_TEST_DATA_DIR;
 }  // namespace
 
 UTEST(svg_parity, fixtures_marked_pass_match_mermaid_js_and_todo_ones_report_progress) {
-    std::ifstream list(kData + "/mermaid_js/parity.tsv");
+    std::ifstream list(kData + "/mermaid_js_dagre/parity.tsv");
     ASSERT_TRUE(list.good());
     std::string line;
     while (std::getline(list, line)) {
@@ -35,7 +35,7 @@ UTEST(svg_parity, fixtures_marked_pass_match_mermaid_js_and_todo_ones_report_pro
         mermaid::RenderOptions options;
         options.svg_id = name == "basic" ? "basic" : name;
         const std::string actual = mermaid::render_svg(read_all(kData + "/merman/" + name + ".mmd"), options);
-        const auto diffs = svgtest::svg_comparer(0.5).compare(read_all(kData + "/mermaid_js/" + name + ".svg"), actual);
+        const auto diffs = svgtest::svg_comparer(0.5).compare(read_all(kData + "/mermaid_js_dagre/" + name + ".svg"), actual);
 
         if (status == "pass") {
             for (size_t i = 0; i < diffs.size() && i < 10; ++i) std::cout << "  " << name << ": " << diffs[i] << "\n";
@@ -58,7 +58,7 @@ UTEST(svg_parity, svg_frame_matches_mermaid_js_outside_style_and_root_content) {
         const std::string actual = mermaid::render_svg(read_all(kData + "/merman/" + name + ".mmd"), options);
         svgtest::svg_comparer cmp(0.5);
         cmp.prune("style").prune("g.root");
-        const auto diffs = cmp.compare(read_all(kData + "/mermaid_js/" + name + ".svg"), actual);
+        const auto diffs = cmp.compare(read_all(kData + "/mermaid_js_dagre/" + name + ".svg"), actual);
         for (size_t i = 0; i < diffs.size() && i < 10; ++i) std::cout << "  " << name << ": " << diffs[i] << "\n";
         EXPECT_EQ(0u, diffs.size());
     }
@@ -69,7 +69,7 @@ UTEST(svg_parity, nodes_of_basic_match_mermaid_js) {
     mermaid::RenderOptions options;
     options.svg_id = "basic";
     const std::string actual = mermaid::render_svg(read_all(kData + "/merman/basic.mmd"), options);
-    const auto diffs = svgtest::svg_comparer(0.5).compare_within("g.nodes", read_all(kData + "/mermaid_js/basic.svg"), actual);
+    const auto diffs = svgtest::svg_comparer(0.5).compare_within("g.nodes", read_all(kData + "/mermaid_js_dagre/basic.svg"), actual);
     for (size_t i = 0; i < diffs.size() && i < 10; ++i) std::cout << "  " << diffs[i] << "\n";
     EXPECT_EQ(0u, diffs.size());
 }
@@ -79,7 +79,7 @@ UTEST(svg_parity, stylesheet_of_basic_matches_mermaid_js) {
     mermaid::RenderOptions options;
     options.svg_id = "basic";
     const std::string actual = mermaid::render_svg(read_all(kData + "/merman/basic.mmd"), options);
-    const auto diffs = svgtest::svg_comparer(0.5).compare_within("style", read_all(kData + "/mermaid_js/basic.svg"), actual);
+    const auto diffs = svgtest::svg_comparer(0.5).compare_within("style", read_all(kData + "/mermaid_js_dagre/basic.svg"), actual);
     for (size_t i = 0; i < diffs.size() && i < 5; ++i) std::cout << "  " << diffs[i] << "\n";
     EXPECT_EQ(0u, diffs.size());
 }
@@ -89,7 +89,7 @@ UTEST(svg_parity, stylesheet_with_class_defs_matches_mermaid_js) {
     mermaid::RenderOptions options;
     options.svg_id = name;
     const std::string actual = mermaid::render_svg(read_all(kData + "/merman/" + name + ".mmd"), options);
-    const auto diffs = svgtest::svg_comparer(0.5).compare_within("style", read_all(kData + "/mermaid_js/" + name + ".svg"), actual);
+    const auto diffs = svgtest::svg_comparer(0.5).compare_within("style", read_all(kData + "/mermaid_js_dagre/" + name + ".svg"), actual);
     for (size_t i = 0; i < diffs.size() && i < 5; ++i) std::cout << "  " << diffs[i] << "\n";
     EXPECT_EQ(0u, diffs.size());
 }
@@ -104,7 +104,7 @@ UTEST(svg_parity, edge_paths_of_basic_match_mermaid_js_markup) {
     const std::string actual = mermaid::render_svg(read_all(kData + "/merman/basic.mmd"), options);
     svgtest::svg_comparer cmp(0.5);
     cmp.ignore_attribute("d").ignore_attribute("data-points").ignore_attribute("style");
-    const auto diffs = cmp.compare_within("g.edgePaths", read_all(kData + "/mermaid_js/basic.svg"), actual);
+    const auto diffs = cmp.compare_within("g.edgePaths", read_all(kData + "/mermaid_js_dagre/basic.svg"), actual);
     for (size_t i = 0; i < diffs.size() && i < 10; ++i) std::cout << "  " << diffs[i] << "\n";
     EXPECT_EQ(0u, diffs.size());
 }
@@ -117,7 +117,7 @@ UTEST(svg_parity, edge_labels_of_basic_match_mermaid_js_markup) {
     const std::string actual = mermaid::render_svg(read_all(kData + "/merman/basic.mmd"), options);
     svgtest::svg_comparer cmp(0.5);
     cmp.ignore_attribute("width").ignore_attribute("transform");
-    const auto diffs = cmp.compare_within("g.edgeLabels", read_all(kData + "/mermaid_js/basic.svg"), actual);
+    const auto diffs = cmp.compare_within("g.edgeLabels", read_all(kData + "/mermaid_js_dagre/basic.svg"), actual);
     for (size_t i = 0; i < diffs.size() && i < 10; ++i) std::cout << "  " << diffs[i] << "\n";
     EXPECT_EQ(0u, diffs.size());
 }
@@ -128,7 +128,7 @@ UTEST(svg_parity, edge_paths_and_markers_with_link_style_match_mermaid_js_markup
     mermaid::RenderOptions options;
     options.svg_id = name;
     const std::string actual = mermaid::render_svg(read_all(kData + "/merman/" + name + ".mmd"), options);
-    const std::string expected = read_all(kData + "/mermaid_js/" + name + ".svg");
+    const std::string expected = read_all(kData + "/mermaid_js_dagre/" + name + ".svg");
     svgtest::svg_comparer paths(0.5);
     // the dash lengths in `style` differ with the route; the style text is checked in test_render
     paths.ignore_attribute("d").ignore_attribute("data-points").ignore_attribute("style");
@@ -142,4 +142,33 @@ UTEST(svg_parity, edge_paths_and_markers_with_link_style_match_mermaid_js_markup
     const auto mdiffs = markers.compare(expected, actual);
     for (size_t i = 0; i < mdiffs.size() && i < 10; ++i) std::cout << "  " << mdiffs[i] << "\n";
     EXPECT_EQ(0u, mdiffs.size());
+}
+
+// ---- Reference: real Mermaid 12.2.0 with `layout: dagre` (tests/data/mermaid_js_dagre) ----
+
+namespace {
+
+std::vector<std::string> compare_dagre(const std::string& name, const std::string& selector, svgtest::svg_comparer cmp) {
+    mermaid::RenderOptions options;
+    options.svg_id = name;
+    const std::string actual = mermaid::render_svg(read_all(kData + "/merman/" + name + ".mmd"), options);
+    const std::string expected = read_all(kData + "/mermaid_js_dagre/" + name + ".svg");
+    return selector.empty() ? cmp.compare(expected, actual) : cmp.compare_within(selector, expected, actual);
+}
+
+void print_diffs(const std::vector<std::string>& diffs) {
+    for (size_t i = 0; i < diffs.size() && i < 10; ++i) std::cout << "  " << diffs[i] << "\n";
+}
+
+}  // namespace
+
+UTEST(svg_parity_dagre, nodes_and_viewbox_of_basic_match) {
+    const auto nodes = compare_dagre("basic", "g.nodes", svgtest::svg_comparer(0.5));
+    print_diffs(nodes);
+    EXPECT_EQ(0u, nodes.size());
+    svgtest::svg_comparer frame(0.5);
+    frame.prune("style").prune("g.root");
+    const auto diffs = compare_dagre("basic", "", frame);
+    print_diffs(diffs);
+    EXPECT_EQ(0u, diffs.size());
 }

@@ -60,7 +60,7 @@ UTEST(render, produces_a_well_formed_svg_with_mermaid_viewbox) {
     std::string svg = render_svg(read_fixture("basic"));
     ASSERT_TRUE(svg.rfind("<svg", 0) == 0);
     ASSERT_TRUE(well_formed(svg));
-    ASSERT_TRUE(has(svg, "viewBox=\"4 4 360 418\""));
+    ASSERT_TRUE(has(svg, "viewBox=\"0 0 370 398\""));
     ASSERT_TRUE(has(svg, "xmlns=\"http://www.w3.org/2000/svg\""));
     ASSERT_TRUE(has(svg, ">Start<"));
     ASSERT_TRUE(has(svg, ">Choice<"));

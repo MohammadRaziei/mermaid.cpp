@@ -153,6 +153,26 @@ private:
         return {};
     }
 
+    // `data-points` holds base64 of a JSON list of points: compare the decoded numbers.
+    static std::string decoded(const std::string& name, const std::string& value) {
+        if (name != "data-points") return value;
+        static const std::string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        std::string out;
+        unsigned buffer = 0;
+        int bits = 0;
+        for (char c : value) {
+            const size_t at = alphabet.find(c);
+            if (at == std::string::npos) continue;
+            buffer = (buffer << 6) | static_cast<unsigned>(at);
+            bits += 6;
+            if (bits >= 8) {
+                bits -= 8;
+                out += static_cast<char>((buffer >> bits) & 0xFF);
+            }
+        }
+        return out;
+    }
+
     bool is_ignored(const std::string& attribute) const {
         for (const std::string& n : ignored_attributes_)
             if (n == attribute) return true;
@@ -182,7 +202,7 @@ private:
         for (pugi::xml_attribute at : a.attributes()) {
             pugi::xml_attribute other = b.attribute(at.name());
             if (!other) out.push_back(path + ": attribute " + at.name() + " missing");
-            else if (!is_ignored(at.name()) && !values_match(at.value(), other.value()))
+            else if (!is_ignored(at.name()) && !values_match(decoded(at.name(), at.value()), decoded(at.name(), other.value())))
                 out.push_back(path + "@" + at.name() + ": " + first_difference(at.value(), other.value()));
         }
         for (pugi::xml_attribute at : b.attributes())

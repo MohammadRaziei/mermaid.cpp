@@ -64,3 +64,13 @@ UTEST(svg_compare, ignored_attribute_may_differ_but_must_exist) {
     EXPECT_EQ(1u, cmp.compare("<svg><path d=\"M0 0\" id=\"a\"/></svg>", "<svg><path id=\"a\"/></svg>").size());
     EXPECT_EQ(1u, cmp.compare("<svg><path d=\"M0 0\" id=\"a\"/></svg>", "<svg><path d=\"M0 0\" id=\"b\"/></svg>").size());
 }
+
+UTEST(svg_compare, data_points_are_compared_as_numbers_after_decoding) {
+    // [{"x":1,"y":2}] and [{"x":1.2,"y":2}] in base64
+    const char* one = "W3sieCI6MSwieSI6Mn1d";
+    const char* near_one = "W3sieCI6MS4yLCJ5IjoyfV0=";
+    const std::string a = std::string("<svg><path data-points=\"") + one + "\"/></svg>";
+    const std::string b = std::string("<svg><path data-points=\"") + near_one + "\"/></svg>";
+    EXPECT_EQ(0u, svgtest::svg_comparer(0.5).compare(a, b).size());
+    EXPECT_EQ(1u, svgtest::svg_comparer(0.1).compare(a, b).size());
+}

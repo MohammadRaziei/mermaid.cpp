@@ -129,7 +129,7 @@ private:
     }
 
     void write_edge_paths() {
-        out_.open("g", {{"class", "edges edgePaths"}});
+        out_.open("g", {{"class", "edgePaths"}});
         for (size_t i = 0; i < model_.edges.size() && i < layout_.edges.size(); ++i) {
             const Edge& edge = model_.edges[i];
             edges_.write_path(out_, edge, layout_.edges[i], find_layout(edge.from), find_layout(edge.to));

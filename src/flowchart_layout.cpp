@@ -89,23 +89,6 @@ struct EdgeInfo {
     Size label;
 };
 
-// dagre routes unlabelled edges through the (empty) label rank; the extra point lies on the
-// line and is dropped, as in the merman goldens.
-std::vector<Point> without_collinear(const std::vector<Point>& in) {
-    std::vector<Point> out;
-    for (const Point& p : in) {
-        while (out.size() >= 2) {
-            const Point& a = out[out.size() - 2];
-            const Point& b = out.back();
-            const double cross = (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
-            if (std::abs(cross) > 1e-9) break;
-            out.pop_back();
-        }
-        out.push_back(p);
-    }
-    return out;
-}
-
 dagre::RankDir rank_dir(Direction d) {
     switch (d) {
         case Direction::TB: return dagre::RankDir::TB;
@@ -194,7 +177,7 @@ private:
                 const dagre::EdgeResult* r =
                     result.find_edge(model_.nodes[static_cast<size_t>(edges_[i].from)].id,
                                      model_.nodes[static_cast<size_t>(edges_[i].to)].id, std::to_string(i));
-                out.points = without_collinear(r->points);
+                out.points = r->points;
                 if (r->has_label) {
                     out.has_label = true;
                     out.label = Rect::from_center(r->label, edges_[i].label);

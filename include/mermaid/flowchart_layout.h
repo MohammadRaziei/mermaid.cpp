@@ -11,10 +11,10 @@
 namespace mermaid::flowchart {
 
 struct LayoutOptions {
-    double node_sep = 40;         // gap between nodes of one rank
-    double rank_sep = 40;         // gap between ranks
+    double node_sep = 50;         // gap between nodes of one rank (flowchart.nodeSpacing)
+    double rank_sep = 50;         // gap between ranks (flowchart.rankSpacing)
     double edge_sep = 20;         // gap used around edge dummies
-    double margin = 12;           // space around the drawing
+    double margin = 8;            // space around the drawing (dagre marginx/marginy)
     double pad_x = 16;            // label -> box padding (each side)
     double pad_y = 12;
     double diamond_pad = 15;      // diamond: (w+pad) + (h+pad)
@@ -22,9 +22,9 @@ struct LayoutOptions {
     // are never narrower than this. (Source of the 120 not yet understood.)
     double min_label_width = 120;
     double cluster_pad = 8;
-    // Goldens of merman reserve the label plus this much on every side in the label rank
-    // (basic: 101 = 40 + 21 + 40; fixture 003: 99.74 = 40 + 19.74 + 40). Cause not yet confirmed.
-    double edge_label_pad = 20;
+    // Extra room around an edge label in the label rank. Real Mermaid (dagre) reserves none; the
+    // merman/ELK goldens needed 20.
+    double edge_label_pad = 0;
 };
 
 struct NodeLayout {
