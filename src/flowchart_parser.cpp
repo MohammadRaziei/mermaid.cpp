@@ -8,6 +8,7 @@
 
 #include <mermaid/error.h>
 
+#include "init_directive.h"
 #include "preprocess.h"
 
 namespace mermaid::flowchart {
@@ -170,6 +171,9 @@ public:
         ++vertex_counter_;
         return node;
     }
+
+    // `A@{...}` reaches addVertex a second time, so it advances the counter once more.
+    void count_vertex() { ++vertex_counter_; }
 
     bool has_node(const std::string& id) const { return index_.count(id) != 0; }
 
@@ -346,6 +350,8 @@ private:
         ++i_;  // '}'
         std::string piece;
         in_quote = false;
+        bool has_label = false;
+        std::string label_type;
         auto apply = [&](const std::string& item) {
             size_t colon = item.find(':');
             if (colon == std::string::npos) return;
@@ -353,8 +359,12 @@ private:
             std::string value = trim(item.substr(colon + 1));
             if (raw) raw->emplace_back(key, value);
             if (!node) return;
-            if (key == "label") node->label = clean_label(value);
-            else if (key == "shape") {
+            if (key == "label") {
+                node->label = clean_label(value);
+                has_label = true;
+            } else if (key == "labeltype") {
+                label_type = value.size() >= 2 && value.front() == '"' && value.back() == '"' ? value.substr(1, value.size() - 2) : value;
+            } else if (key == "shape") {
                 if (value.size() >= 2 && value.front() == '"' && value.back() == '"')
                     value = value.substr(1, value.size() - 2);
                 node->shape = shape_from_data_name(value);
@@ -370,6 +380,8 @@ private:
             }
         }
         apply(piece);
+        // flowDb.sanitizeNodeLabelType: anything but `text` and `string` means markdown
+        if (node && has_label) node->markdown_label = label_type != "text" && label_type != "string";
     }
 
     std::string parse_vertex() {
@@ -389,7 +401,10 @@ private:
         }
 
         Node& node = b_.mention_node(id);
-        if (peek() == '@' && peek(1) == '{') parse_data_block(&node);
+        if (peek() == '@' && peek(1) == '{') {
+            parse_data_block(&node);
+            b_.count_vertex();
+        }
 
         static const std::vector<std::pair<const char*, std::vector<Close>>> shapes = {
             {"(((", {{")))", Shape::DoubleCircle}}},
@@ -751,6 +766,7 @@ Model Parser::parse(std::string_view source) const {
         e.style = default_style;
         e.style.insert(e.style.end(), own[i].begin(), own[i].end());
     }
+    b.model.config = detail::parse_init_directives(source);
     return std::move(b.model);
 }
 

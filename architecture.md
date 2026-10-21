@@ -60,6 +60,7 @@ each other's internals. That is what makes every stage unit-testable alone.
 | Layer | Class | Responsibility |
 |---|---|---|
 | facade | `Mermaid` | `render(text)`: pick diagram by header keyword, run pipeline |
+| cli | `cli::parse_arguments`, `cli::run` | the `mermaid_cli` tool: own argument parser, files/stdin/stdout, exit codes; `cli/main.cpp` only forwards `argv` |
 | facade | `DiagramRegistry` / `Diagram` | one `Diagram` subclass per Mermaid diagram type |
 | flowchart | `flowchart::Model` | `Node`, `Edge`, `Subgraph`, `ClassDef` value types |
 | flowchart | `StyleParser` | `fill:#f9f,stroke:#333` -> normalized declarations |

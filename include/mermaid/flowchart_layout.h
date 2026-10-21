@@ -1,6 +1,7 @@
 // flowchart_layout.h - flowchart::Model -> positioned geometry.
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -38,6 +39,7 @@ struct NodeLayout {
 
 struct EdgeLayout {
     std::string id;
+    size_t model_index = 0;     // index into Model::edges
     std::vector<Point> points;  // source border -> ... -> target border
     bool has_label = false;
     Rect label;                 // valid when has_label
@@ -46,13 +48,27 @@ struct EdgeLayout {
 struct ClusterLayout {
     std::string id;
     std::string title;
-    Rect rect;
+    Rect rect;            // the dagre compound box
+    Size label;           // measured title, zero without a title
+    int color_index = 0;  // declaration order, depth first (Mermaid's `colorIndex`)
+};
+
+struct Layout;
+
+// A subgraph with no edge leaving it is laid out as a graph of its own (Mermaid's recursive render, drawn as a
+// nested `g.root`) and is then a single node of the parent graph.
+struct RootLayout {
+    std::string id;                  // the subgraph
+    Rect box;                        // its box in the parent's coordinates
+    Point origin;                    // translate that moves the inner coordinates onto `box`
+    std::shared_ptr<const Layout> layout;  // nodes, edges and clusters in the inner coordinates
 };
 
 struct Layout {
-    std::vector<NodeLayout> nodes;      // model order, subgraph ids excluded
-    std::vector<EdgeLayout> edges;      // model order
+    std::vector<NodeLayout> nodes;      // model order, subgraph ids excluded; nodes inside `roots` are not here
+    std::vector<EdgeLayout> edges;      // the edges of this graph, model order
     std::vector<ClusterLayout> clusters;  // outermost last
+    std::vector<RootLayout> roots;      // closed subgraphs, in dagre node order (reverse declaration order)
     Rect bounds;                        // union of nodes, labels and clusters
     Size size;                          // bounds plus margin on the far sides
 

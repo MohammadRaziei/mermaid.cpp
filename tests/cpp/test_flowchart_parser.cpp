@@ -355,3 +355,53 @@ UTEST(flowchart_parser, a_class_given_twice_stays_twice_like_in_flowdb) {
     Model m = parse("flowchart TD\nA:::cold --> B\nclass A cold");
     ASSERT_EQ(2u, m.nodes[0].classes.size());
 }
+
+// ---- %%{init}%% directives (the parts the flowchart renderer reads)
+
+UTEST(flowchart_init, theme_variables_and_flowchart_spacing) {
+    const Model m = Parser().parse(
+        "%%{init: {\"themeVariables\": {\"fontFamily\": \"arial\", \"clusterBkg\": \"#f8f8f8\", \"clusterBorder\": \"#999999\"},"
+        " \"flowchart\": {\"nodeSpacing\": 70, \"rankSpacing\": 60}} }%%\nflowchart TD\nA-->B\n");
+    ASSERT_TRUE(m.config.font_family.has_value());
+    ASSERT_STREQ("arial", m.config.font_family->c_str());
+    ASSERT_STREQ("#f8f8f8", m.config.cluster_bkg->c_str());
+    ASSERT_STREQ("#999999", m.config.cluster_border->c_str());
+    ASSERT_EQ(70.0, *m.config.node_spacing);
+    ASSERT_EQ(60.0, *m.config.rank_spacing);
+}
+
+UTEST(flowchart_init, multi_line_directive_and_later_directive_wins) {
+    const Model m = Parser().parse(
+        "%%{\n  init: {\n    \"flowchart\": {\n      \"nodeSpacing\": 20,\n      \"rankSpacing\": 5\n    }\n  }\n}%%\n"
+        "%%{initialize: {\"flowchart\": {\"nodeSpacing\": 33}}}%%\nflowchart LR\nA-->B\n");
+    ASSERT_EQ(33.0, *m.config.node_spacing);
+    ASSERT_EQ(5.0, *m.config.rank_spacing);
+}
+
+UTEST(flowchart_init, absent_unknown_or_broken_directives_leave_defaults) {
+    const Model none = Parser().parse("flowchart TD\nA-->B\n");
+    ASSERT_FALSE(none.config.font_family.has_value());
+    ASSERT_FALSE(none.config.node_spacing.has_value());
+    const Model odd = Parser().parse("%%{init: {\"theme\": \"forest\", \"flowchart\": {\"curve\": \"basis\"}}}%%\nflowchart TD\nA-->B\n");
+    ASSERT_FALSE(odd.config.node_spacing.has_value());
+    const Model broken = Parser().parse("%%{init: {\"flowchart\": {\"nodeSpacing\": }}}%%\nflowchart TD\nA-->B\n");
+    ASSERT_FALSE(broken.config.node_spacing.has_value());
+}
+
+// ---- `A@{ label: ... }` nodes
+
+UTEST(flowchart_node_data, data_block_advances_the_vertex_counter_twice) {
+    const Model m = Parser().parse("flowchart LR\nA@{ label: \"x\" }\nB@{ label: \"y\" }\nC@{ label: \"z\" }\nA --> B\nB --> C\n");
+    ASSERT_EQ(0, m.find_node("A")->dom_index);
+    ASSERT_EQ(2, m.find_node("B")->dom_index);
+    ASSERT_EQ(4, m.find_node("C")->dom_index);
+}
+
+UTEST(flowchart_node_data, label_from_a_data_block_is_markdown_unless_told_otherwise) {
+    const Model m = Parser().parse(
+        "flowchart LR\nA@{ label: \"a\" }\nB@{ label: \"b\", labelType: \"text\" }\nC[\"c\"]\nD@{ shape: rect }\n");
+    ASSERT_TRUE(m.find_node("A")->markdown_label);
+    ASSERT_FALSE(m.find_node("B")->markdown_label);
+    ASSERT_FALSE(m.find_node("C")->markdown_label);
+    ASSERT_FALSE(m.find_node("D")->markdown_label);  // no label given
+}

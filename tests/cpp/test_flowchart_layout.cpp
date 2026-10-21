@@ -170,7 +170,8 @@ UTEST(flowchart_layout, subgraph_boxes_enclose_their_members) {
         "    c\n"
         "  end\n"
         "end\n"
-        "z --> a\n");
+        "z --> a\n"
+        "z --> c\n");  // an edge into each box keeps both of them in the root graph (see closed_clusters_...)
     ASSERT_EQ(2u, l.clusters.size());
     const ClusterLayout* outer = nullptr;
     const ClusterLayout* inner = nullptr;
@@ -188,12 +189,42 @@ UTEST(flowchart_layout, subgraph_boxes_enclose_their_members) {
     ASSERT_TRUE(l.bounds.contains({outer->rect.x, outer->rect.y}));
 }
 
-UTEST(flowchart_layout, edges_to_subgraphs_attach_to_a_member) {
+UTEST(flowchart_layout, edge_to_a_closed_subgraph_ends_on_its_box) {
     Layout l = lay("flowchart TD\nsubgraph S\n a\nend\nx --> S");
-    ASSERT_EQ(2u, l.nodes.size());  // the subgraph id is not a node
+    ASSERT_EQ(1u, l.nodes.size());  // the subgraph id is not a node; `a` lives in the nested root
     ASSERT_TRUE(l.find_node("S") == nullptr);
+    ASSERT_EQ(1u, l.roots.size());
     ASSERT_EQ(1u, l.edges.size());
     ASSERT_TRUE(l.edges[0].points.size() >= 2);
+    ASSERT_NEAR(l.roots[0].box.y, l.edges[0].points.back().y, 1e-6);  // the arrow stops at the top of the box
+}
+
+UTEST(flowchart_layout, edge_into_a_member_keeps_the_subgraph_in_the_parent_graph) {
+    Layout l = lay("flowchart TD\nsubgraph S\n a\nend\nx --> S\nS --> a2\nz --> a\n");
+    ASSERT_EQ(0u, l.roots.size());
+    ASSERT_TRUE(l.find_node("a") != nullptr);
+    ASSERT_EQ(1u, l.clusters.size());
+}
+
+// Every graph (the root and each nested root): finite, inside its bounds, nothing overlapping.
+static bool graph_is_sound(const Layout& l, size_t& nodes) {
+    nodes += l.nodes.size();
+    for (size_t i = 0; i < l.nodes.size(); ++i) {
+        const Rect ri = l.nodes[i].rect();
+        if (!std::isfinite(ri.x) || !std::isfinite(ri.y)) return false;
+        if (ri.x < l.bounds.x - 1e-6 || ri.right() > l.bounds.right() + 1e-6) return false;
+        if (ri.y < l.bounds.y - 1e-6 || ri.bottom() > l.bounds.bottom() + 1e-6) return false;
+        for (size_t j = i + 1; j < l.nodes.size(); ++j)
+            if (overlaps(ri, l.nodes[j].rect())) return false;
+    }
+    for (const EdgeLayout& e : l.edges) {
+        if (e.points.size() < 2) return false;
+        for (const Point& p : e.points)
+            if (!std::isfinite(p.x) || !std::isfinite(p.y)) return false;
+    }
+    for (const RootLayout& r : l.roots)
+        if (!graph_is_sound(*r.layout, nodes)) return false;
+    return true;
 }
 
 UTEST(flowchart_layout, fixtures_have_finite_non_overlapping_layouts) {
@@ -207,20 +238,10 @@ UTEST(flowchart_layout, fixtures_have_finite_non_overlapping_layouts) {
         "stress_flowchart_edge_label_position_064",
         "stress_flowchart_escape_sequences_and_quotes_012"};
     for (const char* name : names) {
-        Layout l = lay(read_fixture(name));
-        ASSERT_TRUE(!l.nodes.empty());
-        for (size_t i = 0; i < l.nodes.size(); ++i) {
-            const Rect ri = l.nodes[i].rect();
-            ASSERT_TRUE(std::isfinite(ri.x) && std::isfinite(ri.y));
-            ASSERT_TRUE(ri.x >= l.bounds.x - 1e-6 && ri.right() <= l.bounds.right() + 1e-6);
-            ASSERT_TRUE(ri.y >= l.bounds.y - 1e-6 && ri.bottom() <= l.bounds.bottom() + 1e-6);
-            for (size_t j = i + 1; j < l.nodes.size(); ++j)
-                ASSERT_TRUE(!overlaps(ri, l.nodes[j].rect()));
-        }
-        for (const EdgeLayout& e : l.edges) {
-            ASSERT_TRUE(e.points.size() >= 2);
-            for (const Point& p : e.points) ASSERT_TRUE(std::isfinite(p.x) && std::isfinite(p.y));
-        }
+        const Layout l = lay(read_fixture(name));
+        size_t nodes = 0;
+        ASSERT_TRUE(graph_is_sound(l, nodes));
+        ASSERT_TRUE(nodes > 0);
     }
 }
 
@@ -258,4 +279,74 @@ UTEST(flowchart_layout, stadium_is_wider_than_a_box_by_the_cap_allowance) {
     ASSERT_TRUE(a != nullptr);
     ASSERT_NEAR(171.25, a->size.width, 0.05);
     ASSERT_NEAR(45.0, a->size.height, 1e-9);
+}
+
+UTEST(flowchart_layout, init_directive_sets_node_and_rank_spacing) {
+    const Layout base = lay("flowchart TD\nA-->B\nA-->C\n");
+    const Layout wide = lay("%%{init: {\"flowchart\": {\"nodeSpacing\": 70, \"rankSpacing\": 90}}}%%\nflowchart TD\nA-->B\nA-->C\n");
+    const double base_gap = base.find_node("C")->center.x - base.find_node("B")->center.x;
+    const double wide_gap = wide.find_node("C")->center.x - wide.find_node("B")->center.x;
+    ASSERT_EQ(20.0, wide_gap - base_gap);
+    const double base_rank = base.find_node("B")->center.y - base.find_node("A")->center.y;
+    const double wide_rank = wide.find_node("B")->center.y - wide.find_node("A")->center.y;
+    ASSERT_EQ(40.0, wide_rank - base_rank);
+}
+
+// ---- extracted subgraphs (Mermaid's recursive render): a cluster with no edge leaving it is its own dagre graph
+
+static const char* kTwoClusters =
+    "%%{init: {\"flowchart\": {\"nodeSpacing\": 70, \"rankSpacing\": 60}} }%%\nflowchart TB\n"
+    "subgraph ClusterA\n  direction LR\n  a1[One] --> a2[Two]\nend\n"
+    "subgraph ClusterB\n  direction LR\n  b1[Three] --> b2[Four]\nend\n"
+    "ClusterA --> ClusterB\n";
+
+UTEST(flowchart_layout, closed_clusters_are_nested_roots_in_reverse_declaration_order) {
+    const Layout l = lay(kTwoClusters);
+    ASSERT_EQ(2u, l.roots.size());
+    ASSERT_STREQ("ClusterB", l.roots[0].id.c_str());
+    ASSERT_STREQ("ClusterA", l.roots[1].id.c_str());
+    ASSERT_EQ(0u, l.nodes.size());  // the nodes live in the roots
+    ASSERT_EQ(1u, l.edges.size());
+}
+
+UTEST(flowchart_layout, nested_root_is_laid_out_in_its_own_direction_and_coordinates) {
+    const Layout l = lay(kTwoClusters);
+    const RootLayout& a = l.roots[1];
+    // LR inside: the nodes sit side by side, 152 wide with 85 (rankSpacing + 25) between them.
+    const NodeLayout* a1 = a.layout->find_node("a1");
+    const NodeLayout* a2 = a.layout->find_node("a2");
+    ASSERT_TRUE(a1 && a2);
+    ASSERT_EQ(a1->center.y, a2->center.y);
+    ASSERT_NEAR(237.0, a2->center.x - a1->center.x, 1e-6);
+    // The box of the cluster is the node the parent graph sees; the root group is moved onto it.
+    const Rect inner = a.layout->clusters.back().rect;
+    ASSERT_NEAR(474.0, inner.width, 1e-6);
+    ASSERT_NEAR(135.0, inner.height, 1e-6);
+    ASSERT_NEAR(a.box.x, a.origin.x + inner.x, 1e-6);
+    ASSERT_NEAR(a.box.y, a.origin.y + inner.y, 1e-6);
+}
+
+UTEST(flowchart_layout, edge_between_closed_clusters_runs_box_to_box) {
+    const Layout l = lay(kTwoClusters);
+    const EdgeLayout& e = l.edges[0];
+    ASSERT_NEAR(245.0, e.points.front().x, 1e-6);
+    ASSERT_NEAR(143.0, e.points.front().y, 1e-6);  // bottom of ClusterA
+    ASSERT_NEAR(203.0, e.points.back().y, 1e-6);   // top of ClusterB
+    ASSERT_NEAR(490.0, l.size.width, 1e-6);
+    ASSERT_NEAR(346.0, l.size.height, 1e-6);
+}
+
+UTEST(flowchart_layout, cluster_with_an_edge_leaving_it_stays_in_the_parent_graph) {
+    const Layout l = lay("flowchart TB\nsubgraph S\n a --> b\nend\nb --> c\n");
+    ASSERT_EQ(0u, l.roots.size());
+    ASSERT_TRUE(l.find_node("a") != nullptr);
+    ASSERT_EQ(1u, l.clusters.size());
+}
+
+UTEST(flowchart_layout, closed_cluster_without_direction_flips_the_parent_direction) {
+    const Layout l = lay("flowchart TB\nsubgraph S\n a --> b\nend\nx --> y\n");
+    ASSERT_EQ(1u, l.roots.size());
+    const NodeLayout* a = l.roots[0].layout->find_node("a");
+    const NodeLayout* b = l.roots[0].layout->find_node("b");
+    ASSERT_EQ(a->center.y, b->center.y);  // LR inside a TB diagram
 }

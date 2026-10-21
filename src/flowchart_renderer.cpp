@@ -5,11 +5,13 @@
 #include "edge_renderer.h"
 #include "flowchart_css.h"
 #include "node_renderer.h"
+#include "rough_path.h"
 #include "shape_renderer.h"
 #include "style_css.h"
 #include "svg_writer.h"
 #include "text_block.h"
 #include "theme.h"
+#include "theme_variables.h"
 
 namespace mermaid::flowchart {
 
@@ -32,12 +34,7 @@ public:
         write_style();
         out_.open("g");  // holds the markers and the root group
         edges_.write_markers(out_);
-        out_.open("g", {{"class", "root"}});
-        write_clusters();
-        write_edge_paths();
-        write_edge_labels();
-        write_nodes();
-        out_.close();  // root
+        write_root(layout_, nullptr);
         edges_.write_colored_markers(out_);
         out_.close();  // marker group
         write_filters();
@@ -46,6 +43,18 @@ public:
     }
 
 private:
+    // One dagre graph. A closed subgraph is a nested root, moved onto its box in the parent.
+    void write_root(const Layout& layout, const Point* origin) {
+        SvgWriter::Attrs attrs{{"class", "root"}};
+        if (origin) attrs.emplace_back("transform", "translate(" + SvgWriter::num(origin->x) + ", " + SvgWriter::num(origin->y) + ")");
+        out_.open("g", attrs);
+        write_clusters(layout);
+        write_edge_paths(layout);
+        write_edge_labels(layout);
+        write_nodes(layout);
+        out_.close();
+    }
+
     void open_svg() {
         // Mermaid: viewBox = content bounds + `diagramPadding` (8) on every side.
         constexpr double kDiagramPadding = 8;
@@ -70,8 +79,14 @@ private:
     }
 
     std::string style_sheet() const {
-        if (options_.theme == "default")
-            return detail::flowchart_stylesheet(detail::theme_variables::redux_color(), options_.svg_id, model_, options_.css);
+        if (options_.theme == "default") {
+            detail::theme_variables vars = detail::theme_variables::redux_color();
+            const InitConfig& init = model_.config;  // themeVariables of the `%%{init}%%` directive
+            if (init.font_family) vars.font_family = *init.font_family;
+            if (init.cluster_bkg) vars.cluster_bkg = *init.cluster_bkg;
+            if (init.cluster_border) vars.cluster_border = *init.cluster_border;
+            return detail::flowchart_stylesheet(vars, options_.svg_id, model_, options_.css);
+        }
         const std::string id = "#" + options_.svg_id;
         std::string css;
         css += id + "{font-family:" + theme_.font_family + ";font-size:" + SvgWriter::num(theme_.font_size) +
@@ -112,41 +127,60 @@ private:
         }
     }
 
-    void write_clusters() {
+    // rendering-elements/clusters.js `rect` in the neo look.
+    void write_clusters(const Layout& layout) {
+        const detail::theme_variables vars = detail::theme_variables::redux_color();
+        const size_t slots = vars.border_color_array.size();
         out_.open("g", {{"class", "clusters"}});
-        for (auto it = layout_.clusters.rbegin(); it != layout_.clusters.rend(); ++it) {  // outermost first
+        for (auto it = layout.clusters.rbegin(); it != layout.clusters.rend(); ++it) {  // outermost first
             const Rect& r = it->rect;
-            out_.open("g", {{"class", "cluster"}, {"id", it->id}});
-            out_.leaf("rect", {{"x", SvgWriter::num(r.x)},
+            SvgWriter::Attrs attrs{{"class", "cluster"}, {"id", options_.svg_id + "-" + it->id}, {"data-look", "neo"}};
+            if (slots > 0) attrs.emplace_back("data-color-id", "color-" + std::to_string(static_cast<size_t>(it->color_index) % slots));
+            out_.open("g", attrs);
+            out_.leaf("rect", {{"style", ""},
+                               {"x", SvgWriter::num(r.x)},
                                {"y", SvgWriter::num(r.y)},
                                {"width", SvgWriter::num(r.width)},
                                {"height", SvgWriter::num(r.height)}});
-            if (!it->title.empty())
-                detail::write_text_block(out_, {r.center().x, r.y + line_height_ / 2 + 4}, it->title, line_height_);
+            write_cluster_label(*it);
             out_.close();
         }
         out_.close();
     }
 
-    void write_edge_paths() {
+    void write_cluster_label(const ClusterLayout& c) {
+        out_.open("g", {{"class", "cluster-label"},
+                        {"transform", "translate(" + detail::js_number(c.rect.center().x - c.label.width / 2) + ", " +
+                                          detail::js_number(c.rect.y) + ")"}});
+        out_.open("foreignObject", {{"width", detail::js_number(c.label.width)}, {"height", detail::js_number(c.label.height)}});
+        out_.open("div", {{"xmlns", "http://www.w3.org/1999/xhtml"},
+                          {"style", "display: table-cell; white-space: nowrap; line-height: 1.5;"}});
+        out_.open("span", {{"class", "nodeLabel"}});
+        out_.element("p", {}, c.title);
+        out_.close();  // span
+        out_.close();  // div
+        out_.close();  // foreignObject
+        out_.close();  // cluster-label
+    }
+
+    void write_edge_paths(const Layout& layout) {
         out_.open("g", {{"class", "edgePaths"}});
-        for (size_t i = 0; i < model_.edges.size() && i < layout_.edges.size(); ++i) {
-            const Edge& edge = model_.edges[i];
-            edges_.write_path(out_, edge, layout_.edges[i], find_layout(edge.from), find_layout(edge.to));
+        for (const EdgeLayout& e : layout.edges) {
+            const Edge& edge = model_.edges[e.model_index];
+            edges_.write_path(out_, edge, e, find_layout(layout, edge.from), find_layout(layout, edge.to));
         }
         out_.close();
     }
 
-    const NodeLayout* find_layout(const std::string& id) const {
-        for (const NodeLayout& nl : layout_.nodes)
+    static const NodeLayout* find_layout(const Layout& layout, const std::string& id) {
+        for (const NodeLayout& nl : layout.nodes)
             if (nl.id == id) return &nl;
         return nullptr;  // a subgraph
     }
 
-    void write_edge_labels() {
+    void write_edge_labels(const Layout& layout) {
         out_.open("g", {{"class", "edgeLabels"}});
-        for (size_t i = 0; i < model_.edges.size() && i < layout_.edges.size(); ++i)
-            edges_.write_label(out_, model_.edges[i], layout_.edges[i]);
+        for (const EdgeLayout& e : layout.edges) edges_.write_label(out_, model_.edges[e.model_index], e);
         out_.close();
     }
 
@@ -171,10 +205,11 @@ private:
         return unique;
     }
 
-    void write_nodes() {
+    void write_nodes(const Layout& layout) {
         out_.open("g", {{"class", "nodes"}});
+        for (const RootLayout& root : layout.roots) write_root(*root.layout, &root.origin);
         const detail::node_renderer renderer(options_.svg_id, detail::theme_variables::redux_color(), options_.hand_drawn_seed);
-        for (const NodeLayout& nl : layout_.nodes) {
+        for (const NodeLayout& nl : layout.nodes) {
             const Node* node = model_.find_node(nl.id);
             if (!node) continue;
             renderer.write(out_, *node, nl, resolved_style(*node));

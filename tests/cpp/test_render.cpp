@@ -172,6 +172,35 @@ UTEST(render, subgraph_titles_are_drawn) {
     ASSERT_TRUE(has(svg, "class=\"cluster"));
 }
 
+// Reference: Mermaid 12.2.0 (dagre) cluster of stress_flowchart_comments_and_directives_010. The box is the dagre
+// compound node, so it is wider than its children (edge-label dummies of `ok -->|yes| ...` belong to it).
+// (The label is 1/64 px narrower than in the reference, 50.59375: Chromium rounds layout units; parity tolerance is 0.5.)
+UTEST(render, cluster_is_the_dagre_compound_box_in_neo_markup) {
+    RenderOptions o;
+    o.svg_id = "t";
+    const std::string svg = render_svg(
+        "flowchart TD\nsubgraph S[\"Settings\"]\n cfg[\"config.json\"] --> parse[\"parse()\"]\n parse --> ok{ok?}\nend\n"
+        "ok -->|yes| out[\"write output\"]\nok -->|no| err[\"raise error\"]\n",
+        o);
+    ASSERT_TRUE(has(svg,
+        "<g class=\"clusters\"><g class=\"cluster\" id=\"t-S\" data-look=\"neo\" data-color-id=\"color-0\">"
+        "<rect style=\"\" x=\"8\" y=\"8\" width=\"352.5\" height=\"411\"/>"
+        "<g class=\"cluster-label\" transform=\"translate(158.9609375, 8)\">"
+        "<foreignObject width=\"50.578125\" height=\"21\">"
+        "<div xmlns=\"http://www.w3.org/1999/xhtml\" style=\"display: table-cell; white-space: nowrap; line-height: 1.5;\">"
+        "<span class=\"nodeLabel\"><p>Settings</p></span></div></foreignObject></g></g></g>"));
+}
+
+UTEST(render, cluster_colour_slots_follow_declaration_order_depth_first) {
+    RenderOptions o;
+    o.svg_id = "t";
+    const std::string svg = render_svg(
+        "flowchart TD\nsubgraph A\n subgraph B\n  b1\n end\n a1\nend\nsubgraph C\n c1\nend\n", o);
+    ASSERT_TRUE(has(svg, "id=\"t-A\" data-look=\"neo\" data-color-id=\"color-0\""));
+    ASSERT_TRUE(has(svg, "id=\"t-B\" data-look=\"neo\" data-color-id=\"color-1\""));
+    ASSERT_TRUE(has(svg, "id=\"t-C\" data-look=\"neo\" data-color-id=\"color-2\""));
+}
+
 UTEST(render, unsupported_and_invalid_input) {
     bool unsupported = false;
     try { render_svg("sequenceDiagram\nA->>B: hi"); } catch (const UnsupportedDiagram&) { unsupported = true; }
@@ -226,4 +255,35 @@ UTEST(render, stadium_takes_fill_stroke_and_width_from_its_styles) {
     const std::string svg = render_svg("flowchart LR\nA([end])\nstyle A fill:#f00,stroke:#00f,stroke-width:3px");
     ASSERT_TRUE(has(svg, "stroke=\"none\" stroke-width=\"0\" fill=\"#f00\""));
     ASSERT_TRUE(has(svg, "stroke=\"#00f\" stroke-width=\"3\" fill=\"none\""));
+}
+
+UTEST(render, init_theme_variables_reach_the_stylesheet) {
+    RenderOptions o;
+    o.svg_id = "t";
+    const std::string svg = render_svg(
+        "%%{init: {\"themeVariables\": {\"fontFamily\": \"arial\", \"clusterBkg\": \"#f8f8f8\", \"clusterBorder\": \"#999999\"}}}%%\n"
+        "flowchart TD\nsubgraph S\n a-->b\nend\n", o);
+    ASSERT_TRUE(has(svg, "#t{font-family:arial;font-size:14px;"));
+    ASSERT_TRUE(has(svg, "cluster rect{fill:#f8f8f8;stroke:#999999;stroke-width:1px;}"));
+}
+
+UTEST(render, closed_clusters_are_nested_root_groups) {
+    RenderOptions o;
+    o.svg_id = "t";
+    const std::string svg = render_svg(
+        "flowchart TB\nsubgraph ClusterA\n  direction LR\n  a1[One] --> a2[Two]\nend\n"
+        "subgraph ClusterB\n  direction LR\n  b1[Three] --> b2[Four]\nend\nClusterA --> ClusterB\n", o);
+    ASSERT_TRUE(has(svg, "<g class=\"nodes\"><g class=\"root\" transform=\"translate(0, "));
+    ASSERT_TRUE(has(svg, "<g class=\"clusters\"></g><g class=\"edgePaths\"><path d=\"M"));  // the outer root has no clusters of its own
+    ASSERT_TRUE(has(svg, "id=\"t-L_ClusterA_ClusterB_0\""));
+    ASSERT_TRUE(has(svg, "id=\"t-L_a1_a2_0\""));
+    ASSERT_TRUE(svg.find("t-ClusterB") < svg.find("t-ClusterA"));  // B first, like Mermaid
+}
+
+UTEST(render, markdown_node_labels_get_their_class) {
+    RenderOptions o;
+    o.svg_id = "t";
+    const std::string svg = render_svg("flowchart LR\nA@{ label: \"A: (Edge Text)\" }\nB[\"plain\"]\nA --> B\n", o);
+    ASSERT_TRUE(has(svg, "<span class=\"nodeLabel markdown-node-label\"><p>A: (Edge Text)</p></span>"));
+    ASSERT_TRUE(has(svg, "<span class=\"nodeLabel\"><p>plain</p></span>"));
 }

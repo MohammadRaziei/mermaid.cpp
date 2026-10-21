@@ -38,7 +38,7 @@ void node_renderer::write(SvgWriter& out, const flowchart::Node& node, const flo
                    {"data-look", "neo"},
                    {"transform", translate(layout.center.x, layout.center.y)}});
     write_outline(out, layout.shape, layout.size, style);
-    write_label(out, node.label, layout.label, style, label_shift(layout.shape));
+    write_label(out, node.label, layout.label, style, label_shift(layout.shape), node.markdown_label);
     out.close();
 }
 
@@ -135,7 +135,7 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
 }
 
 void node_renderer::write_label(SvgWriter& out, const std::string& text, const Size& label, const flowchart::Style& style,
-                               double dy) const {
+                               double dy, bool markdown) const {
     // addHtmlSpan (createText.ts): a table-cell div that is widened to the minimum label width.
     const std::string color = important_label_style(style);
     out.open("g", {{"class", "label"},
@@ -147,7 +147,7 @@ void node_renderer::write_label(SvgWriter& out, const std::string& text, const S
                      {"style", computed_label_color(style) +
                                    "display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; "
                                    "text-align: center; width: 120px;"}});
-    SvgWriter::Attrs span{{"class", "nodeLabel"}};
+    SvgWriter::Attrs span{{"class", markdown ? "nodeLabel markdown-node-label" : "nodeLabel"}};
     if (!color.empty()) span.emplace_back("style", color);
     out.open("span", span);
     out.open("p");

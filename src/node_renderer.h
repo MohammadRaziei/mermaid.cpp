@@ -24,7 +24,8 @@ public:
 
 private:
     void write_outline(SvgWriter& out, flowchart::Shape shape, const Size& size, const flowchart::Style& style) const;
-    void write_label(SvgWriter& out, const std::string& text, const Size& label, const flowchart::Style& style, double dy) const;
+    void write_label(SvgWriter& out, const std::string& text, const Size& label, const flowchart::Style& style, double dy,
+                     bool markdown = false) const;
     void write_stadium(SvgWriter& out, const Size& size, const flowchart::Style& style, const std::string& inline_style) const;
     static double label_shift(flowchart::Shape shape);
 

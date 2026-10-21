@@ -97,6 +97,11 @@ install(FILES
     ${PROJECT_BINARY_DIR}/mermaidConfigVersion.cmake
     DESTINATION ${_mermaid_cmake_dest})
 
+# --- command line tool (SVG output only), modelled on mermaid-js/mermaid-cli ---
+add_executable(mermaid_cli cli/main.cpp)
+target_link_libraries(mermaid_cli PRIVATE mermaid::mermaid)
+install(TARGETS mermaid_cli RUNTIME DESTINATION bin)
+
 if(EXISTS ${PROJECT_SOURCE_DIR}/examples/main.cpp)
     add_executable(example examples/main.cpp)
     target_link_libraries(example PRIVATE mermaid::mermaid)

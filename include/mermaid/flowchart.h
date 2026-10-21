@@ -42,6 +42,7 @@ struct Node {
     Shape shape = Shape::Default;
     std::vector<std::string> classes;
     Style style;  // from `style` statements
+    bool markdown_label = false;  // label set by `@{ label: ... }` (labelType defaults to markdown)
     int dom_index = 0;  // n of the DOM id `flowchart-<id>-<n>` (Mermaid's vertex counter at first sight)
 };
 
@@ -70,6 +71,15 @@ struct ClassDef {
     Style style;
 };
 
+// The `%%{init: ...}%%` settings the flowchart renderer reads (later directives override earlier ones).
+struct InitConfig {
+    std::optional<std::string> font_family;     // themeVariables.fontFamily
+    std::optional<std::string> cluster_bkg;     // themeVariables.clusterBkg
+    std::optional<std::string> cluster_border;  // themeVariables.clusterBorder
+    std::optional<double> node_spacing;         // flowchart.nodeSpacing
+    std::optional<double> rank_spacing;         // flowchart.rankSpacing
+};
+
 struct Model {
     Direction direction = Direction::TB;
     std::vector<Node> nodes;
@@ -79,6 +89,7 @@ struct Model {
     std::vector<std::string> class_def_order;  // names in first-definition order
     std::string acc_title;
     std::string acc_descr;
+    InitConfig config;
 
     const Node* find_node(const std::string& id) const;
     const Subgraph* find_subgraph(const std::string& id) const;
