@@ -1,5 +1,6 @@
 #include <cmath>
 #include <fstream>
+#include <set>
 #include <sstream>
 
 #include <mermaid/browser_text_measurer.h>
@@ -349,4 +350,58 @@ UTEST(flowchart_layout, closed_cluster_without_direction_flips_the_parent_direct
     const NodeLayout* a = l.roots[0].layout->find_node("a");
     const NodeLayout* b = l.roots[0].layout->find_node("b");
     ASSERT_EQ(a->center.y, b->center.y);  // LR inside a TB diagram
+}
+
+// ---- a cluster box holds exactly its members (S6b)
+
+static std::set<std::string> members_below(const Model& m, const std::string& sub) {
+    std::set<std::string> out;
+    for (const Subgraph& s : m.subgraphs) {
+        if (s.id != sub) continue;
+        for (const std::string& id : s.members) {
+            out.insert(id);
+            const std::set<std::string> deeper = members_below(m, id);
+            out.insert(deeper.begin(), deeper.end());
+        }
+    }
+    return out;
+}
+
+// In every graph: members lie inside the box of their cluster, other nodes do not touch it.
+static bool clusters_hold_exactly_their_members(const Model& m, const Layout& l) {
+    for (const ClusterLayout& c : l.clusters) {
+        const std::set<std::string> members = members_below(m, c.id);
+        for (const NodeLayout& n : l.nodes) {
+            const Rect r = n.rect();
+            const bool inside = r.x >= c.rect.x - 0.01 && r.right() <= c.rect.right() + 0.01 && r.y >= c.rect.y - 0.01 &&
+                                r.bottom() <= c.rect.bottom() + 0.01;
+            const bool touches = r.x < c.rect.right() && r.right() > c.rect.x && r.y < c.rect.bottom() && r.bottom() > c.rect.y;
+            if (members.count(n.id) ? !inside : touches) return false;
+        }
+    }
+    for (const RootLayout& r : l.roots)
+        if (!clusters_hold_exactly_their_members(m, *r.layout)) return false;
+    return true;
+}
+
+static bool cluster_boxes_are_clean(const std::string& source) {
+    static browser_text_measurer measurer;
+    const Model m = Parser().parse(source);
+    return clusters_hold_exactly_their_members(m, LayoutEngine(measurer, LayoutOptions{}).layout(m));
+}
+
+UTEST(flowchart_layout, cluster_box_holds_exactly_its_members_when_outside_nodes_share_its_ranks) {
+    ASSERT_TRUE(cluster_boxes_are_clean(
+        "flowchart TD\n top --> a\n top --> out1\n subgraph S\n  a --> b --> c\n end\n out1 --> out2 --> out3\n c --> end1\n out3 --> end1\n"));
+}
+
+UTEST(flowchart_layout, nested_cluster_boxes_hold_exactly_their_members_left_to_right) {
+    ASSERT_TRUE(cluster_boxes_are_clean(
+        "flowchart LR\n x --> p\n subgraph A\n  p --> q\n  subgraph B\n   q --> r\n  end\n end\n x --> y --> z --> r\n r --> w\n y --> q\n"));
+}
+
+UTEST(flowchart_layout, cluster_boxes_of_the_fixtures_hold_exactly_their_members) {
+    ASSERT_TRUE(cluster_boxes_are_clean(read_fixture("stress_flowchart_deeply_nested_clusters_019")));
+    ASSERT_TRUE(cluster_boxes_are_clean(read_fixture("stress_flowchart_comments_and_directives_010")));
+    ASSERT_TRUE(cluster_boxes_are_clean(read_fixture("stress_flowchart_directives_comments_blank_lines_032")));
 }

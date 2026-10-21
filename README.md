@@ -2,7 +2,7 @@
 
 Mermaid diagrams in dependency-free C++17: parse -> layout -> SVG, no JavaScript runtime.
 
-> Status: early. Step 0 done (scaffold + version API). See `checklist.md`.
+> Status: flowcharts render to SVG and match Mermaid 12.2.0 (`layout: dagre`) on all 10 reference fixtures. Other diagram types are not supported yet. See `checklist.md`.
 
 ## Build & test
 
@@ -39,4 +39,6 @@ target_link_libraries(app PRIVATE mermaid::mermaid)
 ## Docs
 
 - `architecture.md` - design and component map
-- `checklist.md` - roadmap and open questions
+- `checklist.md` - status, roadmap and what is unverified
+- `docs/adr/` - architecture decision records
+- `agent.md` - rules and workflow for AI agents and contributors

@@ -1,147 +1,142 @@
 # Checklist
 
-Workflow per step: failing test first -> implement -> green -> commit -> zip.
+Workflow per step: failing test first -> implement -> green -> commit -> clean rebuild and all tests -> zip
+(see `agent.md`). Decisions behind the steps are in `docs/adr/`. Legend: `[x]` done, `[~]` partly done, `[ ]` open.
 
-## Steps
+## Status
 
-- [x] **S0** scaffold: git (`master`), layout mirroring liburlparser, CMake, vendored `utest.h`, version API (TDD)
-- [x] **S1** geometry value types (`Point`, `Size`, `Rect`) + `TextMeasurer` interface + `ApproxTextMeasurer` (Arial metrics, 14px, 21px line)
-- [ ] **S1b** (on hold) accurate `TextMeasurer` using the standard approach for fonts; no specific font is vendored and no extra dependency may be added without the owner's approval. Approach to be agreed first
-- [x] **S2** flowchart `Model` + `StyleParser`
+- 177 tests pass (Linux/GCC; CI also builds macOS and Windows).
+- Parity with real Mermaid 12.2.0 (`layout: dagre`, neo look): **10 of 10 fixtures at zero differences**
+  (`tests/data/mermaid_js_dagre/parity.tsv`). That is the whole parity net; everything outside those fixtures is
+  listed under "Unverified".
+- Supported: flowcharts (`graph` / `flowchart`); every other diagram type throws `UnsupportedDiagram`.
+- `mermaid_cli` renders SVG from files or stdin.
+
+## Done
+
+- [x] **S0** scaffold: git (`master`), layout mirroring liburlparser, CMake, vendored `utest.h`, version API
+- [x] **S1** geometry value types, `TextMeasurer` interface
+- [x] **S1c** `browser_text_measurer`: table generated from Chromium by `tools/dump_font_metrics.mjs` (advances,
+  5112 kerning pairs, 14 px, linear scaling), HTML whitespace collapsing; the Arial approximation was removed
+  (ADR-0004)
+- [x] **S2** flowchart `Model` + style declaration parsing (`style_css`)
 - [x] **S3** shape and edge scanning (folded into the parser)
 - [x] **S4** flowchart `Parser` (statements, chains, `&`, subgraphs, class/style/linkStyle), merman semantic goldens
-- [x] **S5** `NodeSizer` (rect and diamond from goldens; other shapes approximate)
-- [x] **S6** first simplified layout (longest-path ranks, barycenter order); retired in S6f-6b, replaced by the dagre pipeline
-- [x] **S7** render (tests: `test_render.cpp`; private classes are covered through the public `render_svg`, tests never include `src/`)
-  - [x] S7a `SvgWriter` (escaping, number formatting, balanced tags)
-  - [x] S7b `Theme` (default, dark, forest, neutral; unknown name throws)
-  - [x] S7c `ShapeRenderer`s (one class per outline kind)
-  - [x] S7d `EdgeRenderer` (paths, markers, labels, invisible edges)
-  - [x] S7e `FlowchartRenderer` + `render_svg(source)` (diagram detection, styles, clusters, accessibility)
-- [x] **S8** facade `mermaid::render_svg(source)` (S7e) and the `mermaid_cli` target: `-i` (`-` stdin), `-o` (`-` stdout; default `<input>.svg`, `out.svg` for stdin), `-t`, `-b`, `-I`, `-C`, `-e svg` (png/pdf rejected), `-q`, `-V`, `-h`, long forms and `--opt=value`; own argument parser in `mermaid/cli.h` (tested without a process); `examples/main.cpp`. Not like mermaid-cli: `-i` is required (no implicit stdin), no markdown input, no `-c`/`-p`/`-w`/`-H`/`-s` (png/puppeteer only)
-- [~] **S6f** rewrite the layout as the dagre pipeline (reference: `dagre-d3-es@7.0.14`, `layout.js` `runLayout`; one class per stage). Public API: `include/mermaid/dagre.h` (`mermaid::dagre::layout`)
-  - [x] S6f-1 graph model (`dagre_graph.h`: graphlib-compatible multigraph with nesting and the same visiting order, incl. JS integer-key ordering) and `makeSpaceForEdgeLabels`
-  - [x] S6f-2 `Acyclic` and `NetworkSimplexRanker`
+- [x] **S5** `NodeSizer` (box, diamond, cylinder, stadium from Mermaid's formulas; other shapes approximate)
+- [x] **S6** first simplified layout; retired in S6f-6b
+- [x] **S6f** layout as the dagre pipeline (`dagre-d3-es` 7.0.14, one class per stage; ADR-0003)
+  - [x] S6f-1 graph model (graphlib-compatible multigraph, same visiting order incl. JS integer-key ordering),
+    `makeSpaceForEdgeLabels`
+  - [x] S6f-2 `Acyclic`, `NetworkSimplexRanker`
   - [x] S6f-3 `NestingGraph`, `EdgeNormalizer`, `ParentDummyChains`, `BorderSegments`
-  - [x] S6f-4 `Orderer` (init order, barycenter sweeps, crossing count, subgraph sorting, conflict resolution)
-  - [x] S6f-5 `position` (Brandes-Koepf) and the coordinate system (TB/BT/LR/RL)
-  - [x] S6f-6a self-edges, label placement, border nodes, edge points and node intersections (all in `dagre_layout.cpp`)
-  - [x] S6f-6b `LayoutEngine` runs `mermaid::dagre::layout`; `layout_steps` / `layered_graph` removed. Edge labels get `edge_label_pad` (20) on every side in the label rank (matches the basic and 003 goldens; cause not confirmed), cylinder size follows the golden formula, collinear edge points are dropped. 87 tests pass
-  - Verified: `tests/cpp/test_dagre.cpp` has 11 reference cases; a further 300 random graphs (all four directions, compound, labels, cycles, self-loops, multi-edges) were compared against dagre-d3-es and matched to 1e-6. The numbers come from running dagre-d3-es 7.0.14 with a small node script that is kept outside the repo.
-- [x] **S7f** edges wired to `edge_geometry` (neo markup of Mermaid 12.2 `edges.js`): `edges edgePaths` group, ids with svg prefix, classes, `style` (dash array, pathStyle), `data-*`, `-margin` markers, coloured marker copies after root, HTML edge labels. `linkStyle` follows `flowDb.updateLink` (default first, indexed replaces, `fill:none`). Parity tests ignore `d`/`data-points`/`style` numbers because the reference is ELK. Not verified against a real SVG: invisible (`~~~`) edges (still not drawn; the code suggests Mermaid draws a path), label colours from linkStyle, dotted dash pattern, thick class
-- [x] **S7g** parity moved to the real Mermaid 12.2.0 with `layout: dagre` (references made here with headless Chromium, `tools/render_all_references.mjs`; the ELK references were dropped). Real numbers: node/rank spacing 50, margin 8, no extra label-pad, `viewBox` = graph size from 0,0, edge routes keep the point on the empty label rank, edges are `curveBasis` after `fixCorners` (`edge_geometry::basis_path`), unlabelled edges get an empty `edgeLabel`, group class is `edgePaths`. `class_style` is `pass`; `basic` differs only in edge label widths (text metrics)
-- [ ] **S6g** (superseded by S7g: the 40/12/20 values were ELK artefacts)
-- [x] **S1c** (done: `browser_text_measurer`, table generated by `tools/dump_font_metrics.mjs`, HTML whitespace collapsing) text metrics: real widths come from the browser (Yes = 22.84375); `ApproxTextMeasurer` gives 24.12; needs a generated metrics table with kerning
-- [x] **S7h** per-edge `curve` (linear/basis/cardinal; other names draw basis), cylinder in neo markup, duplicate classes kept, repeated style properties collapse. Parity `pass`: basic, class_style, 034, 003
-- [x] **S7i** (done: `rough_path.cpp` repeats rough.js `path()` for polygons incl. the seeded random stream; `RenderOptions::hand_drawn_seed`, default 1; `js_number`) stadium: size is right (`stadium.ts` formula); the outline in 12.2 is a rough.js path (`<g class="basic label-container outer-path">` with two paths, seeded PRNG, `handDrawnSeed`) - port rough.js `path()` for M/L polygons. This is the only difference left in 012 and 002
-- [~] **S7j** clusters (subgraphs) in neo markup. Done: cluster box = the dagre compound node (children's dummy nodes included; `ParentDummyChains` was already ported in S6f-3), ids with svg prefix, `data-look`, `data-color-id` (declaration order, depth first, modulo palette size), label as `foreignObject` (`cluster-label`); box widened to label + padding like `clusters.js`. Parity: 019 `pass`; 010 `pass` after S7k. Open: per-subgraph `direction` in the dagre layer is not needed for 019 (passes), 032 and 064 (`%%{init}%%` spacing, `A@{ label: ... }`)
-- [x] **S7k** `%%{init}%%` (`init`/`initialize`, multi-line, later directive wins, invalid JSON ignored; own small JSON reader in `init_directive.cpp`): `themeVariables.fontFamily/clusterBkg/clusterBorder` into the stylesheet, `flowchart.nodeSpacing/rankSpacing` into the layout; parsed into `Model::config`. 010 `pass`. Not verified: `fontFamily` does not change text measurement (table is fixed); other init keys (`theme`, `curve`, `look`, ...) are ignored
-- [x] **S7l** `A@{ label: "..." }` nodes: label class `nodeLabel markdown-node-label` (labelType defaults to markdown unless `labelType: text|string`), and every `@{}` block advances the vertex counter once more (ids jump by 2). 064 `pass`. Not ported: markdown formatting inside such labels (`**bold**`, `*italic*`, line breaks); plain text renders the same
-- [ ] (old) **S6g** mermaid layout settings. Findings (Mermaid 12.2.0 source read, plus the real-browser SVGs in merman `fixtures/upstream-svgs/flowchart`):
-  - Code defaults: `flowchart.nodeSpacing` / `rankSpacing` 50 (`schemas/config.schema.yaml`, `flowRenderer-v3-unified.ts`), dagre `marginx/marginy` 8 (`dagre/index.js`, `prepareLayoutForDagre`), `diagramPadding` 8, subgraph `ranksep + 25`.
-  - The real-browser SVG of `basic` has exactly the golden node positions (A 184,34.5; B 184,182.5; C 88,391.5; D 280,391.5; viewBox `4 4 360 418`), so the merman goldens equal real Mermaid output. Drawn node rects equal the golden sizes (152 x 45).
-  - Open: the gap between ranks is 40 (A -> B) and the label rank is 40 taller than the label on each side, which the code defaults (50) do not explain. The mechanism (a look/theme setting, or node sizes handed to dagre differing from the drawn ones) is not found yet. Until then `LayoutOptions` keeps 40 / 12 / `edge_label_pad` 20 because they reproduce real output.
-  - Cylinder: `ry = rx / (2.5 + w / 50)`, height adds `3 * ry` (read in `shapes/cylinder.ts`; same as the golden).
-- [ ] **S6b** clusters stay in their own x-range across layers (today a node outside a subgraph can end up inside its box; see `stress_flowchart_deeply_nested_clusters_019`)
-- [x] (done in S7k) **S6d** `%%{init: ...}%%` directives: flowchart `nodeSpacing` / `rankSpacing` and `themeVariables` (needs a small JSON reader of our own, tests/fixtures 010, 032, 064)
-- [x] **S6e** per-subgraph `direction`: a subgraph with no edge leaving it is laid out as a dagre graph of its own (Mermaid `extractor`), in its own `direction` or the one perpendicular to the parent graph, with `ranksep + 25` and the parent `nodesep`; it is a node of the parent sized by its box and drawn as a nested `g.root` (`Layout::roots`). Edges to a subgraph id that stays closed run box to box. 032 `pass`. Not ported: the "safe anchor" re-anchoring of `adjustClustersAndEdges` and cutting an edge at the border of a cluster that is not closed (`fromCluster`/`toCluster`)
-- [ ] **S6c** calmer edges in dense graphs (shared horizontal segments overlap, no curves, back edges cross a lot; see `stress_flowchart_dense_parallel_edges_002`)
-- [ ] **S9** golden layout parity with merman (`*.layout.golden.json`): `basic` and `class_style` match exactly; the other fixtures only have structural checks so far
-- [ ] **S10** CI, docs (Doxygen like liburlparser), benchmarks, coverage dashboard
+  - [x] S6f-4 `Orderer`
+  - [x] S6f-5 `position` (Brandes-Koepf) and the TB/BT/LR/RL coordinate system
+  - [x] S6f-6a self-edges, label placement, border nodes, edge points, node intersections
+  - [x] S6f-6b `LayoutEngine` runs `mermaid::dagre::layout`
+  - Verified: 11 reference cases in `test_dagre.cpp`, plus 300 random graphs (all four directions, compound, labels,
+    cycles, self-loops, multi-edges) compared with `dagre-d3-es` to 1e-6 (Node script kept outside the repo)
+- [x] **S7** render
+  - [x] S7a `SvgWriter`; S7b `Theme`; S7c `ShapeRenderer`s; S7d `EdgeRenderer`; S7e `FlowchartRenderer` +
+    `render_svg(source)` (diagram detection, styles, clusters, accessibility)
+  - [x] S7f edges in the neo markup of Mermaid 12.2 (`edge_geometry`: clip, `fixCorners`, arrow offsets, `curveBasis`;
+    ids, classes, `data-*`, `-margin` markers, coloured marker copies, HTML edge labels); `linkStyle` follows
+    `flowDb.updateLink`
+  - [x] S7g parity moved to real Mermaid 12.2.0 with `layout: dagre` (ADR-0002, ADR-0008). Numbers: node/rank
+    spacing 50, margin 8, no extra label pad, label position centre, `viewBox` = graph size from 0,0, edge routes
+    keep the point on the empty label rank, unlabelled edges get an empty `edgeLabel`
+  - [x] S7h per-edge `curve` (linear/basis/cardinal; other names draw basis), cylinder in neo markup, duplicate
+    classes kept, repeated style properties collapse
+  - [x] S7i stadium as a rough.js path with the seeded generator (`rough_path.cpp`, `RenderOptions::hand_drawn_seed`,
+    default 1; ADR-0012)
+  - [x] S7j clusters in neo markup: box = dagre compound node, svg-prefixed ids, `data-look`, `data-color-id`
+    (declaration order, depth first, modulo palette size), `foreignObject` label, box widened to label + padding
+  - [x] S7k `%%{init}%%` (`init` / `initialize`, multi-line, later wins, invalid JSON ignored; own JSON reader;
+    ADR-0011): `themeVariables.fontFamily|clusterBkg|clusterBorder`, `flowchart.nodeSpacing|rankSpacing`
+  - [x] S7l `A@{ label: "..." }`: `markdown-node-label` class (labelType defaults to markdown unless `text` /
+    `string`), each `@{}` block advances the vertex counter once more (ids jump by 2)
+- [x] **S6b** clusters stay in their own x-range: the dagre compound boxes hold exactly their members. Closed by
+  tests (two constructed graphs, TB and LR, plus fixtures 010, 019, 032) after a 74-check scan found no violation
+- [x] **S6c** calmer edges in dense graphs: solved by the dagre port; fixture 002 passes
+- [x] **S6d** init directives (done in S7k)
+- [x] **S6e** per-subgraph `direction` and closed subgraphs as nested roots (ADR-0010): own `direction` or perpendicular
+  to the parent, `ranksep + 25`, parent `nodesep`, drawn as nested `g.root`; edges between closed clusters run box to
+  box. 032 passes
+- [x] **S8** `mermaid::render_svg(source)` and the `mermaid_cli` target (ADR-0013), `examples/main.cpp`
+- [x] (superseded) **S6g** layout spacing "40 / 12 / 20": those were ELK artefacts (ADR-0002)
+- [x] (superseded) **S9** golden layout parity with merman: merman is not the criterion any more; its goldens remain
+  as parser and sizing checks
 
-## Later / optional
+## Open
 
+Ordered by what is likely to matter next.
+
+- [ ] **S11** themes `dark`, `forest`, `neutral` (and `base`) in the neo look. Only `default` uses the ported
+  stylesheet; the others still use the old simplified classic styles and match nothing. Needs references per theme
+  (`render_reference.mjs` with a theme config) and theme variables dumped per theme
+  (`tools/dump_theme_variables.mjs`). Until then `mermaid_cli -t dark|forest|neutral` is an approximation
+- [ ] **S12** remaining shapes in neo markup, each with a reference: round, subroutine, circle, double circle, hexagon,
+  odd, lean right/left, trapezoid, inverted trapezoid (they still use the old outline code), then the
+  `@{ shape: ... }` family
+- [ ] **S13** edges to clusters that stay open: cut the path at the cluster border (`fromCluster` / `toCluster`) and
+  the "safe anchor" re-anchoring of `adjustClustersAndEdges` (ADR-0010 lists what was not ported)
+- [ ] **S14** more fixtures: the 10 fixtures are the only parity net. Wanted: invisible edges, `linkStyle` colours,
+  dotted/thick edges, every curve, BT/RL, self-loops, multi-edges, long labels, `<br/>`, Markdown strings, nested
+  closed clusters mixed with open ones, `classDef` on subgraphs
+- [ ] **S10** CI is a 3-OS build and test (`.github/workflows/cmake.yml`). Open: Doxygen docs (like liburlparser),
+  benchmarks, coverage dashboard (`mermaid_coverage` target exists, needs `lcov`)
+- [ ] Init keys not read yet: `theme`, other `themeVariables`, `flowchart.curve`, `look`, `layout`, `htmlLabels`
+- [ ] Curves other than basis/linear/cardinal; `flowchart.curve` from config; `animate`
+- [ ] Invisible edges (`~~~`): not drawn (Mermaid appends a path with `edge-thickness-invisible`)
+- [ ] Markdown inside labels (`**bold**`, `*italic*`, line breaks); only plain text matches
+- [ ] `click`, links, tooltips; icons/images; accessibility tags beyond the basic ones
+- [ ] Text: table coverage is not audited; `fontFamily` does not change measurement; a different font needs a new table
+- [ ] ELK: the 12.2.0 default layout is ELK; matching plain `mmdc` output needs an ELK port. No decision taken
+- [ ] Rename the older CamelCase types to `snake_case` (one dedicated step; ADR-0007)
+- [ ] MSVC and macOS are verified by CI only; the one `-Wformat` warning in `tests/cpp/test_css_color.cpp`
 - [ ] Python bindings (nanobind, as in liburlparser)
-- [ ] Other diagram types: sequence, class, state, ER, gantt, pie, ...
-- [ ] Edges to subgraphs, `click`, `@{ shape: ... }`, Markdown strings
+- [ ] Other diagram types: sequence, class, state, ER, gantt, pie, ... (needs an ADR first)
 
-## Open questions (found while reading merman fixtures)
+## Parity fixtures (all `pass`)
 
-- Upstream SVGs (merman `fixtures/upstream-svgs/flowchart`) use font-size **14px**,
-  label height **21px** (1.5 em) and Arial metrics (CSS lists `"Recursive Variable", arial`;
-  the font was not installed). Edge label "No" measured 17.90625 px (= Arial 14px);
-  "Yes" measured 22.84 px, i.e. Arial **with kerning** (24.1 px without).
-  -> an accurate measurer must apply kerning; `ApproxTextMeasurer` cannot.
-- Node label `foreignObject` widths in the same SVGs are 120 (fixed?) - find out why.
+| fixture | exercises |
+|---|---|
+| basic | boxes, diamond, labelled edges, TD layout |
+| class_style | `classDef`, `class`, `style` |
+| stress_flowchart_amp_groups_edge_ids_034 | `&` groups, edge ids, `linkStyle` colours |
+| stress_flowchart_classdef_and_inline_classes_003 | inline classes, cylinder, LR with labels |
+| stress_flowchart_dense_parallel_edges_002 | dense and parallel edges, stadium (rough.js) |
+| stress_flowchart_escape_sequences_and_quotes_012 | escapes and quotes in labels, stadium |
+| stress_flowchart_comments_and_directives_010 | cluster with leaving edges, `%%{init}%%` theme variables |
+| stress_flowchart_deeply_nested_clusters_019 | nested clusters, per-subgraph direction |
+| stress_flowchart_directives_comments_blank_lines_032 | closed clusters as nested roots, edge between clusters, init spacing |
+| stress_flowchart_edge_label_position_064 | `@{ label }` nodes, edge label positions, init spacing |
 
-- Solved in part: the merman layout goldens use the **neo look** sizing in
-  `merman-render/src/flowchart/node.rs`: rect = (text_w + 32, text_h + 24), diamond side =
-  text_w + text_h + 2*padding (padding 15). With text_h = 21 both goldens (152 x 45 and
-  171 x 171) fit **only if text_w = 120 for every label** ("Start", "OK", "Fail", "Choice").
-  So labels in these goldens measure as a fixed 120 px wide. Not yet found where the 120
-  comes from (merman has `max_width_px: Some(120.0)` in `svg_label_artifact.rs`); find out
-  before S5/S9. Rank gap = 40. Tests must assert golden numbers, not guessed constants.
+## Unverified (implemented from the Mermaid source, no reference SVG covers it)
 
-## Parity with merman layout goldens (node size / node position, within 1 px)
+- `linkStyle` label colours, dotted dash pattern, thick class, every curve other than the default
+- shapes other than box, diamond, cylinder, stadium
+- the "safe anchor" and `fromCluster` / `toCluster` paths of cluster edges (not implemented)
+- `-t dark|forest|neutral` output
+- `mermaid_cli` on Windows; temporary-file handling in `test_cli.cpp` on Windows
+- the stadium polygon bounding box: Mermaid's node is 0.02 narrower than the formula (within tolerance)
 
-| fixture | nodes | size ok | position ok |
-|---|---|---|---|
-| basic | 4 | 4 | 4 |
-| class_style | 2 | 2 | 2 |
-| amp_groups_edge_ids_034 | 5 | 5 | 5 |
-| classdef_and_inline_classes_003 | 5 | 5 | 3 (x of `store`/`reject` differ) |
-| comments_and_directives_010 | 5 | 5 | 0 (init directive, cluster) |
-| deeply_nested_clusters_019 | 10 | 10 | 0 (subgraph directions, clusters) |
-| dense_parallel_edges_002 | 9 | 8 | 0 |
-| directives_comments_blank_lines_032 | 4 | 4 | 0 (init spacing) |
-| edge_label_position_064 | 3 | 3 | 0 (init spacing) |
-| escape_sequences_and_quotes_012 | 5 | 3 | 4 |
+## Findings worth keeping
 
-(Recomputed after S6f-6b with the dagre layout; tolerance 1 px.)
-
-## Findings from reading mermaid 11.16.0 and dagre-d3-es 7.0.14 (graphify + code)
-
-- Mermaid lays out flowcharts with `dagre-d3-es` (`rendering-util/layout-algorithms/dagre/index.js`). The edge-label "corridor" seen in merman goldens is dagre's `makeSpaceForEdgeLabels`: `ranksep /= 2`, every edge `minlen *= 2`, so a label sits in its own rank.
-- Oracle check (done outside the repo with node): feeding the merman golden node sizes of `classdef_and_inline_classes_003` (LR, nodesep 40, ranksep 40) and its two edge-label sizes to dagre gives **exactly** the golden y of all five nodes (107.11, 54.57, 159.65 after the 12 px margin) and the golden x of `in`, `parse`, `validate`. So the 9.6 px y error of the simplified layout is the missing dagre positioning (Brandes-Kopf), not a sizing error.
-- Still different: x of `store`/`reject` (golden left-aligns them at 666.74, plain dagre centres them and is 48 px closer): the label rank is wider in the golden. Find how merman/mermaid pads edge-label width before layout.
-- **Reference version: Mermaid 12.2.0** (latest release; tags 12.0.0, 12.1.0, 12.2.0; `main` is 12.2.0). merman follows 12.2.0 too (its README says so), so its goldens are 12.2.0 behaviour. The first analysis was done on 11.16.0; `dagre-d3-es` is 7.0.14 in both, so the dagre port is unaffected. In 12.2.0 the layout code (`dagre/index.js`) was split into a measure and a render phase and the subgraph-title margin handling changed; the dagre call itself is the same.
-- The constant 120 is `flowchart.minNodeWidth` (default 120, new in 12.x; absent in 11.16.0): labels narrower than that are widened to it and the node padding is added on top (120 + 32 = 152, the width of `in`/`parse` in the goldens). `wrappingWidth` is 120 too. `NodeSizer` should read both from the config instead of hard-coding `min_label_width`.
-- Mermaid 12.2.0 and merman defaults: `nodeSpacing`/`rankSpacing` 50, dagre `marginx/marginy` 8, `diagramPadding` 8; the goldens show 40 and 12. Still unexplained (S6g): find what config the golden generation uses.
-- The fixture headers say Mermaid@11.12.2; that is only a comment, the goldens come from merman (12.2.0).
-
-## Portability
-
-- Tests include `utest.h`, which pulls in `<windows.h>` on MSVC: never name identifiers `near`, `far`, `small`, `big` (macros there). CI (windows-latest) caught `near` in `test_dagre.cpp` and `small` in `test_approx_text_measurer.cpp`.
-
-## Look of the output (found by comparing with real Mermaid SVGs)
-
-Real Mermaid 12.2 output (`fixtures/upstream-svgs/flowchart/*.svg` in merman, rendered in a browser) versus `mermaid::render_svg`:
-
-- Real default look is `neo` (`data-look="neo"`): font `"Recursive Variable", arial, sans-serif`, text colour `#28253D`, a `<style>` with the edge animation keyframes, svg `class="flowchart"`, svg id = diagram id (`basic`).
-- viewBox of the real SVG is `4 4 360 418` for `basic` (content bounds 12..356 plus `diagramPadding` 8); ours is `0 0 368 426`.
-- Edge paths stop short of the node by the marker offset (`M184,57L184,93`, node top at 97).
-- Ours still draws the classic theme (`#ECECFF` fill, `#9370DB` stroke, trebuchet). Theme/look work is a separate step (take colours from Mermaid's `themes/theme-default.js`, neo styles from `rendering-elements/shapes`).
-- `mmdc` itself cannot run in the sandbox (no browser). The browser SVGs above are the comparison source.
-
-## SVG parity with Mermaid (tests/data/mermaid_js, tests/cpp/test_svg_parity.cpp)
-
-- `svg_compare.h` (pugixml via FetchContent, tests only): same element tree, same attribute names, same text, numbers inside any attribute may differ by 0.5. `parity.tsv` marks each fixture `pass` (must match) or `todo` (differences are printed).
-- Current state: `basic`, `003`, `034` are `todo` (8 top-level differences each, the comparison stops at the first mismatching child).
-- What the real 12.2 output does that ours does not yet (read from `basic.svg`):
-  - svg: `xmlns:xlink`, `class="flowchart"`, viewBox = content bounds + 8 padding (`4 4 360 418`), `max-width` from it.
-  - `<style>` is 22 KB: the full neo theme CSS (port `getStyles` / neo theme from Mermaid source, not copy the text).
-  - one `<g>` holding the markers first, then `<g class="root">` with `clusters`, `edges edgePaths`, `edgeLabels`, `nodes`.
-  - 16 marker definitions (`pointEnd`, `pointEnd-margin`, circle, cross, ...).
-  - edges are routed orthogonally with rounded corners (`Q` arcs) and carry `data-edge`, `data-et`, `data-id`, `data-points` (base64 JSON of the points), `data-look="neo"`, `marker-end="...-margin"`, and a dash style; edges stop 4 px short of the node for the marker. Edge labels are `foreignObject` HTML in a `labelBkg` div.
-  - Next steps, one per commit, each lowering the difference count: skeleton and viewBox, markers, style CSS, node shapes, edges, labels, then flip fixtures to `pass`.
-
-## The default layout of Mermaid 12.2.0 is ELK, not dagre (found while comparing edges)
-
-- `schemas/config.schema.yaml` (root `layout`): "Defaults to `elk`, which is bundled with mermaid; the `tiny` build falls back to `dagre`". `flowRenderer-v3-unified.ts` takes the root `layout`, and `rendering-util/render.ts` registers `elk` and `dagre`. Flowchart default look is `neo`, theme `redux-color`.
-- merman generates its `fixtures/upstream-svgs` with `@mermaid-js/mermaid-cli` 12.0.0 + `mermaid` 12.2.0 and a config containing only `handDrawnSeed` (`tools/mermaid-cli/mermaid-config.json`), so those SVGs are ELK output.
-- Evidence in the SVG: edge points are orthogonal with the bend 20 px below the source (`basic`: (158.83,268) (158.83,288) (88,288) (88,369)), and out-edges of one node are fanned out (x = 184 -/+ 25.17). Plain dagre-d3-es 7.0.14 on the same graph gives diagonal points ((119.65,264) (84,314.5) (84,365)); our dagre port gives the same, so the port is right and the engine differs.
-- Node positions of simple chains agree between dagre and ELK (that is why `basic` matched); `store` / `reject` in fixture 003 differ.
-- Consequences: (1) references for the dagre engine must be generated with `layout: dagre` (`%%{init: {"layout": "dagre"}}%%` or frontmatter `config: {layout: dagre}`); (2) matching default `mmdc` output needs an ELK layered port (large, not started); (3) layout-independent parity work (svg skeleton, markers, CSS, shapes, labels) is unaffected.
-- Plan: keep dagre as the implemented engine and honour `layout: dagre`; do the layout-independent SVG steps first; ELK is a separate decision.
-
-### Parity steps done
-
-- [x] frame of the document (`basic`): svg attributes and viewBox (bounds + 8), 12 real markers (`pointEnd`, `pointStart`, `...-margin`, circle, cross), the two drop-shadow `<defs>`, group order. Test: `svg_parity.svg_frame_matches_mermaid_js_outside_style_and_root_content` (uses `SvgComparer::prune`). `parity.tsv` differences for `basic`: 8 -> 69, because the comparison now descends into `g.root` (the count rises while the structure becomes comparable; it is not a regression).
-- Left for later: `003` viewBox height (ELK layout), `034` linkStyle colours add coloured copies of the markers (reference `g` has 16 children = 12 markers + 3 coloured + root).
-- [ ] next: `<style>` CSS, node shapes (`g.node`: rect with `label-container`, `foreignObject` HTML labels), edges (`data-*`, rounded path, marker-end margin), edge labels, clusters.
-- [x] nodes (`basic`): `NodeRenderer` writes the neo markup: group `node default` with DOM id `<svg>-flowchart-<id>-<n>` (`Node::dom_index` = Mermaid's vertex counter: every addVertex call counts, also `A & B` members and `style` statements), `data-look`, `transform`, local-coordinate outline (rect `basic label-container`, diamond polygon with `translate(-s/2+0.5, s/2)`), HTML label (`foreignObject` > div `display: table` > span `nodeLabel` > p) as in `createText.ts`; classDef colours as `!important` styles and the browser-computed `rgb()` colour on the div. Test: `svg_parity.nodes_of_basic_match_mermaid_js`. Not ported yet: the other shapes (cylinder, circle, stadium ... still the old outline in local coordinates), label wrapping at 120 px, duplicated class names (`cold cold`).
-- [ ] next: `<style>` CSS, edges, edge labels, clusters.
-- [x] stylesheet (`basic`, `003` with classDefs): `css_compiler` (stylis-like: namespace prefix, nesting, `&`, comments, minification), `css_color` (hex/rgb/hsl, `fade`, browser `rgb()` form), `theme_variables::redux_color()` (values dumped from Mermaid's own `theme-redux-color.js` with node + esbuild + khroma, not re-derived), `flowchart_css` (templates in the order of Mermaid's `styles.ts`, `flowchart/styles.ts`, `globalStyles.ts`; palette sections per colour slot; classDef rules `> *`, `span`, `tspan` in first-definition order via `Model::class_def_order`). Tests: `svg_parity.stylesheet_*`. Only theme `default` (redux-color, neo) uses it; `dark`, `forest`, `neutral` still use the old simple sheet (dump their variables the same way to port them).
-- Naming: new code uses snake_case (std style), including type names (`css_compiler`, `svg_comparer`, `node_renderer`); the older CamelCase types are left until a dedicated rename step.
-- [ ] next: edges (`flowchart-link` classes and `data-*`, `-margin` markers, rounded paths), edge labels (HTML `labelBkg`), clusters, then the other shapes.
-- [~] edges: `edge_geometry` (public header, 7 tests, values from the real `basic.svg`): `clip_to_nodes`, `border_point` (box, diamond, circle), `shorten_ends` (arrow offset 4), `rounded_path` (radius 5, exact `generateRoundedPath`), `rounded_length`, `points_attribute` (base64 JSON). **Not wired into `edge_renderer` yet.** Spec read from `rendering-elements/edges.js` / `edgeMarker.ts` / `utils/lineWithOffset.ts`: see HANDOFF section 4.
+- **Reference.** Mermaid 12.2.0 defaults to **ELK**, not dagre (`layout` in `config.schema.yaml`); merman's
+  `upstream-svgs` are ELK output. References for this project are generated with `layout: dagre` (ADR-0002).
+- **Look.** Default look is `neo` with `redux-color` theme variables: font `"Recursive Variable", arial, sans-serif`,
+  text colour `#28253D`, a ~22 KB `<style>`, svg `class="flowchart"`; viewBox = content bounds + 8.
+- **Sizing.** Font 14 px, label height 21 px (1.5 em). Node width 120 is `flowchart.minNodeWidth` (default 120, new in
+  12.x): narrower labels widen to it and the node padding is added (120 + 32 = 152). Rect = text + (32, 24); diamond
+  side = text width + text height + 2 * 15. Cylinder: `ry = rx / (2.5 + w / 50)`, height adds `3 * ry`.
+- **Text.** "Yes" is 22.84375 px with kerning in Chromium (24.12 without). Chromium rounds layout units to 1/64 px.
+- **Dagre numbers.** `nodesep` / `ranksep` 50, `marginx/marginy` 8, label position centre (`labelpos: 'c'`), edge label
+  rank from `makeSpaceForEdgeLabels` (`ranksep /= 2`). Inner graphs of closed clusters: `ranksep + 25`.
+- **Cluster order.** dagre receives subgraphs in reverse declaration order, then nodes; `data-color-id` numbers
+  clusters in declaration order, depth first. In the SVG a closed cluster is a nested `g.root` inside `g.nodes`, first.
+- **Vertex counter.** Every `addVertex` call advances the counter that names `flowchart-<id>-<n>`, new vertex or not;
+  an `@{ ... }` block calls it once more.
+- **Portability.** `utest.h` pulls in `<windows.h>` on MSVC: never name identifiers `near`, `far`, `small`, `big`;
+  use `MERMAID_MIN` / `MERMAID_MAX` (ADR-0007).
+- **History.** Older notes (merman golden tables, the ELK investigation, early look differences) are in git history
+  before the commit that rewrote this file.
