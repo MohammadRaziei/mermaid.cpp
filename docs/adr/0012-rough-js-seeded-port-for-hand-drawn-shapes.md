@@ -16,9 +16,8 @@ references use (ADR-0002). A seed of 0 is treated as 1.
 
 ## Consequences
 
-- Fixtures 002 and 012 match exactly, including path data.
-- Only the polygon case is ported; other rough.js primitives (ellipse, curve) are not.
-- Shapes other than box, diamond, cylinder and stadium still use older outline code (`checklist.md`).
+- Fixtures 002 and 012 match exactly, including path data; the odd shape (`>text]`) uses the same path (S12).
+- Only the polygon case is ported; other rough.js primitives (ellipse, curve) are not needed by the neo shapes.
 
 ## Alternatives considered
 

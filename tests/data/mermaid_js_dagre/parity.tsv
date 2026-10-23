@@ -8,3 +8,4 @@ stress_flowchart_dense_parallel_edges_002	pass
 stress_flowchart_directives_comments_blank_lines_032	pass
 stress_flowchart_edge_label_position_064	pass
 stress_flowchart_escape_sequences_and_quotes_012	pass
+shapes_all	pass

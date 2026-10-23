@@ -5,11 +5,11 @@ Workflow per step: failing test first -> implement -> green -> commit -> clean r
 
 ## Status
 
-- 177 tests pass (Linux/GCC; CI also builds macOS and Windows).
-- Parity with real Mermaid 12.2.0 (`layout: dagre`, neo look): **10 of 10 fixtures at zero differences**
+- 182 tests pass (Linux/GCC; CI also builds macOS and Windows).
+- Parity with real Mermaid 12.2.0 (`layout: dagre`, neo look): **11 of 11 fixtures at zero differences**
   (`tests/data/mermaid_js_dagre/parity.tsv`). That is the whole parity net; everything outside those fixtures is
   listed under "Unverified".
-- Supported: flowcharts (`graph` / `flowchart`); every other diagram type throws `UnsupportedDiagram`.
+- Supported: flowcharts (`graph` / `flowchart`); every other diagram type throws `UnsupportedDiagram`. All 14 shapes of the classic syntax are drawn in the neo markup.
 - `mermaid_cli` renders SVG from files or stdin.
 
 ## Done
@@ -22,7 +22,7 @@ Workflow per step: failing test first -> implement -> green -> commit -> clean r
 - [x] **S2** flowchart `Model` + style declaration parsing (`style_css`)
 - [x] **S3** shape and edge scanning (folded into the parser)
 - [x] **S4** flowchart `Parser` (statements, chains, `&`, subgraphs, class/style/linkStyle), merman semantic goldens
-- [x] **S5** `NodeSizer` (box, diamond, cylinder, stadium from Mermaid's formulas; other shapes approximate)
+- [x] **S5** `NodeSizer` (formulas of `shapes/*.ts`, see S12)
 - [x] **S6** first simplified layout; retired in S6f-6b
 - [x] **S6f** layout as the dagre pipeline (`dagre-d3-es` 7.0.14, one class per stage; ADR-0003)
   - [x] S6f-1 graph model (graphlib-compatible multigraph, same visiting order incl. JS integer-key ordering),
@@ -36,7 +36,7 @@ Workflow per step: failing test first -> implement -> green -> commit -> clean r
   - Verified: 11 reference cases in `test_dagre.cpp`, plus 300 random graphs (all four directions, compound, labels,
     cycles, self-loops, multi-edges) compared with `dagre-d3-es` to 1e-6 (Node script kept outside the repo)
 - [x] **S7** render
-  - [x] S7a `SvgWriter`; S7b `Theme`; S7c `ShapeRenderer`s; S7d `EdgeRenderer`; S7e `FlowchartRenderer` +
+  - [x] S7a `SvgWriter`; S7b `Theme`; S7c node outlines (the first `ShapeRenderer` classes were replaced in S12); S7d `EdgeRenderer`; S7e `FlowchartRenderer` +
     `render_svg(source)` (diagram detection, styles, clusters, accessibility)
   - [x] S7f edges in the neo markup of Mermaid 12.2 (`edge_geometry`: clip, `fixCorners`, arrow offsets, `curveBasis`;
     ids, classes, `data-*`, `-margin` markers, coloured marker copies, HTML edge labels); `linkStyle` follows
@@ -62,6 +62,10 @@ Workflow per step: failing test first -> implement -> green -> commit -> clean r
   to the parent, `ranksep + 25`, parent `nodesep`, drawn as nested `g.root`; edges between closed clusters run box to
   box. 032 passes
 - [x] **S8** `mermaid::render_svg(source)` and the `mermaid_cli` target (ADR-0013), `examples/main.cpp`
+- [x] **S12** the remaining classic shapes in neo markup: round, subroutine, circle, double circle, hexagon, odd (rough.js),
+  lean right/left, trapezoid, inverted trapezoid. Sizes from `shapes/*.ts`, outlines derived from the node size in
+  `shape_geometry`, edges clipped to polygon outlines (`intersect-polygon.js`), circles sized to the text; fixture
+  `shapes_all` (14 nodes) passes with zero differences; the old `ShapeRenderer` classes were deleted (ADR-0014)
 - [x] (superseded) **S6g** layout spacing "40 / 12 / 20": those were ELK artefacts (ADR-0002)
 - [x] (superseded) **S9** golden layout parity with merman: merman is not the criterion any more; its goldens remain
   as parser and sizing checks
@@ -74,12 +78,11 @@ Ordered by what is likely to matter next.
   stylesheet; the others still use the old simplified classic styles and match nothing. Needs references per theme
   (`render_reference.mjs` with a theme config) and theme variables dumped per theme
   (`tools/dump_theme_variables.mjs`). Until then `mermaid_cli -t dark|forest|neutral` is an approximation
-- [ ] **S12** remaining shapes in neo markup, each with a reference: round, subroutine, circle, double circle, hexagon,
-  odd, lean right/left, trapezoid, inverted trapezoid (they still use the old outline code), then the
-  `@{ shape: ... }` family
+- [ ] **S12b** the `@{ shape: ... }` family: only the names of the classic shapes are mapped; every other name
+  (`cloud`, `bolt`, `doc`, `tag-rect`, `fork`, `lin-cyl`, ...) becomes a box. Each needs its `shapes/*.ts` read and a reference
 - [ ] **S13** edges to clusters that stay open: cut the path at the cluster border (`fromCluster` / `toCluster`) and
   the "safe anchor" re-anchoring of `adjustClustersAndEdges` (ADR-0010 lists what was not ported)
-- [ ] **S14** more fixtures: the 10 fixtures are the only parity net. Wanted: invisible edges, `linkStyle` colours,
+- [ ] **S14** more fixtures: the 11 fixtures are the only parity net. Wanted: invisible edges, `linkStyle` colours,
   dotted/thick edges, every curve, BT/RL, self-loops, multi-edges, long labels, `<br/>`, Markdown strings, nested
   closed clusters mixed with open ones, `classDef` on subgraphs
 - [ ] **S10** CI is a 3-OS build and test (`.github/workflows/cmake.yml`). Open: Doxygen docs (like liburlparser),
@@ -110,11 +113,12 @@ Ordered by what is likely to matter next.
 | stress_flowchart_deeply_nested_clusters_019 | nested clusters, per-subgraph direction |
 | stress_flowchart_directives_comments_blank_lines_032 | closed clusters as nested roots, edge between clusters, init spacing |
 | stress_flowchart_edge_label_position_064 | `@{ label }` nodes, edge label positions, init spacing |
+| shapes_all | all 14 classic shapes in one LR chain, edges into polygons and circles |
 
 ## Unverified (implemented from the Mermaid source, no reference SVG covers it)
 
 - `linkStyle` label colours, dotted dash pattern, thick class, every curve other than the default
-- shapes other than box, diamond, cylinder, stadium
+- shapes with labels wider than the 120 px label width (wrapping), and shapes with `classDef` / `style` fill and stroke (only box, diamond, cylinder, stadium were checked with styles)
 - the "safe anchor" and `fromCluster` / `toCluster` paths of cluster edges (not implemented)
 - `-t dark|forest|neutral` output
 - `mermaid_cli` on Windows; temporary-file handling in `test_cli.cpp` on Windows

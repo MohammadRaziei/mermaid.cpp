@@ -7,12 +7,6 @@
 
 namespace mermaid::detail {
 
-// "k:v;k:v;" for shapes and paths. `color` is for text, so it is left out.
-std::string shape_declarations(const flowchart::Style& style);
-
-// "fill:<color>;" plus font properties, for the label text.
-std::string text_declarations(const flowchart::Style& style);
-
 // Mermaid's html-label node styles: "fill:#fff !important;stroke:#000 !important" (no trailing
 // semicolon), `color` and font properties left out.
 std::string important_shape_style(const flowchart::Style& style);

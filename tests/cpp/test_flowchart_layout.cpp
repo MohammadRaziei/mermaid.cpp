@@ -405,3 +405,42 @@ UTEST(flowchart_layout, cluster_boxes_of_the_fixtures_hold_exactly_their_members
     ASSERT_TRUE(cluster_boxes_are_clean(read_fixture("stress_flowchart_comments_and_directives_010")));
     ASSERT_TRUE(cluster_boxes_are_clean(read_fixture("stress_flowchart_directives_comments_blank_lines_032")));
 }
+
+// ---- node sizes of the neo look (Mermaid 12.2.0 shapes/*.ts, padding 15, label at least 120 wide)
+
+static Size size_of(const std::string& source, const std::string& id = "a") {
+    const Layout l = lay(source);
+    return l.find_node(id)->size;
+}
+
+UTEST(flowchart_node_sizes, rectangular_shapes) {
+    ASSERT_NEAR(150, size_of("flowchart TD\na(Round)").width, 1e-9);
+    ASSERT_NEAR(51, size_of("flowchart TD\na(Round)").height, 1e-9);
+    ASSERT_NEAR(164, size_of("flowchart TD\na[[Subroutine]]").width, 1e-9);  // 120 + 2 * 8 frame + 28
+    ASSERT_NEAR(33, size_of("flowchart TD\na[[Subroutine]]").height, 1e-9);
+}
+
+UTEST(flowchart_node_sizes, circles_ignore_the_minimum_label_width) {
+    // radius = hypot(label) / 2 + 16, the label being as wide as its text. Chromium measured the text 1/64 px
+    // narrower than our table does, so the tolerance is 0.05.
+    ASSERT_NEAR(2 * 36.74426337305388, size_of("flowchart TD\na((Circle))").width, 0.05);
+    ASSERT_NEAR(2 * 36.74426337305388, size_of("flowchart TD\na((Circle))").height, 0.05);
+    // double circle: two more rings of 12
+    ASSERT_NEAR(2 * 52.546591540374806, size_of("flowchart TD\na(((Double)))").width, 0.05);
+}
+
+UTEST(flowchart_node_sizes, polygon_shapes) {
+    const Size hexagon = size_of("flowchart TD\na{{Hexagon}}");
+    ASSERT_NEAR(204, hexagon.width, 1e-9);  // 120 + 2 * (91 / 3.5) + 32
+    ASSERT_NEAR(91, hexagon.height, 1e-9);  // 21 + 70
+    const Size odd = size_of("flowchart TD\na>Odd]");
+    ASSERT_NEAR(173.25, odd.width, 1e-9);   // 120 + 42 + 45 / 4
+    ASSERT_NEAR(45, odd.height, 1e-9);
+    for (const char* source : {"flowchart TD\na[/Lean/]", "flowchart TD\na[\\Lean\\]", "flowchart TD\na[/Trap\\]"}) {
+        ASSERT_NEAR(186, size_of(source).width, 1e-9);  // 150 + 36
+        ASSERT_NEAR(36, size_of(source).height, 1e-9);
+    }
+    const Size inverted = size_of("flowchart TD\na[\\Inv/]");
+    ASSERT_NEAR(231, inverted.width, 1e-9);  // 180 + 51
+    ASSERT_NEAR(51, inverted.height, 1e-9);
+}

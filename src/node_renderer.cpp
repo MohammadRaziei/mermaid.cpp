@@ -4,7 +4,7 @@
 
 #include "rough_path.h"
 
-#include "shape_renderer.h"
+#include "shape_geometry.h"
 #include "style_css.h"
 
 namespace mermaid::detail {
@@ -19,7 +19,11 @@ std::string translate(double x, double y) {
 
 // flowchart.padding of Mermaid 12.2.
 constexpr double kNodePadding = 15;
+constexpr double kRoundRadius = 12;  // themeVariables.radius of redux-color
+constexpr double kDoubleCircleGap = 12;  // doubleCircle.ts (neo)
 constexpr double M_PI_RAD = 3.14159265358979323846;
+
+std::string js(double v) { return js_number(v); }
 
 }  // namespace
 
@@ -38,7 +42,9 @@ void node_renderer::write(SvgWriter& out, const flowchart::Node& node, const flo
                    {"data-look", "neo"},
                    {"transform", translate(layout.center.x, layout.center.y)}});
     write_outline(out, layout.shape, layout.size, style);
-    write_label(out, node.label, layout.label, style, label_shift(layout.shape), node.markdown_label);
+    Point shift = label_offset(layout.shape, layout.size);
+    shift.y += label_shift(layout.shape);
+    write_label(out, node.label, layout.label, style, shift, node.markdown_label, !ignores_min_label_width(layout.shape));
     out.close();
 }
 
@@ -58,8 +64,13 @@ void node_renderer::write_stadium(SvgWriter& out, const Size& size, const flowch
     arc(-w / 2 + radius, 0, 90, 270, points);
     points.push_back({w / 2 - radius, h / 2});
     arc(w / 2 - radius, 0, 270, 450, points);
+    write_rough_polygon(out, points, "", style, inline_style);
+}
 
-    // userNodeOverrides: the style map wins over the theme.
+// A closed polygon drawn by rough.js (`rc.path`): a fill path and a stroke path in a group.
+// userNodeOverrides: the style map wins over the theme.
+void node_renderer::write_rough_polygon(SvgWriter& out, const std::vector<Point>& points, const std::string& transform,
+                                        const flowchart::Style& style, const std::string& inline_style) const {
     const auto lookup = [&](const char* key, const std::string& fallback) {
         std::string value = fallback;
         for (const auto& [k, v] : style)
@@ -81,7 +92,9 @@ void node_renderer::write_stadium(SvgWriter& out, const Size& size, const flowch
     }
 
     const rough_drawing drawing = rough_polygon(points, seed_);
-    out.open("g", {{"class", "basic label-container outer-path"}});
+    SvgWriter::Attrs group{{"class", "basic label-container outer-path"}};
+    if (!transform.empty()) group.emplace_back("transform", transform);
+    out.open("g", group);
     out.leaf("path", {{"d", drawing.fill_d}, {"stroke", "none"}, {"stroke-width", "0"}, {"fill", lookup("fill", theme_.main_bkg)}, {"style", inline_style}});
     out.leaf("path", {{"d", drawing.stroke_d},
                       {"stroke", lookup("stroke", theme_.node_border)},
@@ -128,25 +141,60 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
                           {"transform", translate(-w / 2, -(h / 2 + ry))}});
     } else if (shape == Shape::Stadium) {
         write_stadium(out, size, style, inline_style);
-    } else {
-        // Not ported yet: the previous outline, in local coordinates.
-        ShapeRenderer::for_shape(shape).draw(out, box, shape_declarations(style));
+    } else if (shape == Shape::Round) {
+        // roundedRect.ts: drawRect with rx = ry = themeVariables.radius
+        out.leaf("rect", {{"class", "basic label-container"},
+                          {"style", inline_style},
+                          {"rx", js(kRoundRadius)},
+                          {"ry", js(kRoundRadius)},
+                          {"x", js(box.x)},
+                          {"y", js(box.y)},
+                          {"width", js(box.width)},
+                          {"height", js(box.height)}});
+    } else if (shape == Shape::Circle) {
+        out.leaf("circle", {{"class", "basic label-container"},
+                            {"style", inline_style},
+                            {"r", js(size.width / 2)},
+                            {"cx", "0"},
+                            {"cy", "0"}});
+    } else if (shape == Shape::DoubleCircle) {
+        // doubleCircle.ts: an outer and an inner ring, 12 apart
+        const double outer = size.width / 2;
+        out.open("g", {{"class", "basic label-container"}, {"style", inline_style}});
+        out.leaf("circle", {{"class", "outer-circle"}, {"style", inline_style}, {"r", js(outer)}, {"cx", "0"}, {"cy", "0"}});
+        out.leaf("circle", {{"class", "inner-circle"}, {"style", inline_style}, {"r", js(outer - kDoubleCircleGap)}, {"cx", "0"}, {"cy", "0"}});
+        out.close();
+    } else if (const auto polygon = polygon_outline_of(shape, size)) {
+        if (polygon->rough) {
+            write_rough_polygon(out, polygon->points, "translate(" + js(polygon->shift.x) + "," + js(polygon->shift.y) + ")", style, inline_style);
+        } else {
+            // insertPolygonShape: drawn from the origin and moved by translate(-w / 2, h / 2)
+            std::string points;
+            for (const Point& p : polygon->points) points += (points.empty() ? "" : " ") + js(p.x) + "," + js(p.y);
+            SvgWriter::Attrs attrs{{"points", points},
+                                   {"class", "label-container"},
+                                   {"transform", "translate(" + js(-polygon->anchor.width / 2) + "," + js(polygon->anchor.height / 2) + ")"}};
+            if (!inline_style.empty()) attrs.emplace_back("style", inline_style);
+            out.leaf("polygon", attrs);
+        }
     }
 }
 
 void node_renderer::write_label(SvgWriter& out, const std::string& text, const Size& label, const flowchart::Style& style,
-                               double dy, bool markdown) const {
-    // addHtmlSpan (createText.ts): a table-cell div that is widened to the minimum label width.
+                               const Point& shift, bool markdown, bool min_width) const {
+    // addHtmlSpan (createText.ts): a table-cell div; a label held to the minimum width is a `table` of that width.
     const std::string color = important_label_style(style);
     out.open("g", {{"class", "label"},
                    {"style", color},
-                   {"transform", translate(-label.width / 2, -label.height / 2 + dy)}});
+                   {"transform", translate(-label.width / 2 + shift.x, -label.height / 2 + shift.y)}});
     out.leaf("rect");
     out.open("foreignObject", {{"width", SvgWriter::num(label.width)}, {"height", SvgWriter::num(label.height)}});
     out.open("div", {{"xmlns", "http://www.w3.org/1999/xhtml"},
                      {"style", computed_label_color(style) +
-                                   "display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; "
-                                   "text-align: center; width: 120px;"}});
+                                   (min_width ? "display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; "
+                                                "text-align: center; width: 120px;"
+                                              : "display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 120px; "
+                                                "text-align: center;")}});
     SvgWriter::Attrs span{{"class", markdown ? "nodeLabel markdown-node-label" : "nodeLabel"}};
     if (!color.empty()) span.emplace_back("style", color);
     out.open("span", span);

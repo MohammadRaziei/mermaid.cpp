@@ -6,7 +6,6 @@
 #include "flowchart_css.h"
 #include "node_renderer.h"
 #include "rough_path.h"
-#include "shape_renderer.h"
 #include "style_css.h"
 #include "svg_writer.h"
 #include "text_block.h"

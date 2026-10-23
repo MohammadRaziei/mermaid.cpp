@@ -5,6 +5,7 @@
 #include <charconv>
 #include <cmath>
 
+#include "shape_geometry.h"
 #include "svg_writer.h"
 
 using mermaid::detail::SvgWriter;
@@ -118,7 +119,9 @@ Point edge_geometry::border_point(const NodeLayout& node, const Point& outside) 
             const double r = MERMAID_MIN(w, h), len = std::hypot(dx, dy);
             return {node.center.x + r * dx / len, node.center.y + r * dy / len};
         }
-        default: {  // dagre's intersect-rect
+        default: {
+            if (const auto polygon = detail::polygon_border_point(node, outside)) return *polygon;
+            // dagre's intersect-rect
             double sx, sy;
             if (std::fabs(dy) * w > std::fabs(dx) * h) {
                 sy = dy < 0 ? -h : h;

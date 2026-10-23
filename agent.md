@@ -108,9 +108,9 @@ PNGs: `pip install novasvg`, then `novasvg.svg2png(svg, png, width=900, backgrou
 
 - **New init key**: test in `test_flowchart_parser.cpp` (`flowchart_init`), add the field to `InitConfig`, read it in
   `src/init_directive.cpp`, apply it where it matters (layout or stylesheet).
-- **New node shape**: read `rendering-elements/shapes/<shape>.ts` for the size formula and the markup; add the size to
-  `node_sizer`, the outline to `shape_renderer` / `node_renderer`, a fixture with a reference, and update the list of
-  shapes in `checklist.md`.
+- **New node shape**: read `rendering-elements/shapes/<shape>.ts` for the size formula, the markup and `intersect`;
+  add the size to `node_sizer`, the outline to `shape_geometry` (polygons) or `node_renderer`, a fixture with a
+  reference, and update `checklist.md` (ADR-0014).
 - **New CLI option**: extend `k_options` and `parse_arguments` in `src/cli.cpp`, test in `test_cli.cpp`, README and
   `usage()` follow from the table.
 - **New diagram type**: a new ADR first (parser, layout, renderer split, detection in `render_svg`); until then it

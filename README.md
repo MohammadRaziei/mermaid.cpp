@@ -2,7 +2,7 @@
 
 Mermaid diagrams in dependency-free C++17: parse -> layout -> SVG, no JavaScript runtime.
 
-> Status: flowcharts render to SVG and match Mermaid 12.2.0 (`layout: dagre`) on all 10 reference fixtures. Other diagram types are not supported yet. See `checklist.md`.
+> Status: flowcharts render to SVG and match Mermaid 12.2.0 (`layout: dagre`) on all 11 reference fixtures. Other diagram types are not supported yet. See `checklist.md`.
 
 ## Build & test
 

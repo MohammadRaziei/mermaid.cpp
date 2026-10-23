@@ -19,6 +19,7 @@ struct LayoutOptions {
     double pad_x = 16;            // label -> box padding (each side)
     double pad_y = 12;
     double diamond_pad = 15;      // diamond: (w+pad) + (h+pad)
+    double node_padding = 15;     // flowchart.padding: round, lean, trapezoid shapes
     // Layout goldens of merman give 152 = 120 + 2*16 for `A[Start]`: labels
     // are never narrower than this. (Source of the 120 not yet understood.)
     double min_label_width = 120;

@@ -4,6 +4,8 @@
 #include <cmath>
 #include <mermaid/macros.h>
 
+#include "shape_geometry.h"
+
 namespace mermaid::flowchart::detail {
 
 namespace {
@@ -12,33 +14,52 @@ constexpr double M_PI_ = 3.14159265358979323846;
 
 Size NodeSizer::label_size(const Node& node) const {
     const Size text = measurer_.measure(node.label);
+    if (mermaid::detail::ignores_min_label_width(node.shape)) return text;
     return {MERMAID_MAX(text.width, options_.min_label_width), text.height};
 }
 
+// The sizes follow shapes/*.ts of Mermaid 12.2 in the neo look.
 Size NodeSizer::size(const Node& node) const {
-    const Size label = measurer_.measure(node.label);
-    const double text_w = MERMAID_MAX(label.width, options_.min_label_width);
+    const Size label = label_size(node);
+    const double text_w = label.width;
     const double text_h = label.height;
-
-    const double box_w = text_w + 2 * options_.pad_x;
-    const double box_h = text_h + 2 * options_.pad_y;
+    const double p = options_.node_padding;
 
     switch (node.shape) {
         case Shape::Diamond: {
             const double side = (text_w + options_.diamond_pad) + (text_h + options_.diamond_pad);
             return {side, side};
         }
-        case Shape::Circle:
-            return {box_w, box_w};
-        case Shape::DoubleCircle:
-            return {box_w + 10, box_w + 10};
-        case Shape::Hexagon:
-        case Shape::Odd:
-        case Shape::LeanRight:
+        case Shape::Circle: {  // circle.ts: the radius is half the diagonal of the label, plus 16
+            const double r = std::hypot(text_w, text_h) / 2 + 16;
+            return {2 * r, 2 * r};
+        }
+        case Shape::DoubleCircle: {  // doubleCircle.ts: the inner ring like the circle, the outer one 12 further
+            const double r = std::hypot(text_w, text_h) / 2 + 16 + 12;
+            return {2 * r, 2 * r};
+        }
+        case Shape::Round:  // roundedRect.ts: drawRect with the node padding on every side
+            return {text_w + 2 * p, text_h + 2 * p};
+        case Shape::Subroutine:  // subroutine.ts: 8 frame bars on each side, labelPadding 28 x 12
+            return {text_w + 2 * 8 + 28, text_h + 12};
+        case Shape::Hexagon: {  // hexagon.ts (neo): h = text + 70, m = h / 3.5, w = text + 2m + 32
+            const double h = text_h + 70;
+            return {text_w + 2 * (h / 3.5) + 32, h};
+        }
+        case Shape::Odd: {  // rectLeftInvArrow.ts (neo): label padding 21 x 12, the notch adds h / 4
+            const double h = text_h + 24;
+            return {text_w + 42 + h / 4, h};
+        }
+        case Shape::LeanRight:  // lean_right.ts, lean_left.ts, trapezoid.ts: h = text + p, w = text + 2p, then + h
         case Shape::LeanLeft:
-        case Shape::Trapezoid:
-        case Shape::InvTrapezoid:
-            return {box_w + box_h / 2, box_h};
+        case Shape::Trapezoid: {
+            const double h = text_h + p;
+            return {text_w + 2 * p + h, h};
+        }
+        case Shape::InvTrapezoid: {  // invertedTrapezoid.ts: padding on both sides
+            const double h = text_h + 2 * p;
+            return {text_w + 4 * p + h, h};
+        }
         case Shape::Stadium: {
             // shapes/stadium.ts (neo): paddingX 40, paddingY 24; the arcs are sampled with 50 points,
             // so their inscribed circle is a little smaller than the circle.
@@ -56,11 +77,9 @@ Size NodeSizer::size(const Node& node) const {
         }
         case Shape::Default:
         case Shape::Square:
-        case Shape::Round:
-        case Shape::Subroutine:
             break;
     }
-    return {box_w, box_h};
+    return {text_w + 2 * options_.pad_x, text_h + 2 * options_.pad_y};
 }
 
 }  // namespace mermaid::flowchart::detail

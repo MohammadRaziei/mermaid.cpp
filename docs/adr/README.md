@@ -19,3 +19,4 @@ Copy `0000-template.md` for a new record and add it to the table.
 | [0011](0011-own-json-reader-for-init-directives.md) | Own small JSON reader for `%%{init}%%` | Accepted |
 | [0012](0012-rough-js-seeded-port-for-hand-drawn-shapes.md) | rough.js path port with the seeded random stream | Accepted |
 | [0013](0013-cli-svg-only-own-argument-parser.md) | `mermaid_cli`: SVG only, own parser, logic in a public header | Accepted |
+| [0014](0014-shape-geometry-derived-from-node-size.md) | One module derives each shape's outline from the node size | Accepted |

@@ -122,3 +122,26 @@ UTEST(edge_geometry, unknown_curve_names_fall_back_to_basis) {
     ASSERT_STREQ(edge_geometry::curve_path("basis", p).c_str(), edge_geometry::curve_path("", p).c_str());
     ASSERT_STREQ(edge_geometry::curve_path("basis", p).c_str(), edge_geometry::curve_path("nonsense", p).c_str());
 }
+
+// intersectPolygon: the outline of a hexagon / lean / trapezoid / odd / subroutine node is its polygon, not its box.
+UTEST(edge_geometry, border_point_of_a_hexagon_is_on_its_slanted_side) {
+    // 204 x 91, corners at (+-102, 0), (+-76, +-45.5) around the centre
+    const NodeLayout hexagon = node(Shape::Hexagon, 0, 0, 204, 91);
+    const Point p = edge_geometry::border_point(hexagon, {150, -45.5});
+    // where the line y = -(45.5 / 150) x meets the side from (102, 0) to (76, -45.5)
+    const double t = (45.5 * 102 / 150) / (45.5 + 26 * 45.5 / 150);
+    ASSERT_NEAR(102 - 26 * t, p.x, 1e-3);
+    ASSERT_NEAR(-45.5 * t, p.y, 1e-3);
+    // straight out of a corner and out of the flat top still end on the outline
+    const Point right = edge_geometry::border_point(hexagon, {300, 0});
+    ASSERT_NEAR(102, right.x, 1e-9);
+    const Point up = edge_geometry::border_point(hexagon, {0, -300});
+    ASSERT_NEAR(-45.5, up.y, 1e-9);
+}
+
+UTEST(edge_geometry, border_point_of_a_parallelogram_follows_the_lean) {
+    // lean right, 186 x 36: the bottom edge runs from x = -93 to 75 relative to the box, the top from -75 to 93
+    const NodeLayout lean = node(Shape::LeanRight, 0, 0, 186, 36);
+    const Point right = edge_geometry::border_point(lean, {400, 0});
+    ASSERT_NEAR(84, right.x, 1e-9);  // middle of the right slanted side
+}

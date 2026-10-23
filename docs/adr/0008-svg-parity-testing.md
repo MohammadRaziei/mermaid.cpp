@@ -21,8 +21,8 @@ the same post-processing as mermaid-cli. A separate test checks the frame of the
 
 ## Consequences
 
-- A strong regression net: all 10 fixtures pass.
-- Coverage is only those 10 fixtures; unchecked areas are listed in `checklist.md`.
+- A strong regression net: all 11 fixtures pass.
+- Coverage is only those 11 fixtures; unchecked areas are listed in `checklist.md`.
 - A tolerance of 0.5 can hide smaller errors; the text-measurement rounding is the known cause of such gaps.
 - Regenerating references needs Node and network, so it is not part of the normal build.
 

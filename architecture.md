@@ -55,8 +55,8 @@ their boxes are dagre's compound nodes.
 
 - **One class, one reason to change.** Parsing, sizing, ranking, ordering, positioning, routing and drawing are
   separate classes.
-- **Depend on abstractions at the seams that vary.** `TextMeasurer` (font metrics differ), `ShapeRenderer` /
-  `NodeSizer` (one strategy per node shape).
+- **Depend on abstractions at the seams that vary.** `TextMeasurer` (font metrics differ), `NodeSizer` and
+  `shape_geometry` (one formula per node shape, outline derived from the size).
 - **Value types in, value types out.** Stages are deterministic functions of their inputs; no globals, no hidden
   state, no I/O outside the CLI.
 - **Errors are exceptions with positions** (`ParseError{line}`, `UnsupportedDiagram`); layout and render cannot fail on
@@ -79,7 +79,7 @@ their boxes are dagre's compound nodes.
 | flowchart | `style_css` | `fill:#f9f,stroke:#333` -> normalised declarations |
 | flowchart | `init_directive` | `%%{init}%%` with a small JSON reader (ADR-0011) |
 | text | `TextMeasurer`, `browser_text_measurer` | text width/height from a generated table of Chromium metrics (ADR-0004) |
-| layout | `NodeSizer` | node box from label and shape (`flowchart.minNodeWidth`, padding) |
+| layout | `NodeSizer` | node box from label and shape (`flowchart.minNodeWidth`, padding), formulas of `shapes/*.ts` |
 | layout | `LayoutEngine` | model -> `dagre::layout` input per graph (closed subgraphs first), result -> geometry, margin fit |
 | dagre | `dagre::layout` (public, `dagre.h`) | the dagre pipeline, one class per stage (below), verified against `dagre-d3-es` (ADR-0003) |
 | dagre | `Acyclic` | reverse back edges so the graph is acyclic |
@@ -92,7 +92,7 @@ their boxes are dagre's compound nodes.
 | render | `SvgWriter` | tiny XML builder with escaping and number formatting |
 | render | `theme_variables`, `flowchart_css`, `css_compiler`, `css_color` | the stylesheet of Mermaid 12.2 (neo / redux-color) built, not copied (ADR-0009); only the `default` theme so far |
 | render | `Theme` | old simplified styles for `dark`, `forest`, `neutral` (not ported to neo; `checklist.md` S11) |
-| render | `ShapeRenderer`, `node_renderer`, `rough_path` | node outlines and neo markup; stadium via the rough.js port (ADR-0012) |
+| render | `shape_geometry`, `node_renderer`, `rough_path` | outline of each shape derived from the node size, neo markup, edge clipping to polygons (ADR-0014); stadium and odd via the rough.js port (ADR-0012) |
 | render | `EdgeRenderer` | paths, markers, labels, invisible edges |
 | render | `FlowchartRenderer` | root groups (clusters, edge paths, edge labels, nodes), nested roots, document frame |
 
