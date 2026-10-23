@@ -26,7 +26,7 @@ public:
 private:
     void write_outline(SvgWriter& out, flowchart::Shape shape, const Size& size, const flowchart::Style& style) const;
     void write_label(SvgWriter& out, const std::string& text, const Size& label, const flowchart::Style& style,
-                     const Point& shift, bool markdown, bool min_width) const;
+                     const Point& shift, bool markdown, bool table, bool wrapped) const;
     void write_rough_polygon(SvgWriter& out, const std::vector<Point>& points, const std::string& transform,
                              const flowchart::Style& style, const std::string& inline_style) const;
     void write_stadium(SvgWriter& out, const Size& size, const flowchart::Style& style, const std::string& inline_style) const;

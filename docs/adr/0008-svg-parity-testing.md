@@ -21,9 +21,11 @@ the same post-processing as mermaid-cli. A separate test checks the frame of the
 
 ## Consequences
 
-- A strong regression net: all 11 fixtures pass.
-- Coverage is only those 11 fixtures; unchecked areas are listed in `checklist.md`.
+- A strong regression net: all 19 fixtures pass.
+- Coverage is only those 19 fixtures; unchecked areas are listed in `checklist.md`.
 - A tolerance of 0.5 can hide smaller errors; the text-measurement rounding is the known cause of such gaps.
+- `mermaid.render()` returns an HTML string (`<br>`); mermaid-cli serialises the DOM, so the scripts turn `<br>` into
+  `<br />` to get well-formed XML like the real tool.
 - Regenerating references needs Node and network, so it is not part of the normal build.
 
 ## Alternatives considered

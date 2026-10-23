@@ -324,10 +324,46 @@ std::string color_sections(const theme_variables& t) {
     return out;
 }
 
-// What a browser prints for a style value read back from the CSSOM: hex colours become rgb().
-std::string browser_value(const std::string& value) {
-    size_t a = value.find_first_not_of(" \t");
-    const std::string v = a == std::string::npos ? std::string() : value.substr(a, value.find_last_not_of(" \t") - a + 1);
+std::string trim_blanks(const std::string& value) {
+    const size_t a = value.find_first_not_of(" \t");
+    return a == std::string::npos ? std::string() : value.substr(a, value.find_last_not_of(" \t") - a + 1);
+}
+
+// Splits at blanks and/or commas (CSS list separators), dropping empty pieces.
+std::vector<std::string> split_list(const std::string& value, bool commas_only) {
+    std::vector<std::string> out;
+    std::string current;
+    const auto flush = [&] {
+        const std::string piece = trim_blanks(current);
+        if (!piece.empty()) out.push_back(piece);
+        current.clear();
+    };
+    for (const char c : value) {
+        if (c == ',' || (!commas_only && (c == ' ' || c == '\t'))) flush();
+        else current += c;
+    }
+    flush();
+    return out;
+}
+
+// What a browser prints for a style value read back from the CSSOM (Mermaid inserts the classDef rules into a
+// CSSStyleSheet): hex colours become rgb(), `stroke-dasharray` is a comma list, multi-word font names are quoted.
+std::string browser_value(const std::string& key, const std::string& value) {
+    const std::string v = trim_blanks(value);
+    if (key == "stroke-dasharray") {
+        std::string out;
+        for (const std::string& item : split_list(v, false)) out += (out.empty() ? "" : ", ") + item;
+        return out.empty() ? v : out;
+    }
+    if (key == "font-family") {
+        std::string out;
+        for (std::string family : split_list(v, true)) {
+            const bool quoted = family.front() == '"' || family.front() == '\'';
+            if (!quoted && family.find_first_of(" \t") != std::string::npos) family = "\"" + family + "\"";
+            out += (out.empty() ? "" : ", ") + family;
+        }
+        return out.empty() ? v : out;
+    }
     const std::optional<rgb_color> c = v.empty() || v[0] != '#' ? std::nullopt : parse_css_color(v);
     return c ? css_rgb(*c) : v;
 }
@@ -346,8 +382,8 @@ std::string user_styles(const theme_variables& t, const flowchart::Model& model,
         if (it == model.class_defs.end() || it->second.style.empty()) continue;
         std::vector<std::string> all, text;
         for (const auto& [key, value] : it->second.style) {
-            all.push_back(key + ": " + browser_value(value));
-            if (key == "color") text.push_back("fill: " + browser_value(value));
+            all.push_back(key + ": " + browser_value(key, value));
+            if (key == "color") text.push_back("fill: " + browser_value(key, value));
         }
         out += important_rule(name, "> *", all);
         out += important_rule(name, "span", all);

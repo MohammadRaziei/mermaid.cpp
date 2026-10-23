@@ -444,3 +444,72 @@ UTEST(flowchart_node_sizes, polygon_shapes) {
     ASSERT_NEAR(231, inverted.width, 1e-9);  // 180 + 51
     ASSERT_NEAR(51, inverted.height, 1e-9);
 }
+
+// Labels wider than 120 wrap at 120; the box grows with the number of lines (sizes from the reference SVG).
+UTEST(flowchart_node_sizes, long_labels_wrap_and_grow_taller) {
+    const Size box = size_of("flowchart TD\na[A fairly long label that is certainly wider than the usual minimum width of a node]");
+    ASSERT_NEAR(152, box.width, 1e-9);
+    ASSERT_NEAR(129, box.height, 1e-9);  // 5 lines
+    const Size round = size_of("flowchart TD\na(Another quite long label for a round node with many words in it)");
+    ASSERT_NEAR(150, round.width, 1e-9);
+    ASSERT_NEAR(114, round.height, 1e-9);  // 4 lines + 30
+    const Size diamond = size_of("flowchart TD\na{A long question for the decision node here?}");
+    ASSERT_NEAR(213, diamond.width, 1e-9);  // (120 + 15) + (63 + 15)
+    const Size circle = size_of("flowchart TD\na((A long circle label that goes on))");
+    ASSERT_NEAR(2 * 79.56886030125128, circle.width, 1e-6);  // hypot(120, 42) / 2 + 16
+}
+
+// ---- self-loops (dagre/index.js: two helper nodes and three edges, then one synthesised path)
+
+UTEST(flowchart_self_loop, a_loop_is_one_edge_with_two_helper_nodes) {
+    const Layout l = lay("flowchart TD\n a[Node A] --> a\n a --> b[Node B]\n");
+    ASSERT_EQ(2u, l.edges.size());
+    ASSERT_TRUE(l.edges[0].self_loop);
+    ASSERT_FALSE(l.edges[1].self_loop);
+    ASSERT_EQ(4u, l.edges[0].points.size());
+    ASSERT_EQ(2u, l.loop_helpers.size());
+    ASSERT_STREQ("a---a---1", l.loop_helpers[0].id.c_str());
+    ASSERT_STREQ("a---a---2", l.loop_helpers[1].id.c_str());
+    ASSERT_EQ(2u, l.nodes.size());  // the helpers are not nodes of the diagram
+}
+
+UTEST(flowchart_self_loop, the_loop_leaves_and_re_enters_the_node_on_one_side) {
+    for (const char* direction : {"TD", "BT", "LR", "RL"}) {
+        const Layout l = lay(std::string("flowchart ") + direction + "\n a[Node A] --> a\n a --> b[Node B]\n");
+        const NodeLayout& a = *l.find_node("a");
+        const std::vector<Point>& p = l.edges[0].points;
+        ASSERT_EQ(4u, p.size());
+        const Rect box = a.rect();
+        const bool vertical_side = std::fabs(p[0].x - p[3].x) < 1e-9;  // left or right: both ends share x
+        if (vertical_side) {  // left or right: out along x, across along y, back along x
+            ASSERT_NEAR(p[0].y, p[1].y, 1e-9);
+            ASSERT_NEAR(p[3].y, p[2].y, 1e-9);
+            ASSERT_TRUE(std::fabs(p[0].x - box.x) < 1e-9 || std::fabs(p[0].x - box.right()) < 1e-9);
+        } else {  // top or bottom
+            ASSERT_NEAR(p[0].y, p[3].y, 1e-9);
+            ASSERT_NEAR(p[0].x, p[1].x, 1e-9);
+            ASSERT_NEAR(p[3].x, p[2].x, 1e-9);
+            ASSERT_TRUE(std::fabs(p[0].y - box.y) < 1e-9 || std::fabs(p[0].y - box.bottom()) < 1e-9);
+        }
+    }
+}
+
+UTEST(flowchart_self_loop, the_loop_of_a_labelled_edge_gets_the_label_beside_it) {
+    const Layout l = lay("flowchart LR\n x[X] -->|retry| x\n");
+    ASSERT_EQ(1u, l.edges.size());
+    ASSERT_TRUE(l.edges[0].has_label);
+    ASSERT_TRUE(l.edges[0].label.width > 0);
+}
+
+// An edge label wider than 200 wraps at 200 (max-width of the label div), like node labels do at 120.
+UTEST(flowchart_edge_labels, long_labels_wrap_at_200) {
+    const Layout l = lay(
+        "flowchart TD\n a -->|a very long edge label that will certainly wrap because it is wider than two hundred pixels for sure| b\n"
+        " b -->|short| c\n");
+    ASSERT_TRUE(l.edges[0].has_label);
+    ASSERT_TRUE(l.edges[0].label_wrapped);
+    ASSERT_NEAR(200, l.edges[0].label.width, 1e-9);
+    ASSERT_NEAR(84, l.edges[0].label.height, 1e-9);  // 4 lines
+    ASSERT_FALSE(l.edges[1].label_wrapped);
+    ASSERT_NEAR(21, l.edges[1].label.height, 1e-9);
+}

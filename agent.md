@@ -85,7 +85,7 @@ node all.mjs ../tests/data/merman ../tests/data/mermaid_js_dagre      # every .m
 ```
 
 The script uses `{layout: "dagre", handDrawnSeed: 1}`, names each SVG after its file (that is also the svg id) and
-post-processes like mermaid-cli. For one file use `render_reference.mjs <in.mmd> <out.svg> dagre <svg-id>`.
+post-processes like mermaid-cli (including `<br>` -> `<br />`). For one file use `render_reference.mjs <in.mmd> <out.svg> dagre <svg-id>`.
 
 Mermaid's own source is the spec. Fetch what you need, do not vendor it:
 `https://raw.githubusercontent.com/mermaid-js/mermaid/mermaid@12.2.0/packages/mermaid/src/<path>` (for example
@@ -125,6 +125,13 @@ PNGs: `pip install novasvg`, then `novasvg.svg2png(svg, png, width=900, backgrou
   change tie-breaks. Keep `make_input` order unless a reference says otherwise.
 - `Layout::nodes` lists only the nodes of that graph; nodes of closed subgraphs are in `Layout::roots[i].layout`
   with their own coordinates. Code that walks a layout must recurse (see `tests/cpp/test_flowchart_layout.cpp`).
+- Layout coordinates are dagre's own (it is given margin 8 and translates the graph); `Layout::bounds` is what is drawn
+  and the `viewBox` comes from it, so its origin may not be 0 (ADR-0015). Never renormalise the coordinates.
+- Edge ids: the first link between two nodes is `L_a_b_0`, later ones `L_a_b_<existing + 1>` (so 0, 2, 3, ...).
+- A self-loop is three dagre edges and two 0.1 x 0.1 helper nodes, merged into one synthesised route; paths of loops
+  are written after the other paths, their labels keep graph order.
+- Labels wider than 120 (nodes) or 200 (edges) wrap; their height is lines x 21 and the div becomes a `table` with
+  `white-space: break-spaces`.
 - `fontFamily` from `%%{init}%%` changes the CSS only, not the text measurement.
 - Only the `default` theme is ported to the neo look; `dark`, `forest`, `neutral` are the old simplified styles.
 - `utest.h` pulls in `<windows.h>` on MSVC: no `near`, `far`, `small`, `big`; avoid `min` / `max` names.

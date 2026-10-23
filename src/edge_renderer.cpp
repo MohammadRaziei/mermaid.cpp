@@ -70,7 +70,6 @@ const marker_spec* find_marker(const std::string& name) {
 }
 
 // markerOffsets (lineWithOffset.ts): how far the path is pulled back from the node (arrow_point only).
-double path_offset(Head head) { return head == Head::Arrow ? 4 : 0; }
 
 // markerOffsets2 (edges.js): the gap kept free at each end of the dash pattern.
 double dash_offset(Head head) {
@@ -174,34 +173,46 @@ std::string EdgeRenderer::marker_url(Head head, bool start, const std::string& s
     return "url(#" + id + ")";
 }
 
-bool EdgeRenderer::is_drawn(const flowchart::Edge& edge, const flowchart::EdgeLayout& layout) {
-    return edge.stroke != Stroke::Invisible && layout.points.size() >= 2;
+bool EdgeRenderer::is_drawn(const flowchart::EdgeLayout& layout) {
+    return layout.points.size() >= 2;  // invisible edges are drawn too, with the `invisible` thickness
 }
 
 void EdgeRenderer::write_path(SvgWriter& out, const flowchart::Edge& edge, const flowchart::EdgeLayout& layout,
                               const flowchart::NodeLayout* tail, const flowchart::NodeLayout* head) {
-    if (!is_drawn(edge, layout)) return;
+    if (!is_drawn(layout)) return;
 
     // Route as Mermaid draws it: clipped to the outlines, pulled back from the arrow tips, rounded.
     // (the edge's curve, `basis` unless set, after fixCorners)
     std::vector<Point> route = layout.points;
     if (tail && head) route = edge_geometry::clip_to_nodes(route, *tail, *head);
     const std::vector<Point> drawn =
-        edge_geometry::shorten_ends(edge_geometry::fix_corners(route), path_offset(edge.start), path_offset(edge.end));
+        edge_geometry::shorten_ends(edge_geometry::fix_corners(route), edge_geometry::path_offset(edge.start), edge_geometry::path_offset(edge.end));
     const double length = edge_geometry::curve_length(edge.curve, drawn);
 
     // thickness picks the first class pair; the pattern is `solid` unless the stroke is dotted
     // (flowDb passes the stroke as the pattern, which only `dotted` and `dashed` recognise).
     const std::string thickness = edge.stroke == Stroke::Thick ? "thick" : "normal";
     const bool dotted = edge.stroke == Stroke::Dotted;
-    const std::string classes = "edge-thickness-" + thickness + " edge-pattern-" + (dotted ? "dotted" : "solid") +
-                                " edge-thickness-normal edge-pattern-solid flowchart-link";
+    // flowDb gives an invisible edge no `flowchart-link` classes, so only the stroke classes remain
+    const std::string classes = edge.stroke == Stroke::Invisible
+                                    ? std::string("edge-thickness-invisible edge-pattern-solid")
+                                    : "edge-thickness-" + thickness + " edge-pattern-" + (dotted ? "dotted" : "solid") +
+                                          " edge-thickness-normal edge-pattern-solid flowchart-link";
 
     const std::string style_text = path_style_text(edge);
     const std::string style = "stroke-dasharray: " + dash_array(length, dash_offset(edge.start), dash_offset(edge.end), dotted) +
                               "; stroke-dashoffset: 0;" + style_text;
 
-    SvgWriter::Attrs attrs{{"d", edge_geometry::curve_path(edge.curve, drawn)},
+    const std::string d = edge_geometry::curve_path(edge.curve, drawn);
+    // edges.js resolveEdgeLabelPosition: unless the middle point of the clipped route lies on the drawn path, the
+    // label follows the path by the distance its middle moved from the middle of dagre's route.
+    if (layout.has_label && !edge.label.empty() && !route.empty() &&
+        !edge_geometry::is_label_coordinate_in_path(route[route.size() / 2], d)) {
+        const Point now = edge_geometry::label_position(route), before = edge_geometry::label_position(layout.points);
+        label_shifts_[edge.id] = {now.x - before.x, now.y - before.y};
+    }
+
+    SvgWriter::Attrs attrs{{"d", d},
                            {"id", svg_id_ + "-" + edge.id},
                            {"class", classes},
                            {"style", style},
@@ -216,11 +227,15 @@ void EdgeRenderer::write_path(SvgWriter& out, const flowchart::Edge& edge, const
 }
 
 void EdgeRenderer::write_label(SvgWriter& out, const flowchart::Edge& edge, const flowchart::EdgeLayout& layout) const {
-    if (!is_drawn(edge, layout)) return;
+    if (!is_drawn(layout)) return;
 
     const auto translate = [](double x, double y) { return "translate(" + SvgWriter::num(x) + ", " + SvgWriter::num(y) + ")"; };
     const bool labelled = layout.has_label && !edge.label.empty();
-    const Rect box = labelled ? layout.label : Rect{0, 0, 0, 0};
+    Rect box = labelled ? layout.label : Rect{0, 0, 0, 0};
+    if (const auto shift = label_shifts_.find(edge.id); labelled && shift != label_shifts_.end()) {
+        box.x += shift->second.x;
+        box.y += shift->second.y;
+    }
 
     // edges.js insertEdgeLabel: a group at the label centre, the HTML label centred inside it.
     // An edge without a label gets the same markup, empty, with no position.
@@ -231,7 +246,9 @@ void EdgeRenderer::write_label(SvgWriter& out, const flowchart::Edge& edge, cons
     out.open("foreignObject", {{"width", SvgWriter::num(box.width)}, {"height", SvgWriter::num(box.height)}});
     out.open("div", {{"xmlns", "http://www.w3.org/1999/xhtml"},
                      {"class", "labelBkg"},
-                     {"style", "display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"}});
+                     {"style", labelled && layout.label_wrapped
+                                   ? "display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"
+                                   : "display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"}});
     out.open("span", {{"class", "edgeLabel"}});
     if (labelled) {
         out.open("p");

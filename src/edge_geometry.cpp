@@ -2,8 +2,11 @@
 
 #include <mermaid/macros.h>
 
+#include <cctype>
 #include <charconv>
 #include <cmath>
+#include <cstdlib>
+#include <string>
 
 #include "shape_geometry.h"
 #include "svg_writer.h"
@@ -135,6 +138,65 @@ Point edge_geometry::border_point(const NodeLayout& node, const Point& outside) 
     }
 }
 
+namespace {
+
+double js_round(double v) { return std::floor(v + 0.5); }  // Math.round: halves go up
+
+double round_to(double v, int decimals) {
+    const double factor = std::pow(10.0, decimals);
+    return js_round(v * factor) / factor;
+}
+
+}  // namespace
+
+Point edge_geometry::label_position(const std::vector<Point>& points) {
+    if (points.size() == 1) return points.front();
+    double total = 0;
+    for (size_t i = 1; i < points.size(); ++i) total += std::hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+
+    // calculatePoint: walk along the polyline until the remaining distance falls inside a segment
+    double remaining = total / 2;
+    for (size_t i = 1; i < points.size(); ++i) {
+        const Point& prev = points[i - 1];
+        const Point& point = points[i];
+        const double length = std::hypot(point.x - prev.x, point.y - prev.y);
+        if (length == 0) return prev;
+        if (length < remaining) {
+            remaining -= length;
+            continue;
+        }
+        const double ratio = remaining / length;
+        if (ratio <= 0) return prev;
+        if (ratio >= 1) return point;
+        return {round_to((1 - ratio) * prev.x + ratio * point.x, 5), round_to((1 - ratio) * prev.y + ratio * point.y, 5)};
+    }
+    return points.back();
+}
+
+bool edge_geometry::is_label_coordinate_in_path(const Point& point, const std::string& path) {
+    // replace(/(\d+\.\d+)/g, n => Math.round(parseFloat(n)).toString())
+    std::string sanitized;
+    for (size_t i = 0; i < path.size();) {
+        if (!std::isdigit(static_cast<unsigned char>(path[i]))) {
+            sanitized += path[i++];
+            continue;
+        }
+        size_t j = i;
+        while (j < path.size() && std::isdigit(static_cast<unsigned char>(path[j]))) ++j;
+        if (j + 1 < path.size() && path[j] == '.' && std::isdigit(static_cast<unsigned char>(path[j + 1]))) {
+            size_t k = j + 1;
+            while (k < path.size() && std::isdigit(static_cast<unsigned char>(path[k]))) ++k;
+            sanitized += std::to_string(static_cast<long long>(js_round(std::strtod(path.substr(i, k - i).c_str(), nullptr))));
+            i = k;
+        } else {
+            sanitized += path.substr(i, j - i);
+            i = j;
+        }
+    }
+    const auto text = [](double v) { return std::to_string(static_cast<long long>(js_round(v))); };
+    return sanitized.find(text(point.x)) != std::string::npos || sanitized.find(text(point.y)) != std::string::npos;
+}
+
 std::vector<Point> edge_geometry::clip_to_nodes(const std::vector<Point>& route, const NodeLayout& tail, const NodeLayout& head) {
     std::vector<Point> inner;
     if (route.size() > 2) inner.assign(route.begin() + 1, route.end() - 1);
@@ -260,6 +322,33 @@ std::string edge_geometry::curve_path(const std::string& curve, const std::vecto
         d += piece.cubic ? "C" + xy(piece.c1) + "," + xy(piece.c2) + "," + xy(piece.to) : "L" + xy(piece.to);
     return d;
 }
+
+Rect edge_geometry::curve_bounds(const std::string& curve, const std::vector<Point>& points) {
+    if (points.empty()) return {};
+    double min_x = points.front().x, max_x = min_x, min_y = points.front().y, max_y = min_y;
+    const auto take = [&](const Point& p) {
+        min_x = std::min(min_x, p.x);
+        max_x = std::max(max_x, p.x);
+        min_y = std::min(min_y, p.y);
+        max_y = std::max(max_y, p.y);
+    };
+    Point at = points.front();
+    for (const curve_piece& piece : curve_pieces(curve, points)) {
+        if (piece.cubic) {
+            constexpr int kSteps = 256;
+            for (int i = 1; i < kSteps; ++i) {
+                const double t = static_cast<double>(i) / kSteps, u = 1 - t;
+                take({u * u * u * at.x + 3 * u * u * t * piece.c1.x + 3 * u * t * t * piece.c2.x + t * t * t * piece.to.x,
+                      u * u * u * at.y + 3 * u * u * t * piece.c1.y + 3 * u * t * t * piece.c2.y + t * t * t * piece.to.y});
+            }
+        }
+        take(piece.to);
+        at = piece.to;
+    }
+    return {min_x, min_y, max_x - min_x, max_y - min_y};
+}
+
+double edge_geometry::path_offset(flowchart::Head head) { return head == flowchart::Head::Arrow ? 4 : 0; }
 
 double edge_geometry::curve_length(const std::string& curve, const std::vector<Point>& points) {
     if (points.size() < 2) return 0;

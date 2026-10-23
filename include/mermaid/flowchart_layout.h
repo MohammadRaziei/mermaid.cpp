@@ -19,6 +19,7 @@ struct LayoutOptions {
     double pad_x = 16;            // label -> box padding (each side)
     double pad_y = 12;
     double diamond_pad = 15;      // diamond: (w+pad) + (h+pad)
+    double edge_label_max_width = 200;  // edge label wrap width (max-width of the label div)
     double node_padding = 15;     // flowchart.padding: round, lean, trapezoid shapes
     // Layout goldens of merman give 152 = 120 + 2*16 for `A[Start]`: labels
     // are never narrower than this. (Source of the 120 not yet understood.)
@@ -35,14 +36,17 @@ struct NodeLayout {
     Point center;
     Size size;
     Size label;  // the label box inside the outline (text, at least `min_label_width` wide)
+    bool label_wrapped = false;  // the text broke into lines to fit the label width
     Rect rect() const { return Rect::from_center(center, size); }
 };
 
 struct EdgeLayout {
     std::string id;
     size_t model_index = 0;     // index into Model::edges
+    bool self_loop = false;     // a loop on one node: `points` is the synthesised 4-point route (see Layout::loop_helpers)
     std::vector<Point> points;  // source border -> ... -> target border
     bool has_label = false;
+    bool label_wrapped = false;  // the label text broke into lines at `edge_label_max_width`
     Rect label;                 // valid when has_label
 };
 
@@ -52,6 +56,13 @@ struct ClusterLayout {
     Rect rect;            // the dagre compound box
     Size label;           // measured title, zero without a title
     int color_index = 0;  // declaration order, depth first (Mermaid's `colorIndex`)
+};
+
+// The two tiny nodes Mermaid lays a self-loop out with (0.1 x 0.1 once measured; they take part in the layout and are
+// drawn, empty).
+struct LoopHelper {
+    std::string id;  // "<node>---<node>---1" / "---2"
+    Point center;
 };
 
 struct Layout;
@@ -69,6 +80,7 @@ struct Layout {
     std::vector<NodeLayout> nodes;      // model order, subgraph ids excluded; nodes inside `roots` are not here
     std::vector<EdgeLayout> edges;      // the edges of this graph, model order
     std::vector<ClusterLayout> clusters;  // outermost last
+    std::vector<LoopHelper> loop_helpers;  // two per self-loop, in dagre node order
     std::vector<RootLayout> roots;      // closed subgraphs, in dagre node order (reverse declaration order)
     Rect bounds;                        // union of nodes, labels and clusters
     Size size;                          // bounds plus margin on the far sides

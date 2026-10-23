@@ -12,10 +12,12 @@ namespace {
 constexpr double M_PI_ = 3.14159265358979323846;
 }
 
-Size NodeSizer::label_size(const Node& node) const {
-    const Size text = measurer_.measure(node.label);
-    if (mermaid::detail::ignores_min_label_width(node.shape)) return text;
-    return {MERMAID_MAX(text.width, options_.min_label_width), text.height};
+// labelHelper + createText: the text wraps at the label width (120); a label that fits is as wide as its text, and
+// all shapes but the circles hold it to at least that width.
+NodeSizer::Label NodeSizer::label(const Node& node) const {
+    const TextMeasurer::Wrapped text = measurer_.measure_wrapped(node.label, options_.min_label_width);
+    if (mermaid::detail::ignores_min_label_width(node.shape)) return {text.size, text.wrapped};
+    return {{MERMAID_MAX(text.size.width, options_.min_label_width), text.size.height}, text.wrapped};
 }
 
 // The sizes follow shapes/*.ts of Mermaid 12.2 in the neo look.

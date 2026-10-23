@@ -145,3 +145,45 @@ UTEST(edge_geometry, border_point_of_a_parallelogram_follows_the_lean) {
     const Point right = edge_geometry::border_point(lean, {400, 0});
     ASSERT_NEAR(84, right.x, 1e-9);  // middle of the right slanted side
 }
+
+// utils.calcLabelPosition: the point half way along the polyline
+UTEST(edge_geometry, label_position_is_half_way_along_the_path) {
+    ASSERT_NEAR(5, edge_geometry::label_position({{0, 0}, {10, 0}}).x, 1e-9);
+    // 10 + 30 long: half is 20, i.e. 10 into the second segment
+    const Point p = edge_geometry::label_position({{0, 0}, {10, 0}, {10, 30}});
+    ASSERT_NEAR(10, p.x, 1e-9);
+    ASSERT_NEAR(10, p.y, 1e-9);
+    // a single point is its own middle
+    ASSERT_NEAR(7, edge_geometry::label_position({{7, 3}}).x, 1e-9);
+    // interpolated coordinates are rounded to 5 decimals like roundNumber(x, 5)
+    const Point q = edge_geometry::label_position({{0, 0}, {1, 0}, {1, 1}, {0, 1}, {0, 2.0000001}});
+    ASSERT_NEAR(1, q.x, 1e-9);
+    ASSERT_NEAR(1.0, q.y, 1e-9);
+}
+
+// utils.isLabelCoordinateInPath: the rounded x or y of the point appears as text in the path, decimals rounded
+UTEST(edge_geometry, label_coordinate_in_path_compares_rounded_numbers) {
+    const std::string d = "M360,93.5L364.167,93.5C368.333,93.5";  // sanitised: M360,94L364,94C368,94
+    ASSERT_TRUE(edge_geometry::is_label_coordinate_in_path({360.2, 10}, d));   // x rounds to 360
+    ASSERT_TRUE(edge_geometry::is_label_coordinate_in_path({1, 94.4}, d));     // y rounds to 94
+    ASSERT_FALSE(edge_geometry::is_label_coordinate_in_path({200, 200}, d));
+    ASSERT_TRUE(edge_geometry::is_label_coordinate_in_path({3.6, 999}, d));    // "4" is a substring of "364"
+}
+
+// getBBox of the drawn path: the extent of the curve itself, not of its control polygon
+UTEST(edge_geometry, curve_bounds_of_a_straight_path_are_its_points) {
+    const Rect b = edge_geometry::curve_bounds("linear", {{0, 0}, {10, 5}, {20, 0}});
+    ASSERT_NEAR(0, b.x, 1e-9);
+    ASSERT_NEAR(0, b.y, 1e-9);
+    ASSERT_NEAR(20, b.width, 1e-9);
+    ASSERT_NEAR(5, b.height, 1e-9);
+}
+
+UTEST(edge_geometry, curve_bounds_of_a_basis_curve_stay_inside_the_corner_it_cuts) {
+    // a peak: the basis spline reaches only (0 + 4 * 30 + 0) / 6 = 20 of the 30
+    const Rect b = edge_geometry::curve_bounds("basis", {{0, 0}, {10, 30}, {20, 0}});
+    ASSERT_NEAR(0, b.x, 1e-6);  // starts and ends on the end points
+    ASSERT_NEAR(20, b.right(), 1e-6);
+    ASSERT_NEAR(0, b.y, 1e-6);
+    ASSERT_NEAR(20, b.bottom(), 1e-2);
+}

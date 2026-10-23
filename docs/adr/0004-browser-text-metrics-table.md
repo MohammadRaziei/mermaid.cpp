@@ -22,6 +22,9 @@ scaled linearly for other sizes, with HTML whitespace collapsing. The line heigh
 - Chromium rounds layout units to 1/64 px, so a width can differ by that much (seen: 50.578125 against 50.59375);
   the parity tolerance of 0.5 absorbs it (ADR-0008).
 - Characters or pairs outside the table fall back to defaults; the table's coverage is not audited.
+- Labels wider than the label box break at spaces like the browser does: `TextMeasurer::measure_wrapped` wraps
+  greedily at 120 px for nodes and 200 px for edge labels (line counts checked against Chromium in the reference SVGs);
+  a word wider than the box is not split, which is not verified against the browser.
 - `themeVariables.fontFamily` from `%%{init}%%` changes the CSS only; it does **not** change the measurement.
 
 ## Alternatives considered

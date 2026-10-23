@@ -1,4 +1,5 @@
 #include <mermaid/flowchart_layout.h>
+#include <mermaid/edge_geometry.h>
 
 #include <algorithm>
 #include <cmath>
@@ -92,6 +93,7 @@ struct EdgeInfo {
     EndRef from, to;
     int scope = -1;  // the closed subgraph whose graph holds this edge, -1 for the root graph
     Size label;
+    bool label_wrapped = false;
     bool placed() const { return from.type != EndRef::kind::none && to.type != EndRef::kind::none; }
 };
 
@@ -125,7 +127,9 @@ public:
         const detail::NodeSizer sizer(measurer_, options_);
         for (const Node& n : model_.nodes) {
             sizes_.push_back(sizer.size(n));
-            labels_.push_back(sizer.label_size(n));
+            const detail::NodeSizer::Label label = sizer.label(n);
+            labels_.push_back(label.size);
+            labels_wrapped_.push_back(label.wrapped);
         }
         compute_used();
         resolve_edges();
@@ -219,7 +223,11 @@ private:
             EdgeInfo info;
             info.from = resolve(e.from);
             info.to = resolve(e.to);
-            if (!e.label.empty()) info.label = measurer_.measure(e.label);
+            if (!e.label.empty()) {
+                const TextMeasurer::Wrapped label = measurer_.measure_wrapped(e.label, options_.edge_label_max_width);
+                info.label = label.size;
+                info.label_wrapped = label.wrapped;
+            }
             edges_.push_back(info);
         }
 
@@ -312,6 +320,8 @@ private:
         in.options.nodesep = scope.nodesep;
         in.options.ranksep = scope.ranksep;
         in.options.edgesep = options_.edge_sep;
+        in.options.marginx = options_.margin;  // prepareLayoutForDagre: marginx / marginy 8
+        in.options.marginy = options_.margin;
 
         auto parent_id = [&](int sub) -> std::string { return sub >= 0 ? sub_id(sub) : std::string(); };
         // compounds and closed subgraphs share the subgraph order of dagre's node list
@@ -333,10 +343,35 @@ private:
             in.nodes.push_back({model_.nodes[static_cast<size_t>(i)].id, sizes_[static_cast<size_t>(i)].width,
                                 sizes_[static_cast<size_t>(i)].height, parent_id(path.empty() ? -1 : path.back())});
         }
+        // prepareLayoutForDagre: a self-loop gets two helper nodes (children of the same parent) ...
+        for (size_t i = 0; i < edges_.size(); ++i) {
+            if (!is_self_loop(i) || edges_[i].scope != scope.owner) continue;
+            const std::vector<int> path = topology_.path_of(edges_[i].from.index);
+            const std::string parent = parent_id(path.empty() ? -1 : path.back());
+            in.nodes.push_back({loop_helper_id(i, 1), kLoopHelperSize, kLoopHelperSize, parent});
+            in.nodes.push_back({loop_helper_id(i, 2), kLoopHelperSize, kLoopHelperSize, parent});
+        }
         if (scope.owner >= 0) in.nodes.push_back({sub_id(scope.owner), 0, 0, std::string()});
 
         for (size_t i = 0; i < edges_.size(); ++i) {
             if (!edges_[i].placed() || edges_[i].scope != scope.owner) continue;
+            if (is_self_loop(i)) {  // ... and three edges: node -> helper 1 -> helper 2 -> node; the label is on the middle one
+                const std::string node = end_id(edges_[i].from);
+                for (int part = 0; part < 3; ++part) {
+                    dagre::Edge e;
+                    e.v = part == 0 ? node : loop_helper_id(i, part);
+                    e.w = part == 2 ? node : loop_helper_id(i, part + 1);
+                    e.name = node + "-cyclic-special-" + std::to_string(part);
+                    e.minlen = MERMAID_MAX(1, model_.edges[i].length);
+                    e.labelpos = dagre::LabelPos::Center;
+                    if (part == 1 && (edges_[i].label.width > 0 || edges_[i].label.height > 0)) {
+                        e.width = edges_[i].label.width + 2 * options_.edge_label_pad;
+                        e.height = edges_[i].label.height + 2 * options_.edge_label_pad;
+                    }
+                    in.edges.push_back(e);
+                }
+                continue;
+            }
             dagre::Edge e;
             e.v = end_id(edges_[i].from);
             e.w = end_id(edges_[i].to);
@@ -352,17 +387,110 @@ private:
         return in;
     }
 
+    // The helpers are given 10 x 10, but Mermaid measures them once they are drawn (an empty rect of 0.1 x 0.1) and
+    // dagre lays out with that size.
+    static constexpr double kLoopHelperSize = 0.1;
+
+    bool is_self_loop(size_t i) const {
+        const EdgeInfo& e = edges_[i];
+        return e.placed() && e.from.type == EndRef::kind::node && e.to.type == EndRef::kind::node && e.from.index == e.to.index;
+    }
+
+    std::string loop_helper_id(size_t i, int part) const {
+        const std::string& node = model_.nodes[static_cast<size_t>(edges_[i].from.index)].id;
+        return node + "---" + node + "---" + std::to_string(part);
+    }
+
+    static double clamp(double v, double lo, double hi) { return MERMAID_MAX(lo, MERMAID_MIN(hi, v)); }
+
+    // dagre/index.js getEdgesToRender: the three segments become one four-point route on the side of the node
+    // the helpers were laid out towards; the label sits beside it.
+    EdgeLayout merged_self_loop(size_t i, const Scope& scope, const Result& result, EdgeLayout out) const {
+        out.self_loop = true;
+        out.label_wrapped = edges_[i].label_wrapped;
+        const dagre::NodeResult* node = result.find_node(end_id(edges_[i].from));
+        const dagre::NodeResult* h1 = result.find_node(loop_helper_id(i, 1));
+        const dagre::NodeResult* h2 = result.find_node(loop_helper_id(i, 2));
+
+        // getSelfLoopSide: towards the middle of the helper nodes
+        const double dx = (h1->x + h2->x) / 2 - node->x, dy = (h1->y + h2->y) / 2 - node->y;
+        enum class side { top, bottom, left, right } where;
+        if (std::fabs(dx) > std::fabs(dy)) where = dx > 0 ? side::right : side::left;
+        else if (std::fabs(dy) > 0) where = dy > 0 ? side::bottom : side::top;
+        else
+            where = scope.rankdir == dagre::RankDir::BT ? side::bottom
+                    : scope.rankdir == dagre::RankDir::LR ? side::right
+                    : scope.rankdir == dagre::RankDir::RL ? side::left
+                                                           : side::top;
+
+        // getSelfLoopPoints
+        const double label_w = edges_[i].label.width > 0 || edges_[i].label.height > 0 ? edges_[i].label.width + 2 * options_.edge_label_pad : 0;
+        const double label_h = edges_[i].label.width > 0 || edges_[i].label.height > 0 ? edges_[i].label.height + 2 * options_.edge_label_pad : 0;
+        const double x = node->x, y = node->y, half_w = node->width / 2, half_h = node->height / 2;
+        const double max_span = MERMAID_MAX(36.0, MERMAID_MIN(100.0, node->width * 0.8));
+        const double span = clamp(MERMAID_MAX(label_w, node->width * 0.35), 36, max_span);
+        const double depth = clamp(MERMAID_MIN(node->width, node->height) * 0.45, 24, 48);
+        switch (where) {
+            case side::bottom:
+                out.points = {{x - span / 2, y + half_h}, {x - span / 2, y + half_h + depth}, {x + span / 2, y + half_h + depth}, {x + span / 2, y + half_h}};
+                break;
+            case side::right:
+                out.points = {{x + half_w, y - span / 2}, {x + half_w + depth, y - span / 2}, {x + half_w + depth, y + span / 2}, {x + half_w, y + span / 2}};
+                break;
+            case side::left:
+                out.points = {{x - half_w, y - span / 2}, {x - half_w - depth, y - span / 2}, {x - half_w - depth, y + span / 2}, {x - half_w, y + span / 2}};
+                break;
+            case side::top:
+                out.points = {{x - span / 2, y - half_h}, {x - span / 2, y - half_h - depth}, {x + span / 2, y - half_h - depth}, {x + span / 2, y - half_h}};
+                break;
+        }
+
+        // getSelfLoopLabelPosition
+        if (edges_[i].label.width > 0 || edges_[i].label.height > 0) {
+            constexpr double gap = 4;
+            double lx = x, ly = y;
+            double min_x = out.points[0].x, max_x = out.points[0].x, min_y = out.points[0].y, max_y = out.points[0].y;
+            for (const Point& p : out.points) {
+                min_x = MERMAID_MIN(min_x, p.x);
+                max_x = MERMAID_MAX(max_x, p.x);
+                min_y = MERMAID_MIN(min_y, p.y);
+                max_y = MERMAID_MAX(max_y, p.y);
+            }
+            switch (where) {
+                case side::bottom: ly = max_y + label_h / 2 + gap; break;
+                case side::right: lx = max_x + label_w / 2 + gap; break;
+                case side::left: lx = min_x - label_w / 2 - gap; break;
+                case side::top: ly = min_y - label_h / 2 - gap; break;
+            }
+            out.has_label = true;
+            out.label = Rect::from_center({lx, ly}, edges_[i].label);
+        }
+        return out;
+    }
+
     Layout finish(const Scope& scope, const Result& result, std::vector<RootLayout> roots,
                   const std::vector<Size>& closed_size) {
         Layout layout;
         for (const int i : scope.leaves) {
             const Node& node = model_.nodes[static_cast<size_t>(i)];
             const dagre::NodeResult* r = result.find_node(node.id);
-            layout.nodes.push_back({node.id, node.shape, {r->x, r->y}, sizes_[static_cast<size_t>(i)], labels_[static_cast<size_t>(i)]});
+            layout.nodes.push_back({node.id, node.shape, {r->x, r->y}, sizes_[static_cast<size_t>(i)],
+                                    labels_[static_cast<size_t>(i)], static_cast<bool>(labels_wrapped_[static_cast<size_t>(i)])});
         }
         for (size_t i = 0; i < edges_.size(); ++i) {
             if (edges_[i].scope != scope.owner) continue;
-            EdgeLayout out{model_.edges[i].id, i, {}, false, {}};
+            EdgeLayout out;
+            out.id = model_.edges[i].id;
+            out.model_index = i;
+            out.label_wrapped = edges_[i].label_wrapped;
+            if (is_self_loop(i)) {
+                layout.edges.push_back(merged_self_loop(i, scope, result, std::move(out)));
+                for (int part = 1; part <= 2; ++part) {
+                    const dagre::NodeResult* h = result.find_node(loop_helper_id(i, part));
+                    layout.loop_helpers.push_back({loop_helper_id(i, part), {h->x, h->y}});
+                }
+                continue;
+            }
             if (edges_[i].placed()) {
                 const dagre::EdgeResult* r =
                     result.find_edge(end_id(edges_[i].from), end_id(edges_[i].to), std::to_string(i));
@@ -380,7 +508,7 @@ private:
         }
         layout.roots = std::move(roots);
         add_clusters(scope, layout, result);
-        fit_to_margin(layout);
+        measure_bounds(layout);
         return layout;
     }
 
@@ -434,32 +562,42 @@ private:
                 add_cluster(static_cast<int>(s), scope, result, layout.clusters);
     }
 
-    void fit_to_margin(Layout& layout) const {
+    // The curve of a self-loop as it is drawn (clipped to the node, corners fixed, pulled back from the arrow tips).
+    Rect self_loop_bounds(const EdgeLayout& e, const Layout& layout) const {
+        const Edge& edge = model_.edges[e.model_index];
+        std::vector<Point> route = e.points;
+        for (const NodeLayout& n : layout.nodes)
+            if (n.id == edge.from) route = edge_geometry::clip_to_nodes(route, n, n);
+        const std::vector<Point> drawn = edge_geometry::shorten_ends(
+            edge_geometry::fix_corners(route), edge_geometry::path_offset(edge.start), edge_geometry::path_offset(edge.end));
+        return edge_geometry::curve_bounds(edge.curve, drawn);
+    }
+
+    // dagre has already moved the graph by its margin (translateGraph). What is drawn can be smaller than what dagre
+    // laid out (the self-loop helpers are 10 x 10 for dagre and 0.1 x 0.1 on screen), and Mermaid sizes the viewBox from
+    // the drawn content, so only the bounds are measured here; nothing moves.
+    void measure_bounds(Layout& layout) const {
         std::optional<Rect> bounds;
         auto include = [&](const Rect& r) { bounds = bounds ? bounds->united(r) : r; };
         for (const NodeLayout& n : layout.nodes) include(n.rect());
         for (const ClusterLayout& c : layout.clusters) include(c.rect);
         for (const RootLayout& r : layout.roots) include(r.box);
+        for (const LoopHelper& h : layout.loop_helpers) include({h.center.x, h.center.y, 0.1, 0.1});  // their drawn rect
         for (const EdgeLayout& e : layout.edges) {
             if (e.has_label) include(e.label);
+            if (e.self_loop) {  // sharp corners: the drawn curve is well inside its points, and getBBox sees the curve
+                include(self_loop_bounds(e, layout));
+                continue;
+            }
             for (const Point& p : e.points) include({p.x, p.y, 0, 0});
         }
-        if (!bounds) return;
-
-        const double dx = options_.margin - bounds->x, dy = options_.margin - bounds->y;
-        for (NodeLayout& n : layout.nodes) n.center = {n.center.x + dx, n.center.y + dy};
-        for (ClusterLayout& c : layout.clusters) c.rect = {c.rect.x + dx, c.rect.y + dy, c.rect.width, c.rect.height};
         for (RootLayout& r : layout.roots) {
-            r.box = {r.box.x + dx, r.box.y + dy, r.box.width, r.box.height};
             const Rect& inner = r.layout->clusters.back().rect;
             r.origin = {r.box.x - inner.x, r.box.y - inner.y};
         }
-        for (EdgeLayout& e : layout.edges) {
-            if (e.has_label) e.label = {e.label.x + dx, e.label.y + dy, e.label.width, e.label.height};
-            for (Point& p : e.points) p = {p.x + dx, p.y + dy};
-        }
-        layout.bounds = {options_.margin, options_.margin, bounds->width, bounds->height};
-        layout.size = {layout.bounds.right() + options_.margin, layout.bounds.bottom() + options_.margin};
+        if (!bounds) return;
+        layout.bounds = *bounds;
+        layout.size = {bounds->right() + options_.margin, bounds->bottom() + options_.margin};
     }
 
     const Model& model_;
@@ -468,6 +606,7 @@ private:
     Topology topology_;
     std::vector<Size> sizes_;
     std::vector<Size> labels_;
+    std::vector<char> labels_wrapped_;
     std::vector<EdgeInfo> edges_;
     std::vector<bool> used_, external_, closed_;
     std::vector<EndRef> anchor_;

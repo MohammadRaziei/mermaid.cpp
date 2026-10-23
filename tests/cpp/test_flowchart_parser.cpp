@@ -147,8 +147,18 @@ UTEST(flowchart_parser, chains_and_ampersand_groups) {
 UTEST(flowchart_parser, edge_ids_auto_and_user_defined) {
     Model m = parse("flowchart TD\nA --> B\nA --> B\nC e1@--> D\ne1@{curve: basis}");
     ASSERT_STREQ("L_A_B_0", m.edges[0].id.c_str());
-    ASSERT_STREQ("L_A_B_1", m.edges[1].id.c_str());
+    ASSERT_STREQ("L_A_B_2", m.edges[1].id.c_str());  // flowDb: existing links + 1, so the counter skips 1
     ASSERT_STREQ("e1", m.edges[2].id.c_str());
+}
+
+UTEST(flowchart_parser, repeated_edges_count_the_links_already_between_the_pair) {
+    Model m = parse("flowchart TD\nA --> B\nA --> B\nA --> B\nB --> A\nA --> A\nA --> A\n");
+    ASSERT_STREQ("L_A_B_0", m.edges[0].id.c_str());
+    ASSERT_STREQ("L_A_B_2", m.edges[1].id.c_str());
+    ASSERT_STREQ("L_A_B_3", m.edges[2].id.c_str());
+    ASSERT_STREQ("L_B_A_0", m.edges[3].id.c_str());  // the other direction counts on its own
+    ASSERT_STREQ("L_A_A_0", m.edges[4].id.c_str());
+    ASSERT_STREQ("L_A_A_2", m.edges[5].id.c_str());
 }
 
 UTEST(flowchart_parser, semicolons_comments_and_directives) {

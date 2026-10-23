@@ -1,0 +1,6 @@
+flowchart BT
+  a[Start] --> b{Check}
+  b -->|yes| c(Fine)
+  b -->|no| d[[Retry]]
+  d --> a
+  c --> e((End))

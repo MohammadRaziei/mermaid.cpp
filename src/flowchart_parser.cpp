@@ -186,12 +186,12 @@ public:
         e.start = spec.start;
         e.end = spec.end;
         e.length = spec.length;
-        if (!spec.id.empty()) {
-            e.id = spec.id;
-        } else {
-            int n = pair_count_[from + "\x1f" + to]++;
-            e.id = "L_" + from + "_" + to + "_" + std::to_string(n);
-        }
+        // flowDb.addLink: the first link between two nodes is numbered 0, later ones "existing + 1"; links with an
+        // id of their own count as well
+        int& existing = pair_count_[from + "\x1f" + to];
+        e.id = !spec.id.empty() ? spec.id
+                                : "L_" + from + "_" + to + "_" + std::to_string(existing == 0 ? 0 : existing + 1);
+        ++existing;
         model.edges.push_back(std::move(e));
     }
 

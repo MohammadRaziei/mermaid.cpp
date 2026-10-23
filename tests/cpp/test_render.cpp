@@ -287,3 +287,61 @@ UTEST(render, markdown_node_labels_get_their_class) {
     ASSERT_TRUE(has(svg, "<span class=\"nodeLabel markdown-node-label\"><p>A: (Edge Text)</p></span>"));
     ASSERT_TRUE(has(svg, "<span class=\"nodeLabel\"><p>plain</p></span>"));
 }
+
+// Mermaid inserts the classDef rules into a browser CSSStyleSheet, so the values come back the way Chromium
+// serialises them: lists with commas, multi-word font names quoted.
+UTEST(render, class_def_values_are_serialised_like_the_browser_css_om) {
+    RenderOptions o;
+    o.svg_id = "t";
+    const std::string svg = render_svg(
+        "flowchart LR\n classDef a stroke-dasharray: 5 5\n classDef b stroke-dasharray:5   5   2\n"
+        " classDef c stroke-dasharray: 3,4\n classDef d font-family: Arial Black\n classDef e font-family: serif\n"
+        " x:::a --> y:::b\n z:::c\n w:::d\n v:::e\n", o);
+    ASSERT_TRUE(has(svg, ".a span{stroke-dasharray:5,5!important;}"));
+    ASSERT_TRUE(has(svg, ".b span{stroke-dasharray:5,5,2!important;}"));
+    // a comma ends the declaration (flowDb.addClass); the stray `4` is no declaration and the CSSOM drops it
+    ASSERT_TRUE(has(svg, ".c span{stroke-dasharray:3!important;}"));
+    ASSERT_TRUE(has(svg, ".d span{font-family:\"Arial Black\"!important;}"));
+    ASSERT_TRUE(has(svg, ".e span{font-family:serif!important;}"));
+}
+
+UTEST(render, self_loops_draw_helper_nodes_and_their_paths_after_the_other_edges) {
+    RenderOptions o;
+    o.svg_id = "t";
+    const std::string svg = render_svg("flowchart TD\n a[A] --> a\n a --> b[B]\n", o);
+    // the helpers are drawn after the real nodes, without the svg id prefix
+    ASSERT_TRUE(has(svg, "<g class=\"label edgeLabel\" id=\"a---a---1\" transform=\"translate("));
+    ASSERT_TRUE(has(svg, "<rect width=\"0.1\" height=\"0.1\"></rect>") || has(svg, "<rect width=\"0.1\" height=\"0.1\"/>"));
+    ASSERT_TRUE(has(svg, "style=\"display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 10px; text-align: center;\""));
+    // the ordinary edge is drawn before the loop
+    ASSERT_TRUE(svg.find("id=\"t-L_a_b_0\"") < svg.find("id=\"t-L_a_a_0\""));
+    // while the edge labels keep the order of the graph: the loop's comes first
+    ASSERT_TRUE(svg.find("data-id=\"L_a_a_0\" transform") < svg.find("data-id=\"L_a_b_0\" transform"));
+}
+
+// `a ~~~ b` is drawn: an invisible path (thickness class `invisible`, no markers) and an empty label, which still take
+// part in the layout like any other edge.
+UTEST(render, invisible_edges_are_drawn_as_invisible_paths) {
+    RenderOptions o;
+    o.svg_id = "t";
+    const std::string svg = render_svg("flowchart LR\n a ~~~ b\n b --> c\n", o);
+    ASSERT_TRUE(has(svg, "id=\"t-L_a_b_0\" class=\"edge-thickness-invisible edge-pattern-solid\""));
+    ASSERT_TRUE(has(svg, "style=\"stroke-dasharray: 0 0 50 0; stroke-dashoffset: 0;;\""));
+    ASSERT_TRUE(has(svg, "data-id=\"L_a_b_0\""));
+    const size_t path = svg.find("id=\"t-L_a_b_0\"");
+    const size_t end = svg.find("/>", path);
+    ASSERT_TRUE(svg.substr(path, end - path).find("marker-") == std::string::npos);
+    // its empty label is there too: three labels for two edges plus the invisible one
+    size_t labels = 0;
+    for (size_t at = svg.find("<g class=\"edgeLabel\""); at != std::string::npos; at = svg.find("<g class=\"edgeLabel\"", at + 1)) ++labels;
+    ASSERT_EQ(2u, labels);
+}
+
+UTEST(render, wrapped_edge_labels_are_a_table_of_the_wrap_width) {
+    RenderOptions o;
+    o.svg_id = "t";
+    const std::string svg = render_svg(
+        "flowchart TD\n a -->|a very long edge label that will certainly wrap because it is wider than two hundred pixels for sure| b\n", o);
+    ASSERT_TRUE(has(svg, "<foreignObject width=\"200\" height=\"84\">"));
+    ASSERT_TRUE(has(svg, "style=\"display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;\""));
+}

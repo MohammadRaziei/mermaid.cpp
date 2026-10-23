@@ -39,7 +39,21 @@ public:
     // "linear" or "cardinal"; any other name draws "basis"), written like d3-path with 3 digits.
     static std::string curve_path(const std::string& curve, const std::vector<Point>& points);
 
+    // The tight bounding box of that path (what getBBox() reports): the curve itself, sampled numerically, not its
+    // control points.
+    static Rect curve_bounds(const std::string& curve, const std::vector<Point>& points);
+
+    // How far the path is pulled back from the tip of an arrow head (markerOffsets): 4 for an arrow, else 0.
+    static double path_offset(flowchart::Head head);
+
     // Length of that path (what getTotalLength() reports), measured numerically.
+    // utils.calcLabelPosition: the point half way along the polyline (coordinates rounded to 5 decimals).
+    static Point label_position(const std::vector<Point>& points);
+
+    // utils.isLabelCoordinateInPath: whether the rounded x or y of `point` occurs as text in the path `d`, whose
+    // decimals are rounded the same way. When it does not, Mermaid moves the edge label with the drawn path.
+    static bool is_label_coordinate_in_path(const Point& point, const std::string& path);
+
     static double curve_length(const std::string& curve, const std::vector<Point>& points);
 
     // The `data-points` value: base64 of the JSON list of points.

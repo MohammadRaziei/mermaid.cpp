@@ -164,9 +164,13 @@ private:
 
     void write_edge_paths(const Layout& layout) {
         out_.open("g", {{"class", "edgePaths"}});
-        for (const EdgeLayout& e : layout.edges) {
-            const Edge& edge = model_.edges[e.model_index];
-            edges_.write_path(out_, edge, e, find_layout(layout, edge.from), find_layout(layout, edge.to));
+        // getEdgesToRender: the ordinary edges first, the merged self-loops after them
+        for (const bool loops : {false, true}) {
+            for (const EdgeLayout& e : layout.edges) {
+                if (e.self_loop != loops) continue;
+                const Edge& edge = model_.edges[e.model_index];
+                edges_.write_path(out_, edge, e, find_layout(layout, edge.from), find_layout(layout, edge.to));
+            }
         }
         out_.close();
     }
@@ -207,12 +211,32 @@ private:
     void write_nodes(const Layout& layout) {
         out_.open("g", {{"class", "nodes"}});
         for (const RootLayout& root : layout.roots) write_root(*root.layout, &root.origin);
+        const auto write_loop_helpers = [&] {
+            // the helpers of self-loops: empty `labelRect` nodes, drawn after the real nodes
+            for (const LoopHelper& h : layout.loop_helpers) {
+                out_.open("g", {{"class", "label edgeLabel"},
+                                {"id", h.id},
+                                {"transform", "translate(" + SvgWriter::num(h.center.x) + ", " + SvgWriter::num(h.center.y) + ")"}});
+                out_.leaf("rect", {{"width", "0.1"}, {"height", "0.1"}});
+                out_.open("g", {{"class", "label"}, {"style", ""}, {"transform", "translate(0, 0)"}});
+                out_.leaf("rect", {});
+                out_.open("foreignObject", {{"width", "0"}, {"height", "0"}});
+                out_.open("div", {{"xmlns", "http://www.w3.org/1999/xhtml"},
+                                  {"style", "display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 10px; text-align: center;"}});
+                out_.leaf("span", {{"class", "nodeLabel"}});
+                out_.close();  // div
+                out_.close();  // foreignObject
+                out_.close();  // label
+                out_.close();  // helper
+            }
+        };
         const detail::node_renderer renderer(options_.svg_id, detail::theme_variables::redux_color(), options_.hand_drawn_seed);
         for (const NodeLayout& nl : layout.nodes) {
             const Node* node = model_.find_node(nl.id);
             if (!node) continue;
             renderer.write(out_, *node, nl, resolved_style(*node));
         }
+        write_loop_helpers();
         out_.close();
     }
 

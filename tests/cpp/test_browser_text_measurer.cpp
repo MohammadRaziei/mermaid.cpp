@@ -61,3 +61,35 @@ UTEST(browser_text_measurer, collapses_runs_of_spaces_and_trims_the_ends) {
     ASSERT_NEAR(m.line_width("a"), m.line_width("  a  "), 1e-9);
     ASSERT_NEAR(m.line_width("a b"), m.line_width("a\t b"), 1e-9);
 }
+
+// A label wider than the box is broken at spaces, like the browser does for `max-width: 120px`. The line counts are
+// what Chromium laid out in the reference SVGs (height / 21).
+UTEST(browser_text_measurer, wraps_long_labels_at_spaces) {
+    browser_text_measurer m;
+    const auto lines = [&](const char* text) { return static_cast<int>(m.measure_wrapped(text, 120).size.height / 21 + 0.5); };
+    ASSERT_EQ(5, lines("A fairly long label that is certainly wider than the usual minimum width of a node"));
+    ASSERT_EQ(4, lines("Another quite long label for a round node with many words in it"));
+    ASSERT_EQ(3, lines("A long question for the decision node here?"));
+    ASSERT_EQ(2, lines("A long circle label that goes on"));
+}
+
+UTEST(browser_text_measurer, wrapped_text_is_as_wide_as_the_box_and_short_text_is_left_alone) {
+    browser_text_measurer m;
+    const TextMeasurer::Wrapped wrapped = m.measure_wrapped("A long circle label that goes on", 120);
+    ASSERT_TRUE(wrapped.wrapped);
+    ASSERT_NEAR(120, wrapped.size.width, 1e-9);
+
+    const TextMeasurer::Wrapped plain = m.measure_wrapped("Short", 120);
+    ASSERT_FALSE(plain.wrapped);
+    ASSERT_NEAR(m.measure("Short").width, plain.size.width, 1e-9);
+    ASSERT_NEAR(21, plain.size.height, 1e-9);
+}
+
+UTEST(browser_text_measurer, explicit_line_breaks_stay_and_a_word_wider_than_the_box_is_not_split) {
+    browser_text_measurer m;
+    const TextMeasurer::Wrapped two = m.measure_wrapped("one\ntwo", 120);
+    ASSERT_FALSE(two.wrapped);
+    ASSERT_NEAR(42, two.size.height, 1e-9);
+    const TextMeasurer::Wrapped word = m.measure_wrapped("Supercalifragilisticexpialidocious_and_even_longer_than_the_box", 120);
+    ASSERT_NEAR(21, word.size.height, 1e-9);  // no break opportunity
+}

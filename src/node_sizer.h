@@ -15,8 +15,14 @@ public:
     NodeSizer(const TextMeasurer& measurer, const LayoutOptions& options)
         : measurer_(measurer), options_(options) {}
 
+    struct Label {
+        Size size;
+        bool wrapped = false;  // the text had to break to fit the label width
+    };
+
     Size size(const Node& node) const;
-    Size label_size(const Node& node) const;
+    Label label(const Node& node) const;
+    Size label_size(const Node& node) const { return label(node).size; }
 
 private:
     const TextMeasurer& measurer_;

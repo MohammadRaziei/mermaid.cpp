@@ -19,6 +19,9 @@ text. `classDef`, `linkStyle` and init theme variables flow through the same pat
 
 - Overrides (`fontFamily`, `clusterBkg`, `clusterBorder`, a user CSS file) work without special cases.
 - The compiled text must match stylis formatting (for example `fill:red;`).
+- Mermaid inserts the `classDef` rules into a browser `CSSStyleSheet`, so their values come back as Chromium
+  serialises them; `browser_value` reproduces what was seen: hex colours as `rgb()`, `stroke-dasharray` as a comma list
+  (`5 5` -> `5,5`), multi-word font names quoted. Other properties are written as given, which is unverified.
 - **Only the `default` theme uses this path.** `dark`, `forest` and `neutral` still go through the older, simplified
   classic stylesheet and are not checked against Mermaid; `mermaid_cli -t` exposes them anyway (`checklist.md`, S11).
 

@@ -2,9 +2,10 @@ import chromium from '@sparticuz/chromium';
 import puppeteer from 'puppeteer-core';
 import fs from 'fs';
 const [,, mmd, out, layout='dagre', id='basic'] = process.argv;
-// what mermaid-cli adds to the serialised svg: xmlns:xlink and the background colour
+// what mermaid-cli adds to the serialised svg: xmlns:xlink and the background colour, and the XML form of <br>
+// (it serialises the DOM with XMLSerializer, mermaid.render() returns the HTML string)
 function mmdcLike(svg) {
-  return svg.replace(' xmlns="http://www.w3.org/2000/svg"', ' xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"')
+  return svg.replace(/<br>/g, '<br />').replace(' xmlns="http://www.w3.org/2000/svg"', ' xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"')
             .replace(/style="(max-width: [^"]*?);?"/, 'style="$1; background-color: white;"');
 }
 const browser = await puppeteer.launch({args: chromium.args, executablePath: await chromium.executablePath(), headless: 'shell'});

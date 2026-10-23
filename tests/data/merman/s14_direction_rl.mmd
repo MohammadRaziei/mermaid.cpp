@@ -1,0 +1,6 @@
+flowchart RL
+  a[Input] --> b[Parse]
+  b --> c[(Store)]
+  b --> d{{Validate}}
+  d -->|ok| c
+  d -->|bad| e>Reject]

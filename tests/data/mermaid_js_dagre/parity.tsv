@@ -9,3 +9,11 @@ stress_flowchart_directives_comments_blank_lines_032	pass
 stress_flowchart_edge_label_position_064	pass
 stress_flowchart_escape_sequences_and_quotes_012	pass
 shapes_all	pass
+s14_direction_bt	pass
+s14_direction_rl	pass
+s14_styled_shapes	pass
+s14_long_labels	pass
+s14_selfloop_multiedge	pass
+s14_selfloop_lr	pass
+s14_edge_styles	pass
+s14_long_edge_label	pass

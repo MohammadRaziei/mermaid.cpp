@@ -5,8 +5,8 @@ Workflow per step: failing test first -> implement -> green -> commit -> clean r
 
 ## Status
 
-- 182 tests pass (Linux/GCC; CI also builds macOS and Windows).
-- Parity with real Mermaid 12.2.0 (`layout: dagre`, neo look): **11 of 11 fixtures at zero differences**
+- 199 tests pass (Linux/GCC; CI also builds macOS and Windows).
+- Parity with real Mermaid 12.2.0 (`layout: dagre`, neo look): **19 of 19 fixtures at zero differences**
   (`tests/data/mermaid_js_dagre/parity.tsv`). That is the whole parity net; everything outside those fixtures is
   listed under "Unverified".
 - Supported: flowcharts (`graph` / `flowchart`); every other diagram type throws `UnsupportedDiagram`. All 14 shapes of the classic syntax are drawn in the neo markup.
@@ -82,14 +82,15 @@ Ordered by what is likely to matter next.
   (`cloud`, `bolt`, `doc`, `tag-rect`, `fork`, `lin-cyl`, ...) becomes a box. Each needs its `shapes/*.ts` read and a reference
 - [ ] **S13** edges to clusters that stay open: cut the path at the cluster border (`fromCluster` / `toCluster`) and
   the "safe anchor" re-anchoring of `adjustClustersAndEdges` (ADR-0010 lists what was not ported)
-- [ ] **S14** more fixtures: the 11 fixtures are the only parity net. Wanted: invisible edges, `linkStyle` colours,
-  dotted/thick edges, every curve, BT/RL, self-loops, multi-edges, long labels, `<br/>`, Markdown strings, nested
-  closed clusters mixed with open ones, `classDef` on subgraphs
+- [~] **S14** more fixtures. Done (8): BT, RL, self-loops (two), edge styles incl. invisible, styled shapes, long node
+  labels, long edge label. Found and fixed on the way: label position follows the clipped path (`positionEdgeLabel`),
+  CSSOM serialisation of `classDef` values, edge id numbering, text wrapping, self-loops, invisible edges, `<br />` in the
+  reference tool. Still wanted: `linkStyle` colours on more shapes, every curve, Markdown strings, nested closed clusters
+  mixed with open ones, `classDef` on subgraphs, several loops on one node, self-loops on subgraph ids, wide single words
 - [ ] **S10** CI is a 3-OS build and test (`.github/workflows/cmake.yml`). Open: Doxygen docs (like liburlparser),
   benchmarks, coverage dashboard (`mermaid_coverage` target exists, needs `lcov`)
 - [ ] Init keys not read yet: `theme`, other `themeVariables`, `flowchart.curve`, `look`, `layout`, `htmlLabels`
 - [ ] Curves other than basis/linear/cardinal; `flowchart.curve` from config; `animate`
-- [ ] Invisible edges (`~~~`): not drawn (Mermaid appends a path with `edge-thickness-invisible`)
 - [ ] Markdown inside labels (`**bold**`, `*italic*`, line breaks); only plain text matches
 - [ ] `click`, links, tooltips; icons/images; accessibility tags beyond the basic ones
 - [ ] Text: table coverage is not audited; `fontFamily` does not change measurement; a different font needs a new table
@@ -114,6 +115,12 @@ Ordered by what is likely to matter next.
 | stress_flowchart_directives_comments_blank_lines_032 | closed clusters as nested roots, edge between clusters, init spacing |
 | stress_flowchart_edge_label_position_064 | `@{ label }` nodes, edge label positions, init spacing |
 | shapes_all | all 14 classic shapes in one LR chain, edges into polygons and circles |
+| s14_direction_bt, s14_direction_rl | BT and RL, edge labels on clipped paths |
+| s14_styled_shapes | `classDef` / `style` on round, circle, hexagon, odd, lean, subroutine, double circle; dash lists |
+| s14_long_labels | node labels that wrap at 120, `<br/>`, circle sized to wrapped text |
+| s14_long_edge_label | edge label that wraps at 200 |
+| s14_selfloop_multiedge, s14_selfloop_lr | self-loops (labelled or not), parallel edges `L_a_b_2`, TD and LR |
+| s14_edge_styles | dotted, thick, invisible, `--o`, `--x`, `<-->`, long edges, labelled dotted/thick |
 
 ## Unverified (implemented from the Mermaid source, no reference SVG covers it)
 
@@ -121,6 +128,8 @@ Ordered by what is likely to matter next.
 - shapes with labels wider than the 120 px label width (wrapping), and shapes with `classDef` / `style` fill and stroke (only box, diamond, cylinder, stadium were checked with styles)
 - the "safe anchor" and `fromCluster` / `toCluster` paths of cluster edges (not implemented)
 - `-t dark|forest|neutral` output
+- a word wider than the label box (the browser does not split it; we do not either), several self-loops on one node, self-loops
+  on subgraph ids
 - `mermaid_cli` on Windows; temporary-file handling in `test_cli.cpp` on Windows
 - the stadium polygon bounding box: Mermaid's node is 0.02 narrower than the formula (within tolerance)
 
@@ -140,6 +149,13 @@ Ordered by what is likely to matter next.
   clusters in declaration order, depth first. In the SVG a closed cluster is a nested `g.root` inside `g.nodes`, first.
 - **Vertex counter.** Every `addVertex` call advances the counter that names `flowchart-<id>-<n>`, new vertex or not;
   an `@{ ... }` block calls it once more.
+- **Edge ids.** First link between two nodes `L_a_b_0`, later ones `L_a_b_<existing + 1>`.
+- **Wrapping.** Node labels wrap at 120 px, edge labels at 200 px; a wrapped label is a `display: table` div of that width
+  with `white-space: break-spaces`, its height lines x 21.
+- **Self-loops.** Two helper nodes (0.1 x 0.1 once measured) and three edges for dagre; a synthesised 4-point route on the
+  side the helpers landed; helpers drawn as empty `g.label.edgeLabel`; viewBox from the drawn bounds (ADR-0015).
+- **CSSOM.** `classDef` rules go through a browser stylesheet: `rgb()` colours, `stroke-dasharray: 5 5` becomes `5,5`,
+  `font-family: Arial Black` becomes `"Arial Black"`; a comma ends a declaration.
 - **Portability.** `utest.h` pulls in `<windows.h>` on MSVC: never name identifiers `near`, `far`, `small`, `big`;
   use `MERMAID_MIN` / `MERMAID_MAX` (ADR-0007).
 - **History.** Older notes (merman golden tables, the ELK investigation, early look differences) are in git history

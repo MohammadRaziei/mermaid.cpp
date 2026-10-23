@@ -78,9 +78,9 @@ their boxes are dagre's compound nodes.
 | flowchart | `Parser` | statements, chains, `&` groups, subgraph stack, shapes, edges, `@{ ... }` blocks, class/style/linkStyle |
 | flowchart | `style_css` | `fill:#f9f,stroke:#333` -> normalised declarations |
 | flowchart | `init_directive` | `%%{init}%%` with a small JSON reader (ADR-0011) |
-| text | `TextMeasurer`, `browser_text_measurer` | text width/height from a generated table of Chromium metrics (ADR-0004) |
+| text | `TextMeasurer`, `browser_text_measurer` | text width/height from a generated table of Chromium metrics; `measure_wrapped` breaks lines at 120 / 200 px (ADR-0004) |
 | layout | `NodeSizer` | node box from label and shape (`flowchart.minNodeWidth`, padding), formulas of `shapes/*.ts` |
-| layout | `LayoutEngine` | model -> `dagre::layout` input per graph (closed subgraphs first), result -> geometry, margin fit |
+| layout | `LayoutEngine` | model -> `dagre::layout` input per graph (closed subgraphs first; self-loops as helper nodes, ADR-0015), result -> geometry, drawn bounds |
 | dagre | `dagre::layout` (public, `dagre.h`) | the dagre pipeline, one class per stage (below), verified against `dagre-d3-es` (ADR-0003) |
 | dagre | `Acyclic` | reverse back edges so the graph is acyclic |
 | dagre | `NestingGraph` | root node, border nodes and nesting edges for compound nodes |
@@ -93,7 +93,7 @@ their boxes are dagre's compound nodes.
 | render | `theme_variables`, `flowchart_css`, `css_compiler`, `css_color` | the stylesheet of Mermaid 12.2 (neo / redux-color) built, not copied (ADR-0009); only the `default` theme so far |
 | render | `Theme` | old simplified styles for `dark`, `forest`, `neutral` (not ported to neo; `checklist.md` S11) |
 | render | `shape_geometry`, `node_renderer`, `rough_path` | outline of each shape derived from the node size, neo markup, edge clipping to polygons (ADR-0014); stadium and odd via the rough.js port (ADR-0012) |
-| render | `EdgeRenderer` | paths, markers, labels, invisible edges |
+| render | `EdgeRenderer` | paths, markers, labels (positioned like `positionEdgeLabel`), invisible edges, merged self-loops |
 | render | `FlowchartRenderer` | root groups (clusters, edge paths, edge labels, nodes), nested roots, document frame |
 
 ## 4. Testing strategy (TDD)

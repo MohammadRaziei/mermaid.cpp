@@ -1,6 +1,7 @@
 // edge_renderer.h (private) - draws edges: paths, arrow heads and labels (Mermaid 12.2 neo look).
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -30,7 +31,7 @@ public:
                     const flowchart::NodeLayout* tail, const flowchart::NodeLayout* head);
     void write_label(SvgWriter& out, const flowchart::Edge& edge, const flowchart::EdgeLayout& layout) const;
 
-    static bool is_drawn(const flowchart::Edge& edge, const flowchart::EdgeLayout& layout);
+    static bool is_drawn(const flowchart::EdgeLayout& layout);
 
 private:
     struct colored_marker {
@@ -47,6 +48,8 @@ private:
     std::string svg_id_;
     double line_height_;
     std::vector<colored_marker> colored_;
+    // positionEdgeLabel: how far the drawn path moved the middle of the route, by edge id (set by write_path)
+    std::map<std::string, Point> label_shifts_;
 };
 
 }  // namespace mermaid::detail

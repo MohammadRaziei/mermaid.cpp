@@ -30,6 +30,16 @@ public:
     // Box of possibly multi-line text: widest line x (lines * line height).
     Size measure(std::string_view text) const;
 
+    // The text laid out in a box `max_width` wide, the way a browser breaks lines: at spaces, greedily, a word that
+    // is wider than the box stays whole on its own line. Explicit '\n' always breaks. `wrapped` tells that some
+    // line had to break; the box is then `max_width` wide (the label's div is set to that width), otherwise it is
+    // the plain measurement.
+    struct Wrapped {
+        Size size;
+        bool wrapped = false;
+    };
+    Wrapped measure_wrapped(std::string_view text, double max_width) const;
+
     const TextStyle& style() const { return style_; }
 
 private:

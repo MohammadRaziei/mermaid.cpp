@@ -44,7 +44,8 @@ void node_renderer::write(SvgWriter& out, const flowchart::Node& node, const flo
     write_outline(out, layout.shape, layout.size, style);
     Point shift = label_offset(layout.shape, layout.size);
     shift.y += label_shift(layout.shape);
-    write_label(out, node.label, layout.label, style, shift, node.markdown_label, !ignores_min_label_width(layout.shape));
+    write_label(out, node.label, layout.label, style, shift, node.markdown_label,
+                !ignores_min_label_width(layout.shape) || layout.label_wrapped, layout.label_wrapped);
     out.close();
 }
 
@@ -181,7 +182,7 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
 }
 
 void node_renderer::write_label(SvgWriter& out, const std::string& text, const Size& label, const flowchart::Style& style,
-                               const Point& shift, bool markdown, bool min_width) const {
+                               const Point& shift, bool markdown, bool table, bool wrapped) const {
     // addHtmlSpan (createText.ts): a table-cell div; a label held to the minimum width is a `table` of that width.
     const std::string color = important_label_style(style);
     out.open("g", {{"class", "label"},
@@ -191,8 +192,8 @@ void node_renderer::write_label(SvgWriter& out, const std::string& text, const S
     out.open("foreignObject", {{"width", SvgWriter::num(label.width)}, {"height", SvgWriter::num(label.height)}});
     out.open("div", {{"xmlns", "http://www.w3.org/1999/xhtml"},
                      {"style", computed_label_color(style) +
-                                   (min_width ? "display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; "
-                                                "text-align: center; width: 120px;"
+                                   (table ? std::string("display: table; white-space: ") + (wrapped ? "break-spaces" : "nowrap") +
+                                              "; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"
                                               : "display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 120px; "
                                                 "text-align: center;")}});
     SvgWriter::Attrs span{{"class", markdown ? "nodeLabel markdown-node-label" : "nodeLabel"}};
