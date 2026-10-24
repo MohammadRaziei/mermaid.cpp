@@ -365,3 +365,26 @@ UTEST(render, of_several_loops_on_one_node_only_the_last_is_drawn) {
     ASSERT_FALSE(has(svg, "data-id=\"L_A_A_0\" data-points"));
     ASSERT_TRUE(has(svg, "data-id=\"L_A_A_2\" data-points"));
 }
+
+UTEST(render, classic_themes_use_their_own_variables_font_and_line_height) {
+    for (const char* theme : {"dark", "forest", "neutral", "base"}) {
+        const std::string svg = render_svg(std::string("%%{init: {\"theme\": \"") + theme + "\"}}%%\nflowchart TD\nA-->B");
+        ASSERT_TRUE(has(svg, "font-family:\"trebuchet ms\",verdana,arial,sans-serif;font-size:16px;"));
+        ASSERT_TRUE(has(svg, "height=\"24\""));  // 16px text: 24px lines
+        ASSERT_FALSE(has(svg, "data-color-id"));  // only redux-color has colour slots
+        ASSERT_TRUE(has(svg, "<linearGradient id="));
+    }
+    const std::string dark = render_svg("%%{init: {\"theme\": \"dark\"}}%%\nflowchart TD\nA-->B");
+    ASSERT_TRUE(has(dark, "flood-color=\"#FFFFFF\""));
+    ASSERT_TRUE(has(dark, "fill:#ccc;"));
+}
+
+UTEST(render, theme_option_and_init_directive_draw_the_same_diagram) {
+    for (const char* theme : {"dark", "forest", "neutral", "base"}) {
+        RenderOptions o;
+        o.theme = theme;
+        const std::string by_option = render_svg("flowchart TD\nA-->B", o);
+        const std::string by_init = render_svg(std::string("%%{init: {\"theme\": \"") + theme + "\"}}%%\nflowchart TD\nA-->B");
+        ASSERT_TRUE(by_option == by_init);
+    }
+}

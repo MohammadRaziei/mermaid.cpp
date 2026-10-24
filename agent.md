@@ -133,7 +133,7 @@ PNGs: `pip install novasvg`, then `novasvg.svg2png(svg, png, width=900, backgrou
 - Labels wider than 120 (nodes) or 200 (edges) wrap; their height is lines x 21 and the div becomes a `table` with
   `white-space: break-spaces`.
 - `fontFamily` from `%%{init}%%` changes the CSS only, not the text measurement.
-- Only the `default` theme is ported to the neo look; `dark`, `forest`, `neutral` are the old simplified styles.
+- Themes: all five (`default`, `dark`, `forest`, `neutral`, `base`) are ported; only three `themeVariables` keys are applied from `%%{init}%%`.
 - `utest.h` pulls in `<windows.h>` on MSVC: no `near`, `far`, `small`, `big`; avoid `min` / `max` names.
 - Regenerating references changes `tests/data/mermaid_js_dagre/*.svg`; commit those only on purpose.
 

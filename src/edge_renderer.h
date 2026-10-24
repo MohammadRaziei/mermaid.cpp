@@ -9,14 +9,13 @@
 #include <mermaid/flowchart_layout.h>
 
 #include "svg_writer.h"
-#include "theme.h"
 
 namespace mermaid::detail {
 
 class EdgeRenderer {
 public:
-    EdgeRenderer(const Theme& theme, std::string svg_id, double line_height)
-        : theme_(theme), svg_id_(std::move(svg_id)), line_height_(line_height) {}
+    EdgeRenderer(std::string svg_id, double line_height)
+        : svg_id_(std::move(svg_id)), line_height_(line_height) {}
 
     // The 12 <marker> elements; goes inside the marker group, before <g class="root">.
     void write_markers(SvgWriter& out) const;
@@ -44,7 +43,6 @@ private:
     std::string marker_url(flowchart::Head head, bool start, const std::string& style_text);
     void write_marker(SvgWriter& out, const std::string& name, const std::string& id, const std::string& color, bool filled) const;
 
-    const Theme& theme_;
     std::string svg_id_;
     double line_height_;
     std::vector<colored_marker> colored_;

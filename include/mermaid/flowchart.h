@@ -74,6 +74,7 @@ struct ClassDef {
 
 // The `%%{init: ...}%%` settings the flowchart renderer reads (later directives override earlier ones).
 struct InitConfig {
+    std::optional<std::string> theme;           // theme: default, dark, forest, neutral, base
     std::optional<std::string> font_family;     // themeVariables.fontFamily
     std::optional<std::string> cluster_bkg;     // themeVariables.clusterBkg
     std::optional<std::string> cluster_border;  // themeVariables.clusterBorder

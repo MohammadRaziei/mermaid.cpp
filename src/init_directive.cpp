@@ -145,6 +145,12 @@ std::optional<std::string> string_at(const json_value& obj, const std::string& g
     return std::nullopt;
 }
 
+std::optional<std::string> top_string(const json_value& obj, const std::string& key) {
+    const json_value* v = obj.find(key);
+    if (v && v->type == json_value::kind::string) return v->string;
+    return std::nullopt;
+}
+
 std::optional<double> number_at(const json_value& obj, const std::string& group, const std::string& key) {
     const json_value* g = obj.find(group);
     const json_value* v = g && g->type == json_value::kind::object ? g->find(key) : nullptr;
@@ -190,6 +196,7 @@ flowchart::InitConfig parse_init_directives(std::string_view source) {
         if (!value) value = json_reader(text).read_object();
         if (!value) continue;
 
+        override_with(config.theme, top_string(*value, "theme"));
         override_with(config.font_family, string_at(*value, "themeVariables", "fontFamily"));
         override_with(config.cluster_bkg, string_at(*value, "themeVariables", "clusterBkg"));
         override_with(config.cluster_border, string_at(*value, "themeVariables", "clusterBorder"));

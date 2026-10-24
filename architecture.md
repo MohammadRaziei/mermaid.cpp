@@ -91,7 +91,7 @@ their boxes are dagre's compound nodes.
 | geometry | `edge_geometry` (public) | clip to node outlines, `fixCorners`, arrow offsets, curves (basis, linear, cardinal), `data-points` |
 | render | `SvgWriter` | tiny XML builder with escaping and number formatting |
 | render | `theme_variables`, `flowchart_css`, `css_compiler`, `css_color` | the stylesheet of Mermaid 12.2 (neo / redux-color) built, not copied (ADR-0009); only the `default` theme so far |
-| render | `Theme` | old simplified styles for `dark`, `forest`, `neutral` (not ported to neo; `checklist.md` S11) |
+| render | `theme_variables` | variables of the five themes (`default` = redux-color, `dark`, `forest`, `neutral`, `base`), `resolved()` applies the init directive |
 | render | `shape_geometry`, `node_renderer`, `rough_path` | outline of each shape derived from the node size, neo markup, edge clipping to polygons (ADR-0014); stadium and odd via the rough.js port (ADR-0012) |
 | render | `EdgeRenderer` | paths, markers, labels (positioned like `positionEdgeLabel`), invisible edges, merged self-loops |
 | render | `FlowchartRenderer` | root groups (clusters, edge paths, edge labels, nodes), nested roots, document frame |

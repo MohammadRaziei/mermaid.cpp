@@ -9,7 +9,6 @@
 #include "style_css.h"
 #include "svg_writer.h"
 #include "text_block.h"
-#include "theme.h"
 #include "theme_variables.h"
 
 namespace mermaid::flowchart {
@@ -24,9 +23,9 @@ public:
         : model_(model),
           layout_(layout),
           options_(options),
-          theme_(detail::Theme::named(options.theme)),
-          line_height_(theme_.font_size * 1.5),
-          edges_(theme_, options.svg_id, line_height_) {}
+          vars_(detail::theme_variables::resolved(model.config, options.theme)),
+          line_height_(vars_.font_px() * 1.5),
+          edges_(options.svg_id, line_height_) {}
 
     std::string render() {
         open_svg();
@@ -37,6 +36,7 @@ public:
         edges_.write_colored_markers(out_);
         out_.close();  // marker group
         write_filters();
+        write_gradient();
         out_.close();  // svg
         return out_.str();
     }
@@ -77,32 +77,27 @@ private:
         if (!model_.acc_descr.empty()) out_.element("desc", {{"id", "chart-desc-" + id}}, model_.acc_descr);
     }
 
-    std::string style_sheet() const {
-        if (options_.theme == "default") {
-            detail::theme_variables vars = detail::theme_variables::redux_color();
-            const InitConfig& init = model_.config;  // themeVariables of the `%%{init}%%` directive
-            if (init.font_family) vars.font_family = *init.font_family;
-            if (init.cluster_bkg) vars.cluster_bkg = *init.cluster_bkg;
-            if (init.cluster_border) vars.cluster_border = *init.cluster_border;
-            return detail::flowchart_stylesheet(vars, options_.svg_id, model_, options_.css);
-        }
-        const std::string id = "#" + options_.svg_id;
-        std::string css;
-        css += id + "{font-family:" + theme_.font_family + ";font-size:" + SvgWriter::num(theme_.font_size) +
-               "px;fill:" + theme_.text + ";}";
-        css += id + " .node rect," + id + " .node polygon," + id + " .node circle," + id + " .node path{fill:" +
-               theme_.node_fill + ";stroke:" + theme_.node_border + ";stroke-width:1px;}";
-        css += id + " .cluster rect{fill:" + theme_.cluster_fill + ";stroke:" + theme_.cluster_border +
-               ";stroke-width:1px;}";
-        css += id + " .flowchart-link{stroke:" + theme_.line + ";stroke-width:2px;fill:none;}";
-        css += id + " .edgeLabel .labelBkg{opacity:0.5;}";
-        css += options_.css;
-        return css;
-    }
+    std::string style_sheet() const { return detail::flowchart_stylesheet(vars_, options_.svg_id, model_, options_.css); }
 
     void write_style() {
         out_.open("style");
         out_.raw(style_sheet());
+        out_.close();
+    }
+
+    std::string options_theme_name() const { return model_.config.theme ? *model_.config.theme : options_.theme; }
+
+    // insertLookDefs: the gradient stops of a theme with `useGradient`, after the drop shadows.
+    void write_gradient() {
+        if (!vars_.use_gradient) return;
+        out_.open("linearGradient", {{"id", options_.svg_id + "-gradient"},
+                                     {"gradientUnits", "objectBoundingBox"},
+                                     {"x1", "0%"},
+                                     {"y1", "0%"},
+                                     {"x2", "100%"},
+                                     {"y2", "0%"}});
+        out_.leaf("stop", {{"offset", "0%"}, {"stop-color", vars_.gradient_start}, {"stop-opacity", "1"}});
+        out_.leaf("stop", {{"offset", "100%"}, {"stop-color", vars_.gradient_stop}, {"stop-opacity", "1"}});
         out_.close();
     }
 
@@ -120,7 +115,7 @@ private:
                                        {"dy", f.offset},
                                        {"stdDeviation", "0"},
                                        {"flood-opacity", "0.06"},
-                                       {"flood-color", "#000000"}});
+                                       {"flood-color", options_theme_name().find("dark") != std::string::npos ? "#FFFFFF" : "#000000"}});
             out_.close();
             out_.close();
         }
@@ -128,8 +123,7 @@ private:
 
     // rendering-elements/clusters.js `rect` in the neo look.
     void write_clusters(const Layout& layout) {
-        const detail::theme_variables vars = detail::theme_variables::redux_color();
-        const size_t slots = vars.border_color_array.size();
+        const size_t slots = vars_.border_color_array.size();
         out_.open("g", {{"class", "clusters"}});
         for (auto it = layout.clusters.rbegin(); it != layout.clusters.rend(); ++it) {  // outermost first
             const Rect& r = it->rect;
@@ -245,7 +239,7 @@ private:
                 out_.close();  // helper
             }
         };
-        const detail::node_renderer renderer(options_.svg_id, detail::theme_variables::redux_color(), options_.hand_drawn_seed);
+        const detail::node_renderer renderer(options_.svg_id, vars_, options_.hand_drawn_seed);
         for (const NodeLayout& nl : layout.nodes) {
             const Node* node = model_.find_node(nl.id);
             if (!node) continue;
@@ -258,7 +252,7 @@ private:
     const Model& model_;
     const Layout& layout_;
     const RenderOptions& options_;
-    detail::Theme theme_;
+    detail::theme_variables vars_;
     double line_height_;
     detail::EdgeRenderer edges_;
     SvgWriter out_;

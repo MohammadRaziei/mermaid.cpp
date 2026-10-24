@@ -1,0 +1,10 @@
+%%{init: {"theme":"base"}}%%
+flowchart LR
+  A[Start] --> B{Choice}
+  B -->|yes| C((Done))
+  B -->|no| D[(DB)]
+  subgraph grp[Group]
+    C --> E[End]
+  end
+  classDef hot fill:#f96
+  class A hot

@@ -419,6 +419,13 @@ UTEST(flowchart_class, class_statement_styles_subgraphs_and_never_creates_nodes)
     ASSERT_EQ(0u, m.find_node("b")->classes.size());
 }
 
+UTEST(flowchart_init, theme_key_is_read) {
+    const Model m = Parser().parse("%%{init: {\"theme\": \"dark\"}}%%\nflowchart TD\nA-->B\n");
+    ASSERT_TRUE(m.config.theme.has_value());
+    ASSERT_STREQ("dark", m.config.theme->c_str());
+    ASSERT_FALSE(Parser().parse("flowchart TD\nA-->B\n").config.theme.has_value());
+}
+
 // ---- `A@{ label: ... }` nodes
 
 UTEST(flowchart_node_data, data_block_advances_the_vertex_counter_twice) {

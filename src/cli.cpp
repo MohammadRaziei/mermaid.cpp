@@ -26,7 +26,7 @@ struct option_spec {
 const option_spec k_options[] = {
     {"-i", "--input", true, "<file>", "Input mermaid file, `-` reads stdin"},
     {"-o", "--output", true, "<file>", "Output file, `-` writes stdout. Default: <input>.svg (out.svg for stdin)"},
-    {"-t", "--theme", true, "<theme>", "Theme of the chart: default, dark, forest, neutral"},
+    {"-t", "--theme", true, "<theme>", "Theme of the chart: default, dark, forest, neutral, base"},
     {"-b", "--backgroundColor", true, "<color>", "Background of the SVG: a CSS colour or `transparent`. Default: white"},
     {"-I", "--svgId", true, "<id>", "The id attribute of the SVG element. Default: my-svg"},
     {"-C", "--cssFile", true, "<file>", "CSS file appended to the diagram's styles"},

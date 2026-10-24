@@ -32,3 +32,13 @@ s14_wide_word	pass
 s14_markdown_strings	todo
 s14_mixed_clusters	todo
 s14_subgraph_loop	todo
+s11_theme_default	pass
+s11_theme_dark	pass
+s11_theme_forest	pass
+s11_theme_neutral	pass
+s11_theme_base	pass
+s11_rich_default	pass
+s11_rich_dark	pass
+s11_rich_forest	pass
+s11_rich_neutral	pass
+s11_rich_base	pass

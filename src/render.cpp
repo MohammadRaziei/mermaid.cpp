@@ -4,6 +4,7 @@
 #include <cctype>
 
 #include <mermaid/browser_text_measurer.h>
+#include "theme_variables.h"
 #include <mermaid/error.h>
 #include <mermaid/flowchart_layout.h>
 #include <mermaid/flowchart_parser.h>
@@ -48,7 +49,9 @@ std::string render_svg(std::string_view source, const RenderOptions& options) {
     }
 
     const flowchart::Model model = flowchart::Parser().parse(source);
-    const browser_text_measurer measurer;
+    TextStyle style;  // the theme decides the font size: 14px (redux-color) or 16px (the classic themes)
+    style.font_size = detail::theme_variables::resolved(model.config, options.theme).font_px();
+    const browser_text_measurer measurer(style);
     const flowchart::Layout layout = flowchart::LayoutEngine(measurer).layout(model);
     return flowchart::render_svg(model, layout, options);
 }

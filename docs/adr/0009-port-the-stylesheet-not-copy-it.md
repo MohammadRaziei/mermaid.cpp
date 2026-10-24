@@ -1,6 +1,6 @@
 # ADR-0009: Build the stylesheet from ported theme variables and a CSS compiler
 
-- Status: Accepted (limited to the default theme, see Consequences)
+- Status: Accepted (all five themes since S11)
 - Realised in: 060f710, 7963ac1 (2026-10-19)
 
 ## Context
@@ -22,8 +22,9 @@ text. `classDef`, `linkStyle` and init theme variables flow through the same pat
 - Mermaid inserts the `classDef` rules into a browser `CSSStyleSheet`, so their values come back as Chromium
   serialises them; `browser_value` reproduces what was seen: hex colours as `rgb()`, `stroke-dasharray` as a comma list
   (`5 5` -> `5,5`), multi-word font names quoted. Other properties are written as given, which is unverified.
-- **Only the `default` theme uses this path.** `dark`, `forest` and `neutral` still go through the older, simplified
-  classic stylesheet and are not checked against Mermaid; `mermaid_cli -t` exposes them anyway (`checklist.md`, S11).
+- Since S11 every theme (`default`, `dark`, `forest`, `neutral`, `base`) uses this path; the classic themes are
+  `theme_variables::dark()` etc., generated from Mermaid's theme code the same way as `redux_color()`. Overrides of
+  `themeVariables` beyond three keys are not applied (they need khroma's colour derivations).
 
 ## Alternatives considered
 

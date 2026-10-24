@@ -14,7 +14,7 @@ namespace mermaid::cli {
 struct options {
     std::string input;                // file, or `-` for stdin
     std::string output;               // file, or `-` for stdout; empty = `<input>.svg` (`out.svg` for stdin)
-    std::string theme = "default";    // default | dark | forest | neutral
+    std::string theme = "default";    // default | dark | forest | neutral | base
     std::string background = "white"; // CSS colour or `transparent`
     std::string svg_id = "my-svg";
     std::string css_file;             // CSS appended to the diagram's <style>

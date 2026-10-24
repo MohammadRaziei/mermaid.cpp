@@ -1,0 +1,18 @@
+%%{init: {"theme":"dark"}}%%
+flowchart TD
+  A([Start]) ==> B{{Prep}}
+  B -.->|maybe| C[/Input/]
+  B --> D[(Store)]
+  subgraph outer[Outer]
+    subgraph inner[Inner]
+      E[One] --> F((Two))
+    end
+    C --> E
+  end
+  D --> G>Flag]
+  F --- G
+  style A fill:#f9f,stroke:#333,stroke-width:3px
+  classDef warn fill:#ffd,stroke:#c90,color:#630
+  class D warn
+  linkStyle 0 stroke:#0a0,stroke-width:4px
+  linkStyle 2 stroke:#f00,color:#f00

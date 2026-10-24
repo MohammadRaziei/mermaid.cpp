@@ -10,7 +10,7 @@
 namespace mermaid {
 
 struct RenderOptions {
-    std::string theme = "default";      // default | dark | forest | neutral
+    std::string theme = "default";      // default | dark | forest | neutral | base
     std::string background = "white";   // CSS colour or "transparent"
     std::string svg_id = "my-svg";
     std::string css;                    // extra CSS appended to <style>

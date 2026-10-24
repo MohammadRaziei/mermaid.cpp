@@ -74,10 +74,12 @@ Workflow per step: failing test first -> implement -> green -> commit -> clean r
 
 Ordered by what is likely to matter next.
 
-- [ ] **S11** themes `dark`, `forest`, `neutral` (and `base`) in the neo look. Only `default` uses the ported
-  stylesheet; the others still use the old simplified classic styles and match nothing. Needs references per theme
-  (`render_reference.mjs` with a theme config) and theme variables dumped per theme
-  (`tools/dump_theme_variables.mjs`). Until then `mermaid_cli -t dark|forest|neutral` is an approximation
+- [x] **S11** themes `dark`, `forest`, `neutral`, `base` in the neo look: variables come from Mermaid's own theme code
+  (`theme_variables::dark()` etc., generated with esbuild + khroma like `redux_color()`), the stylesheet is the same
+  ported path, the classic themes have 16px text (24px lines), no colour slots, a gradient (`insertLookDefs`) and a white
+  drop-shadow flood for dark. 10 fixtures (basic + rich, five themes) pass. The init `theme` key and `-t` give the same
+  picture. Not done: `themeVariables` other than `fontFamily`, `clusterBkg`, `clusterBorder` (they feed khroma
+  derivations in Mermaid, e.g. `primaryColor` of `base`), which would need the colour arithmetic ported
 - [ ] **S12b** the `@{ shape: ... }` family: only the names of the classic shapes are mapped; every other name
   (`cloud`, `bolt`, `doc`, `tag-rect`, `fork`, `lin-cyl`, ...) becomes a box. Each needs its `shapes/*.ts` read and a reference
 - [ ] **S13** edges to clusters that stay open: cut the path at the cluster border (`fromCluster` / `toCluster`) and
@@ -92,7 +94,7 @@ Ordered by what is likely to matter next.
   `style` on a subgraph id, `class` on an edge id, `linkStyle` on more shapes than the one fixture.
 - [ ] **S10** CI is a 3-OS build and test (`.github/workflows/cmake.yml`). Open: Doxygen docs (like liburlparser),
   benchmarks, coverage dashboard (`mermaid_coverage` target exists, needs `lcov`)
-- [ ] Init keys not read yet: `theme`, other `themeVariables`, `look`, `layout`, `htmlLabels` (`flowchart.curve` is read)
+- [ ] Init keys not read yet: other `themeVariables`, `look`, `layout`, `htmlLabels` (`theme`, `flowchart.curve` are read)
 - [ ] `animate`
 - [ ] Markdown inside labels (`**bold**`, `*italic*`, line breaks); only plain text matches
 - [ ] `click`, links, tooltips; icons/images; accessibility tags beyond the basic ones
