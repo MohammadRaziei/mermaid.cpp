@@ -31,6 +31,41 @@ target_compile_definitions(test_mermaid_cpp PRIVATE
     MERMAID_TEST_DATA_DIR="${MERMAID_TEST_SOURCE_DIR}/data"
 )
 
+# Reference SVGs from real Mermaid instead of the committed copies (off by default; needs Node.js, npm and network):
+#   cmake -DMERMAID_GENERATE_REFERENCES=ON ...
+# Mermaid 12.2.0 is installed with puppeteer-core and a headless Chromium into <build>/references/node_modules and
+# tools/render_all_references.mjs renders every tests/data/merman/*.mmd with the pinned fonts of tests/fonts, so the
+# widths do not depend on the machine. Re-run with `cmake --build . --target mermaid_references`.
+option(MERMAID_GENERATE_REFERENCES "Generate the reference SVGs with Mermaid.js (Node.js, npm, network)" OFF)
+if(MERMAID_GENERATE_REFERENCES)
+    find_program(MERMAID_NODE node REQUIRED)
+    find_program(MERMAID_NPM npm REQUIRED)
+    set(MERMAID_REFERENCE_WORK ${CMAKE_BINARY_DIR}/references)
+    set(MERMAID_REFERENCE_SVG_DIR ${MERMAID_REFERENCE_WORK}/svg)
+    file(GLOB MERMAID_REFERENCE_INPUTS CONFIGURE_DEPENDS ${MERMAID_TEST_SOURCE_DIR}/data/merman/*.mmd)
+    add_custom_command(
+        OUTPUT ${MERMAID_REFERENCE_WORK}/references.stamp
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${MERMAID_REFERENCE_SVG_DIR}
+        COMMAND ${MERMAID_NPM} install --no-audit --no-fund --no-save --silent mermaid@12.2.0 puppeteer-core @sparticuz/chromium
+        # ES modules resolve packages next to the script, so it runs from the folder holding node_modules
+        COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/tools/render_all_references.mjs ${MERMAID_REFERENCE_WORK}/render.mjs
+        COMMAND ${CMAKE_COMMAND} -E env MERMAID_REFERENCE_FONT_DIR=${MERMAID_TEST_SOURCE_DIR}/fonts
+                ${MERMAID_NODE} ${MERMAID_REFERENCE_WORK}/render.mjs
+                ${MERMAID_TEST_SOURCE_DIR}/data/merman ${MERMAID_REFERENCE_SVG_DIR}
+        COMMAND ${CMAKE_COMMAND} -E touch ${MERMAID_REFERENCE_WORK}/references.stamp
+        WORKING_DIRECTORY ${MERMAID_REFERENCE_WORK}
+        DEPENDS ${MERMAID_REFERENCE_INPUTS} ${PROJECT_SOURCE_DIR}/tools/render_all_references.mjs
+        COMMENT "Rendering the reference SVGs with Mermaid.js 12.2.0"
+        VERBATIM)
+    file(MAKE_DIRECTORY ${MERMAID_REFERENCE_WORK})
+    if(NOT EXISTS ${MERMAID_REFERENCE_WORK}/package.json)
+        file(WRITE ${MERMAID_REFERENCE_WORK}/package.json "{\"name\":\"mermaid-references\",\"private\":true,\"type\":\"module\"}\n")
+    endif()
+    add_custom_target(mermaid_references DEPENDS ${MERMAID_REFERENCE_WORK}/references.stamp)
+    add_dependencies(test_mermaid_cpp mermaid_references)
+    target_compile_definitions(test_mermaid_cpp PRIVATE MERMAID_REFERENCE_DIR="${MERMAID_REFERENCE_SVG_DIR}")
+endif()
+
 add_test(NAME test_mermaid_cpp COMMAND $<TARGET_FILE:test_mermaid_cpp>)
 
 add_custom_target(mermaid_test_cpp

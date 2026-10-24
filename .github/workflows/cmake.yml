@@ -22,3 +22,19 @@ jobs:
       run: cmake --build build -j4 --config Release
     - name: Test
       run: ctest --test-dir build --build-config Release --output-on-failure
+
+  # The same tests against reference SVGs rendered by Mermaid.js 12.2.0 at build time (pinned fonts, tests/fonts).
+  # Linux only: @sparticuz/chromium ships a Linux binary.
+  generated-references:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - name: Configure
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DMERMAID_GENERATE_REFERENCES=ON
+    - name: Build (renders the references)
+      run: cmake --build build -j4
+    - name: Test
+      run: ctest --test-dir build --output-on-failure

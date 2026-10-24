@@ -23,6 +23,10 @@ message(STATUS "Project: ${PROJECT_NAME}@v${PROJECT_VERSION}")
 if(MSVC)
     add_compile_options(/EHsc)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+else()
+    # Output has to match JavaScript digit for digit; a fused multiply-add (Clang on Apple Silicon contracts by
+    # default) rounds once instead of twice and changes the last digits of the printed numbers.
+    add_compile_options(-ffp-contract=off)
 endif()
 if(CYGWIN OR UNIX)
     add_compile_definitions(_GNU_SOURCE)

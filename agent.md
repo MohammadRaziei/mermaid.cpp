@@ -68,6 +68,7 @@ examples/main.cpp  minimal library use
 tests/cpp/         test_*.cpp (utest.h), svg_compare.h (pugixml comparer)
 tests/data/merman/ fixture sources (.mmd) and merman semantic goldens
 tests/data/mermaid_js_dagre/   reference SVGs from real Mermaid + parity.tsv
+tests/fonts/                 Liberation Sans (OFL): the font every reference is rendered with
 tools/             Node scripts: render_reference.mjs, render_all_references.mjs, dump_font_metrics.mjs,
                    dump_theme_variables.mjs
 docs/adr/          decision records
@@ -135,6 +136,11 @@ PNGs: `pip install novasvg`, then `novasvg.svg2png(svg, png, width=900, backgrou
 - `fontFamily` from `%%{init}%%` changes the CSS only, not the text measurement.
 - Themes: all five (`default`, `dark`, `forest`, `neutral`, `base`) are ported; only three `themeVariables` keys are applied from `%%{init}%%`.
 - `utest.h` pulls in `<windows.h>` on MSVC: no `near`, `far`, `small`, `big`; avoid `min` / `max` names.
+- References can be generated at build time instead of read from the repo: `cmake -DMERMAID_GENERATE_REFERENCES=ON`
+  (Node.js, npm, network; installs mermaid@12.2.0 + puppeteer-core + a headless Chromium into `<build>/references`).
+  The script pins the fonts of `tests/fonts` for every family, so the widths do not depend on the machine; a full
+  regeneration of the 44 committed references with it was byte-identical. `mmdc` is not used: it cannot pin the font
+  without adding CSS to the SVG, and its Mermaid version is not ours.
 - Regenerating references changes `tests/data/mermaid_js_dagre/*.svg`; commit those only on purpose.
 
 ## Keeping the docs true

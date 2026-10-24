@@ -105,7 +105,7 @@ their boxes are dagre's compound nodes.
 Levels: unit tests per class -> parser, layout and render integration tests -> **parity tests** that compare the SVG
 with real Mermaid output as an XML tree (tolerance 0.5 on numbers; `tests/data/mermaid_js_dagre/parity.tsv` marks
 each fixture `pass` or `todo`; ADR-0008). `ctest` runs everything; the `mermaid_coverage` target (lcov) reports
-coverage. References are regenerated with `tools/render_all_references.mjs` (see `agent.md`).
+coverage. References are regenerated with `tools/render_all_references.mjs` (see `agent.md`), or at build time with `-DMERMAID_GENERATE_REFERENCES=ON`.
 
 ## 5. Out of scope for now
 
