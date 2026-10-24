@@ -133,10 +133,14 @@ private:
         out_.open("g", {{"class", "clusters"}});
         for (auto it = layout.clusters.rbegin(); it != layout.clusters.rend(); ++it) {  // outermost first
             const Rect& r = it->rect;
-            SvgWriter::Attrs attrs{{"class", "cluster"}, {"id", options_.svg_id + "-" + it->id}, {"data-look", "neo"}};
+            const Subgraph* subgraph = model_.find_subgraph(it->id);
+            std::string classes = "cluster";
+            if (subgraph)
+                for (const std::string& cls : subgraph->classes) classes += " " + cls;
+            SvgWriter::Attrs attrs{{"class", classes}, {"id", options_.svg_id + "-" + it->id}, {"data-look", "neo"}};
             if (slots > 0) attrs.emplace_back("data-color-id", "color-" + std::to_string(static_cast<size_t>(it->color_index) % slots));
             out_.open("g", attrs);
-            out_.leaf("rect", {{"style", ""},
+            out_.leaf("rect", {{"style", subgraph ? detail::important_shape_style(resolved_style(*subgraph)) : std::string()},
                                {"x", SvgWriter::num(r.x)},
                                {"y", SvgWriter::num(r.y)},
                                {"width", SvgWriter::num(r.width)},
@@ -189,14 +193,25 @@ private:
 
     // classDef styles first (default, then the node's classes), then `style` statements.
     Style resolved_style(const Node& node) const {
+        std::vector<std::string> names{"default"};
+        names.insert(names.end(), node.classes.begin(), node.classes.end());
+        return collapse(class_styles(names), node.style);
+    }
+
+    // A subgraph takes only the styles of its own classes (getCompiledStyles(subGraph.classes)).
+    Style resolved_style(const Subgraph& subgraph) const { return collapse(class_styles(subgraph.classes), {}); }
+
+    Style class_styles(const std::vector<std::string>& names) const {
         Style merged;
-        auto add = [&](const std::string& name) {
+        for (const std::string& name : names) {
             const auto it = model_.class_defs.find(name);
             if (it != model_.class_defs.end()) merged.insert(merged.end(), it->second.style.begin(), it->second.style.end());
-        };
-        add("default");
-        for (const std::string& cls : node.classes) add(cls);
-        merged.insert(merged.end(), node.style.begin(), node.style.end());
+        }
+        return merged;
+    }
+
+    static Style collapse(Style merged, const Style& own) {
+        merged.insert(merged.end(), own.begin(), own.end());
 
         // Mermaid keeps these in an object: a repeated property keeps its first place and takes the last value.
         Style unique;

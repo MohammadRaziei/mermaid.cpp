@@ -303,9 +303,175 @@ std::vector<curve_piece> cardinal_pieces(const std::vector<Point>& p) {
     return out;
 }
 
+// curveStep, curveStepAfter (t = 1) and curveStepBefore (t = 0): d3's step with the turn at fraction `t` of the way.
+std::vector<curve_piece> step_pieces(const std::vector<Point>& p, double t) {
+    std::vector<curve_piece> out;
+    for (size_t i = 1; i < p.size(); ++i) {
+        const Point& from = p[i - 1];
+        const Point& to = p[i];
+        if (t <= 0) {  // d3: the vertical leg comes first, at the old x
+            out.push_back(line_to({from.x, to.y}));
+            out.push_back(line_to(to));
+            continue;
+        }
+        const double x = from.x * (1 - t) + to.x * t;
+        out.push_back(line_to({x, from.y}));
+        out.push_back(line_to({x, to.y}));
+    }
+    if (p.size() >= 2 && t > 0 && t < 1) out.push_back(line_to(p.back()));
+    return out;
+}
+
+// curveBumpX / curveBumpY: one cubic per segment, leaving and entering horizontally (or vertically).
+std::vector<curve_piece> bump_pieces(const std::vector<Point>& p, bool horizontal) {
+    std::vector<curve_piece> out;
+    for (size_t i = 1; i < p.size(); ++i) {
+        const Point &a = p[i - 1], &b = p[i];
+        if (horizontal) {
+            const double mid = (a.x + b.x) / 2;
+            out.push_back({true, {mid, a.y}, {mid, b.y}, b});
+        } else {
+            const double mid = (a.y + b.y) / 2;
+            out.push_back({true, {a.x, mid}, {b.x, mid}, b});
+        }
+    }
+    return out;
+}
+
+// d3's natural spline control points for one coordinate.
+std::pair<std::vector<double>, std::vector<double>> natural_controls(const std::vector<double>& x) {
+    const size_t n = x.size() - 1;
+    std::vector<double> a(n), b(n), r(n);
+    a[0] = 0;
+    b[0] = 2;
+    r[0] = x[0] + 2 * x[1];
+    for (size_t i = 1; i + 1 < n; ++i) {
+        a[i] = 1;
+        b[i] = 4;
+        r[i] = 4 * x[i] + 2 * x[i + 1];
+    }
+    a[n - 1] = 2;
+    b[n - 1] = 7;
+    r[n - 1] = 8 * x[n - 1] + x[n];
+    for (size_t i = 1; i < n; ++i) {
+        const double m = a[i] / b[i - 1];
+        b[i] -= m;
+        r[i] -= m * r[i - 1];
+    }
+    a[n - 1] = r[n - 1] / b[n - 1];
+    for (size_t i = n - 1; i-- > 0;) a[i] = (r[i] - a[i + 1]) / b[i];
+    b[n - 1] = (x[n] + a[n - 1]) / 2;
+    for (size_t i = 0; i + 1 < n; ++i) b[i] = 2 * x[i + 1] - a[i + 1];
+    return {a, b};
+}
+
+std::vector<curve_piece> natural_pieces(const std::vector<Point>& p) {
+    if (p.size() < 3) return linear_pieces(p);
+    std::vector<double> xs, ys;
+    for (const Point& q : p) {
+        xs.push_back(q.x);
+        ys.push_back(q.y);
+    }
+    const auto px = natural_controls(xs), py = natural_controls(ys);
+    std::vector<curve_piece> out;
+    for (size_t i = 0; i + 1 < p.size(); ++i)
+        out.push_back({true, {px.first[i], py.first[i]}, {px.second[i], py.second[i]}, p[i + 1]});
+    return out;
+}
+
+// curveMonotoneX (d3-shape monotone.js); the Y variant runs it on swapped coordinates.
+int sign_of(double v) { return v < 0 ? -1 : 1; }
+
+// Math.min of two numbers: NaN wins.
+double js_min(double a, double b) { return std::isnan(a) || std::isnan(b) ? std::nan("") : MERMAID_MIN(a, b); }
+
+std::vector<curve_piece> monotone_x_pieces(const std::vector<Point>& in) {
+    std::vector<Point> p;  // d3 skips a point equal to the previous one
+    for (const Point& q : in)
+        if (p.empty() || q.x != p.back().x || q.y != p.back().y) p.push_back(q);
+    if (p.size() < 3) return linear_pieces(p);
+    const auto slope3 = [&](const Point& a, const Point& b, const Point& c) {
+        const double h0 = b.x - a.x, h1 = c.x - b.x;
+        const double s0 = (b.y - a.y) / (h0 != 0 ? h0 : (h1 < 0 ? -0.0 : 0.0));
+        const double s1 = (c.y - b.y) / (h1 != 0 ? h1 : (h0 < 0 ? -0.0 : 0.0));
+        const double q = (s0 * h1 + s1 * h0) / (h0 + h1);
+        const double smallest = js_min(js_min(std::fabs(s0), std::fabs(s1)), 0.5 * std::fabs(q));
+        const double v = (sign_of(s0) + sign_of(s1)) * smallest;
+        return std::isnan(v) ? 0.0 : v;  // JavaScript's `|| 0`
+    };
+    const auto slope2 = [](const Point& a, const Point& b, double t) {
+        const double h = b.x - a.x;
+        return h != 0 ? (3 * (b.y - a.y) / h - t) / 2 : t;
+    };
+    const auto bezier = [&](const Point& a, const Point& b, double t0, double t1) {
+        const double dx = (b.x - a.x) / 3;
+        return curve_piece{true, {a.x + dx, a.y + dx * t0}, {b.x - dx, b.y - dx * t1}, b};
+    };
+    std::vector<curve_piece> out;
+    double t0 = slope3(p[0], p[1], p[2]);
+    out.push_back(bezier(p[0], p[1], slope2(p[0], p[1], t0), t0));
+    for (size_t i = 2; i < p.size(); ++i) {
+        const double t1 = i + 1 < p.size() ? slope3(p[i - 1], p[i], p[i + 1]) : slope2(p[i - 1], p[i], t0);
+        out.push_back(bezier(p[i - 1], p[i], t0, t1));
+        t0 = t1;
+    }
+    return out;
+}
+
+std::vector<curve_piece> monotone_y_pieces(const std::vector<Point>& p) {
+    std::vector<Point> swapped;
+    for (const Point& q : p) swapped.push_back({q.y, q.x});
+    std::vector<curve_piece> out = monotone_x_pieces(swapped);
+    for (curve_piece& piece : out) {
+        std::swap(piece.c1.x, piece.c1.y);
+        std::swap(piece.c2.x, piece.c2.y);
+        std::swap(piece.to.x, piece.to.y);
+    }
+    return out;
+}
+
+// curveCatmullRom with d3's default alpha 0.5.
+std::vector<curve_piece> catmull_rom_pieces(const std::vector<Point>& p) {
+    if (p.size() < 3) return linear_pieces(p);
+    constexpr double alpha = 0.5, epsilon = 1e-12;
+    const auto dist_2a = [&](const Point& a, const Point& b) {
+        return std::pow((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y), alpha);
+    };
+    std::vector<curve_piece> out;
+    // segment p1 -> p2 with p0 before and p3 after
+    const auto segment = [&](const Point& p0, const Point& p1, const Point& p2, const Point& p3) {
+        const double l01_2a = dist_2a(p0, p1), l12_2a = dist_2a(p1, p2), l23_2a = dist_2a(p2, p3);
+        const double l01_a = std::sqrt(l01_2a), l12_a = std::sqrt(l12_2a), l23_a = std::sqrt(l23_2a);
+        Point c1 = p1, c2 = p2;
+        if (l01_a > epsilon) {
+            const double a = 2 * l01_2a + 3 * l01_a * l12_a + l12_2a, n = 3 * l01_a * (l01_a + l12_a);
+            c1 = {(p1.x * a - p0.x * l12_2a + p2.x * l01_2a) / n, (p1.y * a - p0.y * l12_2a + p2.y * l01_2a) / n};
+        }
+        if (l23_a > epsilon) {
+            const double b = 2 * l23_2a + 3 * l23_a * l12_a + l12_2a, m = 3 * l23_a * (l23_a + l12_a);
+            c2 = {(p2.x * b + p1.x * l23_2a - p3.x * l12_2a) / m, (p2.y * b + p1.y * l23_2a - p3.y * l12_2a) / m};
+        }
+        out.push_back({true, c1, c2, p2});
+    };
+    // d3 starts with the first point standing in for the missing neighbour (all lengths zero there)
+    segment(p[0], p[0], p[1], p[2]);
+    for (size_t i = 1; i + 2 < p.size(); ++i) segment(p[i - 1], p[i], p[i + 1], p[i + 2]);
+    segment(p[p.size() - 3], p[p.size() - 2], p.back(), p.back());
+    return out;
+}
+
 std::vector<curve_piece> curve_pieces(const std::string& curve, const std::vector<Point>& p) {
     if (curve == "linear") return linear_pieces(p);
     if (curve == "cardinal") return cardinal_pieces(p);
+    if (curve == "step") return step_pieces(p, 0.5);
+    if (curve == "stepAfter") return step_pieces(p, 1);
+    if (curve == "stepBefore") return step_pieces(p, 0);
+    if (curve == "bumpX") return bump_pieces(p, true);
+    if (curve == "bumpY") return bump_pieces(p, false);
+    if (curve == "natural") return natural_pieces(p);
+    if (curve == "monotoneX") return monotone_x_pieces(p);
+    if (curve == "monotoneY") return monotone_y_pieces(p);
+    if (curve == "catmullRom") return catmull_rom_pieces(p);
     return basis_pieces(p);  // Mermaid's default, and what unknown names resolve to here
 }
 

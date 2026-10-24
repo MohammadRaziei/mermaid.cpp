@@ -60,3 +60,11 @@ UTEST(text_measurer, usable_through_the_interface) {
     std::unique_ptr<TextMeasurer> m = std::make_unique<FixedWidthMeasurer>();
     ASSERT_EQ(3.0, m->measure("abc").width);
 }
+
+UTEST(text_measurer, wrapped_text_grows_to_its_longest_word_and_wraps_there) {
+    FixedWidthMeasurer m;
+    const TextMeasurer::Wrapped w = m.measure_wrapped("aaaaaaaaaa bb cc", 5);
+    ASSERT_TRUE(w.wrapped);
+    ASSERT_EQ(10.0, w.size.width);
+    ASSERT_EQ(2 * 21.0, w.size.height);  // "aaaaaaaaaa" / "bb cc"
+}

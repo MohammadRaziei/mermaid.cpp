@@ -218,6 +218,16 @@ public:
         open_lines_.push_back(line);
     }
 
+    // flowDb.setClass: the class goes to the vertex, and to the subgraph once it is closed; an unknown id is ignored
+    // (it does not create a node) and nothing is deduplicated.
+    void add_class(const std::string& id, const std::string& cls) {
+        if (const auto it = index_.find(id); it != index_.end()) model.nodes[it->second].classes.push_back(cls);
+        for (size_t i = 0; i < model.subgraphs.size(); ++i) {
+            const bool open = std::find(stack_.begin(), stack_.end(), i) != stack_.end();
+            if (!open && model.subgraphs[i].id == id) model.subgraphs[i].classes.push_back(cls);
+        }
+    }
+
     bool close_subgraph() {
         if (stack_.empty()) return false;
         stack_.pop_back();
@@ -703,10 +713,7 @@ Model Parser::parse(std::string_view source) const {
             size_t sp = rest.find_last_of(" \t");
             if (sp == std::string::npos) throw ParseError("class needs node ids and a class name", line);
             std::string cls = trim(rest.substr(sp));
-            for (const std::string& id : split_commas(rest.substr(0, sp))) {
-                Node& n = b.upsert_node(id);
-                n.classes.push_back(cls);  // flowDb does not deduplicate
-            }
+            for (const std::string& id : split_commas(rest.substr(0, sp))) b.add_class(id, cls);
         } else if (starts_with_word(t, "style")) {
             std::string rest = rest_after(t, "style");
             size_t sp = 0;
@@ -767,6 +774,9 @@ Model Parser::parse(std::string_view source) const {
         e.style.insert(e.style.end(), own[i].begin(), own[i].end());
     }
     b.model.config = detail::parse_init_directives(source);
+    if (b.model.config.curve)
+        for (Edge& e : b.model.edges)
+            if (e.curve.empty()) e.curve = *b.model.config.curve;
     return std::move(b.model);
 }
 

@@ -117,6 +117,30 @@ UTEST(edge_geometry, linear_path_joins_the_points) {
     ASSERT_NEAR(std::sqrt(500.0) + 20.0, edge_geometry::curve_length("linear", {{0, 0}, {10, 20}, {30, 20}}), 1e-9);
 }
 
+// numbers from tests/data/mermaid_js_dagre/s14_curve_*.svg (first edge of each fixture)
+UTEST(edge_geometry, step_family_path) {
+    const std::vector<Point> p{{137.1578947368421, 53}, {84, 78}, {84, 99}};
+    ASSERT_STREQ("M137.158,53L110.579,53L110.579,78L84,78L84,99L84,99", edge_geometry::curve_path("step", p).c_str());
+    ASSERT_STREQ("M137.158,53L84,53L84,78L84,78L84,99", edge_geometry::curve_path("stepAfter", p).c_str());
+    ASSERT_STREQ("M137.158,53L137.158,78L84,78L84,99L84,99", edge_geometry::curve_path("stepBefore", p).c_str());
+}
+
+UTEST(edge_geometry, monotone_x_path) {
+    const std::vector<Point> p{{131.8421052631579, 55.5}, {185, 30.5}, {206, 30.5}};
+    ASSERT_STREQ("M131.842,55.5C149.561,43,167.281,30.5,185,30.5C192,30.5,199,30.5,206,30.5",
+                 edge_geometry::curve_path("monotoneX", p).c_str());
+}
+
+UTEST(edge_geometry, bump_and_natural_keep_their_end_points) {
+    const std::vector<Point> p{{0, 0}, {10, 30}, {40, 40}};
+    for (const char* name : {"bumpX", "bumpY", "natural", "catmullRom", "monotoneY"}) {
+        const std::string d = edge_geometry::curve_path(name, p);
+        ASSERT_TRUE(d.rfind("M0,0C", 0) == 0);
+        ASSERT_TRUE(d.size() > 5 && d.compare(d.size() - 5, 5, "40,40") == 0);
+    }
+    ASSERT_STREQ("M0,0L10,30", edge_geometry::curve_path("natural", {{0, 0}, {10, 30}}).c_str());
+}
+
 UTEST(edge_geometry, unknown_curve_names_fall_back_to_basis) {
     const std::vector<Point> p{{0, 0}, {10, 30}, {40, 40}};
     ASSERT_STREQ(edge_geometry::curve_path("basis", p).c_str(), edge_geometry::curve_path("", p).c_str());

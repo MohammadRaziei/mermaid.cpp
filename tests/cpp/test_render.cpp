@@ -345,3 +345,23 @@ UTEST(render, wrapped_edge_labels_are_a_table_of_the_wrap_width) {
     ASSERT_TRUE(has(svg, "<foreignObject width=\"200\" height=\"84\">"));
     ASSERT_TRUE(has(svg, "style=\"display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;\""));
 }
+
+UTEST(render, link_style_colour_reaches_the_edge_label_div_and_span) {
+    const std::string svg = render_svg("flowchart LR\nA -->|hi| B\nA --> C\nlinkStyle 0 color:red");
+    ASSERT_TRUE(has(svg, "style=\"color: red !important; display: table-cell;"));
+    ASSERT_TRUE(has(svg, "<span style=\"color:red !important\" class=\"edgeLabel\">"));
+}
+
+UTEST(render, class_def_reaches_the_cluster_class_and_rect) {
+    const std::string svg = render_svg(
+        "flowchart TB\nclassDef hot fill:#f96,stroke:#333\nsubgraph s1[Group]\na --> b\nend\nclass s1 hot\n");
+    ASSERT_TRUE(has(svg, "<g class=\"cluster hot\" id="));
+    ASSERT_TRUE(has(svg, "<rect style=\"fill:#f96 !important;stroke:#333 !important\""));
+}
+
+UTEST(render, of_several_loops_on_one_node_only_the_last_is_drawn) {
+    // dagre's prepareLayoutForDagre names every loop's helpers after the node, so a later loop replaces an earlier one
+    const std::string svg = render_svg("flowchart LR\nA --> A\nA --> A\nA --> B");
+    ASSERT_FALSE(has(svg, "data-id=\"L_A_A_0\" data-points"));
+    ASSERT_TRUE(has(svg, "data-id=\"L_A_A_2\" data-points"));
+}

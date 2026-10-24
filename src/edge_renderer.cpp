@@ -246,10 +246,15 @@ void EdgeRenderer::write_label(SvgWriter& out, const flowchart::Edge& edge, cons
     out.open("foreignObject", {{"width", SvgWriter::num(box.width)}, {"height", SvgWriter::num(box.height)}});
     out.open("div", {{"xmlns", "http://www.w3.org/1999/xhtml"},
                      {"class", "labelBkg"},
-                     {"style", labelled && layout.label_wrapped
-                                   ? "display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"
-                                   : "display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"}});
-    out.open("span", {{"class", "edgeLabel"}});
+                     {"style", computed_label_color(edge.style) +
+                                   (labelled && layout.label_wrapped
+                                        ? "display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"
+                                        : "display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;")}});
+    // a `color` of linkStyle colours the label text: on the div as computed, on the span as written
+    SvgWriter::Attrs span_attrs;
+    if (const std::string color = important_label_style(edge.style); !color.empty()) span_attrs.emplace_back("style", color);
+    span_attrs.emplace_back("class", "edgeLabel");
+    out.open("span", span_attrs);
     if (labelled) {
         out.open("p");
         size_t start = 0;

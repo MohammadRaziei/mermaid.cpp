@@ -195,6 +195,7 @@ flowchart::InitConfig parse_init_directives(std::string_view source) {
         override_with(config.cluster_border, string_at(*value, "themeVariables", "clusterBorder"));
         override_with(config.node_spacing, number_at(*value, "flowchart", "nodeSpacing"));
         override_with(config.rank_spacing, number_at(*value, "flowchart", "rankSpacing"));
+        override_with(config.curve, string_at(*value, "flowchart", "curve"));
     }
     return config;
 }

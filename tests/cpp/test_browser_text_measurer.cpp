@@ -92,4 +92,9 @@ UTEST(browser_text_measurer, explicit_line_breaks_stay_and_a_word_wider_than_the
     ASSERT_NEAR(42, two.size.height, 1e-9);
     const TextMeasurer::Wrapped word = m.measure_wrapped("Supercalifragilisticexpialidocious_and_even_longer_than_the_box", 120);
     ASSERT_NEAR(21, word.size.height, 1e-9);  // no break opportunity
+    // the table the label sits in cannot get narrower than its longest word (tests/data/mermaid_js_dagre/s14_wide_word.svg)
+    const TextMeasurer::Wrapped wide =
+        m.measure_wrapped("Supercalifragilisticexpialidocious_and_more_characters_here", 120);
+    ASSERT_TRUE(wide.wrapped);
+    ASSERT_NEAR(380.546875, wide.size.width, 0.1);  // text widths may differ by a fraction of a pixel from Chromium
 }

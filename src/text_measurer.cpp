@@ -28,6 +28,15 @@ TextMeasurer::Wrapped TextMeasurer::measure_wrapped(std::string_view text, doubl
     double widest = 0;
     int lines = 0;
     size_t start = 0;
+    // A wrapped label sits in a table `max_width` wide that cannot get narrower than its longest word.
+    double table_width = max_width;  // lines are measured against max_width, wrapped at table_width
+    for (size_t at = 0; at <= text.size();) {
+        const size_t space = text.find_first_of(" \n", at);
+        const std::string_view word = text.substr(at, space == std::string_view::npos ? std::string_view::npos : space - at);
+        table_width = MERMAID_MAX(table_width, line_width(word));
+        if (space == std::string_view::npos) break;
+        at = space + 1;
+    }
     for (;;) {
         const size_t nl = text.find('\n', start);
         const std::string_view line =
@@ -46,7 +55,7 @@ TextMeasurer::Wrapped TextMeasurer::measure_wrapped(std::string_view text, doubl
                 pos = space == std::string_view::npos ? line.size() + 1 : space + 1;
                 if (word.empty()) continue;
                 const std::string candidate = current.empty() ? word : current + " " + word;
-                if (current.empty() || line_width(candidate) <= max_width) {
+                if (current.empty() || line_width(candidate) <= table_width) {
                     current = candidate;
                 } else {
                     ++lines;
@@ -58,7 +67,7 @@ TextMeasurer::Wrapped TextMeasurer::measure_wrapped(std::string_view text, doubl
         if (nl == std::string_view::npos) break;
         start = nl + 1;
     }
-    out.size = {out.wrapped ? max_width : widest, lines * style_.line_height()};
+    out.size = {out.wrapped ? table_width : widest, lines * style_.line_height()};
     return out;
 }
 

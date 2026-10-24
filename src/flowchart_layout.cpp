@@ -345,7 +345,7 @@ private:
         }
         // prepareLayoutForDagre: a self-loop gets two helper nodes (children of the same parent) ...
         for (size_t i = 0; i < edges_.size(); ++i) {
-            if (!is_self_loop(i) || edges_[i].scope != scope.owner) continue;
+            if (!is_self_loop(i) || edges_[i].scope != scope.owner || first_loop(i) != i) continue;
             const std::vector<int> path = topology_.path_of(edges_[i].from.index);
             const std::string parent = parent_id(path.empty() ? -1 : path.back());
             in.nodes.push_back({loop_helper_id(i, 1), kLoopHelperSize, kLoopHelperSize, parent});
@@ -356,17 +356,20 @@ private:
         for (size_t i = 0; i < edges_.size(); ++i) {
             if (!edges_[i].placed() || edges_[i].scope != scope.owner) continue;
             if (is_self_loop(i)) {  // ... and three edges: node -> helper 1 -> helper 2 -> node; the label is on the middle one
+                // The keys repeat for a second loop on the node: it replaces the first one's data in the first one's place.
+                if (first_loop(i) != i) continue;
+                const size_t i_last = last_loop(i);
                 const std::string node = end_id(edges_[i].from);
                 for (int part = 0; part < 3; ++part) {
                     dagre::Edge e;
                     e.v = part == 0 ? node : loop_helper_id(i, part);
                     e.w = part == 2 ? node : loop_helper_id(i, part + 1);
                     e.name = node + "-cyclic-special-" + std::to_string(part);
-                    e.minlen = MERMAID_MAX(1, model_.edges[i].length);
+                    e.minlen = MERMAID_MAX(1, model_.edges[i_last].length);
                     e.labelpos = dagre::LabelPos::Center;
-                    if (part == 1 && (edges_[i].label.width > 0 || edges_[i].label.height > 0)) {
-                        e.width = edges_[i].label.width + 2 * options_.edge_label_pad;
-                        e.height = edges_[i].label.height + 2 * options_.edge_label_pad;
+                    if (part == 1 && (edges_[i_last].label.width > 0 || edges_[i_last].label.height > 0)) {
+                        e.width = edges_[i_last].label.width + 2 * options_.edge_label_pad;
+                        e.height = edges_[i_last].label.height + 2 * options_.edge_label_pad;
                     }
                     in.edges.push_back(e);
                 }
@@ -394,6 +397,22 @@ private:
     bool is_self_loop(size_t i) const {
         const EdgeInfo& e = edges_[i];
         return e.placed() && e.from.type == EndRef::kind::node && e.to.type == EndRef::kind::node && e.from.index == e.to.index;
+    }
+
+    // Loops on the same node in the same scope share their helper nodes and edge keys (see make_input).
+    bool same_loop_node(size_t a, size_t b) const {
+        return is_self_loop(b) && edges_[a].scope == edges_[b].scope && edges_[a].from.index == edges_[b].from.index;
+    }
+    size_t first_loop(size_t i) const {
+        for (size_t j = 0; j < i; ++j)
+            if (same_loop_node(i, j)) return j;
+        return i;
+    }
+    size_t last_loop(size_t i) const {
+        size_t last = i;
+        for (size_t j = i + 1; j < edges_.size(); ++j)
+            if (same_loop_node(i, j)) last = j;
+        return last;
     }
 
     std::string loop_helper_id(size_t i, int part) const {
@@ -484,6 +503,7 @@ private:
             out.model_index = i;
             out.label_wrapped = edges_[i].label_wrapped;
             if (is_self_loop(i)) {
+                if (last_loop(i) != i) continue;  // replaced by a later loop on the same node
                 layout.edges.push_back(merged_self_loop(i, scope, result, std::move(out)));
                 for (int part = 1; part <= 2; ++part) {
                     const dagre::NodeResult* h = result.find_node(loop_helper_id(i, part));

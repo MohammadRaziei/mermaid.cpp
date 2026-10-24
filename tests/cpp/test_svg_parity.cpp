@@ -34,7 +34,14 @@ UTEST(svg_parity, fixtures_marked_pass_match_mermaid_js_and_todo_ones_report_pro
 
         mermaid::RenderOptions options;
         options.svg_id = name == "basic" ? "basic" : name;
-        const std::string actual = mermaid::render_svg(read_all(kData + "/merman/" + name + ".mmd"), options);
+        std::string actual;
+        try {
+            actual = mermaid::render_svg(read_all(kData + "/merman/" + name + ".mmd"), options);
+        } catch (const std::exception& e) {  // a todo fixture may use syntax that is not supported yet
+            EXPECT_TRUE(status != "pass");
+            std::cout << "[ parity ] " << name << ": not rendered (todo): " << e.what() << "\n";
+            continue;
+        }
         const auto diffs = svgtest::svg_comparer(0.5).compare(read_all(kData + "/mermaid_js_dagre/" + name + ".svg"), actual);
 
         if (status == "pass") {

@@ -207,7 +207,7 @@ UTEST(flowchart_parser, classes_styles_and_link_styles) {
     ASSERT_EQ(1u, m.find_node("A")->classes.size());
     ASSERT_STREQ("hot", m.find_node("A")->classes[0].c_str());
     ASSERT_STREQ("cold", m.find_node("B")->classes[0].c_str());
-    ASSERT_STREQ("cold", m.find_node("C")->classes[0].c_str());
+    ASSERT_TRUE(m.find_node("C") == nullptr);  // setClass ignores unknown ids (checked against Mermaid 12.2.0)
     ASSERT_STREQ("stroke-width", m.find_node("A")->style[0].first.c_str());
     ASSERT_EQ(3u, m.edges[0].style.size());  // flowDb adds fill:none to an indexed linkStyle
     ASSERT_STREQ("fill", m.edges[0].style[2].first.c_str());
@@ -396,6 +396,27 @@ UTEST(flowchart_init, absent_unknown_or_broken_directives_leave_defaults) {
     ASSERT_FALSE(odd.config.node_spacing.has_value());
     const Model broken = Parser().parse("%%{init: {\"flowchart\": {\"nodeSpacing\": }}}%%\nflowchart TD\nA-->B\n");
     ASSERT_FALSE(broken.config.node_spacing.has_value());
+}
+
+UTEST(flowchart_init, curve_is_the_default_of_edges_without_their_own) {
+    const Model m = Parser().parse(
+        "%%{init: {\"flowchart\": {\"curve\": \"linear\"}}}%%\nflowchart TD\nA-->B\nB e2@--> C\ne2@{ curve: step }\n");
+    ASSERT_STREQ("linear", m.config.curve->c_str());
+    ASSERT_STREQ("linear", m.edges[0].curve.c_str());
+    ASSERT_STREQ("step", m.edges[1].curve.c_str());
+    const Model none = Parser().parse("flowchart TD\nA-->B\n");
+    ASSERT_FALSE(none.config.curve.has_value());
+    ASSERT_STREQ("", none.edges[0].curve.c_str());
+}
+
+UTEST(flowchart_class, class_statement_styles_subgraphs_and_never_creates_nodes) {
+    const Model m = Parser().parse("flowchart TB\nsubgraph s1[Group]\na --> b\nend\nclass s1,a,ghost hot\n");
+    ASSERT_EQ(1u, m.subgraphs.size());
+    ASSERT_EQ(1u, m.subgraphs[0].classes.size());
+    ASSERT_STREQ("hot", m.subgraphs[0].classes[0].c_str());
+    ASSERT_EQ(2u, m.nodes.size());  // a and b only: neither the subgraph id nor `ghost` became a node
+    ASSERT_EQ(1u, m.find_node("a")->classes.size());
+    ASSERT_EQ(0u, m.find_node("b")->classes.size());
 }
 
 // ---- `A@{ label: ... }` nodes

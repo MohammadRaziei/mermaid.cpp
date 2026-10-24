@@ -82,15 +82,18 @@ Ordered by what is likely to matter next.
   (`cloud`, `bolt`, `doc`, `tag-rect`, `fork`, `lin-cyl`, ...) becomes a box. Each needs its `shapes/*.ts` read and a reference
 - [ ] **S13** edges to clusters that stay open: cut the path at the cluster border (`fromCluster` / `toCluster`) and
   the "safe anchor" re-anchoring of `adjustClustersAndEdges` (ADR-0010 lists what was not ported)
-- [~] **S14** more fixtures. Done (8): BT, RL, self-loops (two), edge styles incl. invisible, styled shapes, long node
-  labels, long edge label. Found and fixed on the way: label position follows the clipped path (`positionEdgeLabel`),
-  CSSOM serialisation of `classDef` values, edge id numbering, text wrapping, self-loops, invisible edges, `<br />` in the
-  reference tool. Still wanted: `linkStyle` colours on more shapes, every curve, Markdown strings, nested closed clusters
-  mixed with open ones, `classDef` on subgraphs, several loops on one node, self-loops on subgraph ids, wide single words
+- [~] **S14** more fixtures. Done (22 of 25): BT, RL, self-loops, edge styles incl. invisible, styled shapes, long labels,
+  every curve (`flowchart.curve` init key; step, stepAfter, stepBefore, bumpX/Y, natural, monotoneX/Y, catmullRom,
+  linear, cardinal, basis; one fixture per curve plus a per-edge one), `linkStyle` colour on edge labels, classes on
+  subgraphs (`setClass` ignores unknown ids and does not create nodes), several loops on one node (they share helper
+  ids and edge keys, so only the last is drawn), a word wider than the label box (the wrapped table grows to the longest
+  word). Still `todo` rows: `s14_markdown_strings` (Markdown labels, and a quoted label may span lines: not parsed),
+  `s14_mixed_clusters` and `s14_subgraph_loop` (both need S13: edges to and loops on a subgraph id). Not yet covered:
+  `style` on a subgraph id, `class` on an edge id, `linkStyle` on more shapes than the one fixture.
 - [ ] **S10** CI is a 3-OS build and test (`.github/workflows/cmake.yml`). Open: Doxygen docs (like liburlparser),
   benchmarks, coverage dashboard (`mermaid_coverage` target exists, needs `lcov`)
-- [ ] Init keys not read yet: `theme`, other `themeVariables`, `flowchart.curve`, `look`, `layout`, `htmlLabels`
-- [ ] Curves other than basis/linear/cardinal; `flowchart.curve` from config; `animate`
+- [ ] Init keys not read yet: `theme`, other `themeVariables`, `look`, `layout`, `htmlLabels` (`flowchart.curve` is read)
+- [ ] `animate`
 - [ ] Markdown inside labels (`**bold**`, `*italic*`, line breaks); only plain text matches
 - [ ] `click`, links, tooltips; icons/images; accessibility tags beyond the basic ones
 - [ ] Text: table coverage is not audited; `fontFamily` does not change measurement; a different font needs a new table

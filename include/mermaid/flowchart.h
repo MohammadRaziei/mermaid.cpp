@@ -63,6 +63,7 @@ struct Subgraph {
     std::string id;
     std::string title;
     std::vector<std::string> members;  // node ids and nested subgraph ids
+    std::vector<std::string> classes;  // from `class` statements naming the subgraph id
     std::optional<Direction> direction;
 };
 
@@ -78,6 +79,7 @@ struct InitConfig {
     std::optional<std::string> cluster_border;  // themeVariables.clusterBorder
     std::optional<double> node_spacing;         // flowchart.nodeSpacing
     std::optional<double> rank_spacing;         // flowchart.rankSpacing
+    std::optional<std::string> curve;           // flowchart.curve: default curve of edges without their own
 };
 
 struct Model {

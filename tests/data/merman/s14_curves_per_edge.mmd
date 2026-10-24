@@ -1,0 +1,15 @@
+flowchart TD
+  A e1@--> B
+  A e2@--> C
+  A e3@--> D
+  B e4@--> E
+  C e5@--> E
+  D e6@--> E
+  A e7@--> E
+  e1@{ curve: bumpX }
+  e2@{ curve: bumpY }
+  e3@{ curve: natural }
+  e4@{ curve: monotoneY }
+  e5@{ curve: catmullRom }
+  e6@{ curve: stepBefore }
+  e7@{ curve: monotoneX }
