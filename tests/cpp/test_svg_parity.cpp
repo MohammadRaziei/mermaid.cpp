@@ -19,19 +19,21 @@ std::string read_all(const std::string& path) {
 
 const std::string kData = MERMAID_TEST_DATA_DIR;
 
-// The reference SVGs: generated from real Mermaid into the build folder when MERMAID_GENERATE_REFERENCES is on
-// (tests/CMakeLists.txt), the committed ones in tests/data/mermaid_js_dagre otherwise.
-std::string reference_svg(const std::string& name) {
-#ifdef MERMAID_REFERENCE_DIR
-    return std::string(MERMAID_REFERENCE_DIR) + "/" + name + ".svg";
-#else
-    return kData + "/mermaid_js_dagre/" + name + ".svg";
-#endif
+// The reference SVGs are rendered by real Mermaid (tests/CMakeLists.txt) into MERMAID_REFERENCE_DIR; without them the
+// parity tests have nothing to compare with and report that they were skipped.
+std::string reference_svg(const std::string& name) { return std::string(MERMAID_REFERENCE_DIR) + "/" + name + ".svg"; }
+
+bool references_available() {
+    static const bool available = std::ifstream(reference_svg("basic")).good();
+    if (!available) std::cout << "[ skipped ] no reference SVGs (configure with Node.js/npm or -DMERMAID_REFERENCE_DIR=...)\n";
+    return available;
 }
+
 
 }  // namespace
 
 UTEST(svg_parity, fixtures_marked_pass_match_mermaid_js_and_todo_ones_report_progress) {
+    if (!references_available()) return;
     std::ifstream list(kData + "/mermaid_js_dagre/parity.tsv");
     ASSERT_TRUE(list.good());
     std::string line;
@@ -67,6 +69,7 @@ UTEST(svg_parity, fixtures_marked_pass_match_mermaid_js_and_todo_ones_report_pro
 // The frame of the document: the <svg> element, the marker group, the filter definitions. The
 // <style> text and the content of <g class="root"> are covered by later steps.
 UTEST(svg_parity, svg_frame_matches_mermaid_js_outside_style_and_root_content) {
+    if (!references_available()) return;
     // Fixtures left out: 003 (its height depends on the ELK layout), 034 (linkStyle colours add
     // coloured marker copies).
     for (const char* name : {"basic"}) {
@@ -83,6 +86,7 @@ UTEST(svg_parity, svg_frame_matches_mermaid_js_outside_style_and_root_content) {
 
 // The node group: shapes (box, diamond), label markup, DOM ids, transforms.
 UTEST(svg_parity, nodes_of_basic_match_mermaid_js) {
+    if (!references_available()) return;
     mermaid::RenderOptions options;
     options.svg_id = "basic";
     const std::string actual = mermaid::render_svg(read_all(kData + "/merman/basic.mmd"), options);
@@ -93,6 +97,7 @@ UTEST(svg_parity, nodes_of_basic_match_mermaid_js) {
 
 // The stylesheet text (theme variables, flowchart styles, neo look rules, classDef rules).
 UTEST(svg_parity, stylesheet_of_basic_matches_mermaid_js) {
+    if (!references_available()) return;
     mermaid::RenderOptions options;
     options.svg_id = "basic";
     const std::string actual = mermaid::render_svg(read_all(kData + "/merman/basic.mmd"), options);
@@ -102,6 +107,7 @@ UTEST(svg_parity, stylesheet_of_basic_matches_mermaid_js) {
 }
 
 UTEST(svg_parity, stylesheet_with_class_defs_matches_mermaid_js) {
+    if (!references_available()) return;
     const std::string name = "stress_flowchart_classdef_and_inline_classes_003";
     mermaid::RenderOptions options;
     options.svg_id = name;
@@ -116,6 +122,7 @@ UTEST(svg_parity, stylesheet_with_class_defs_matches_mermaid_js) {
 // laid out by ELK, we use dagre), so only their presence is compared here; the geometry itself is
 // covered by test_edge_geometry.
 UTEST(svg_parity, edge_paths_of_basic_match_mermaid_js_markup) {
+    if (!references_available()) return;
     mermaid::RenderOptions options;
     options.svg_id = "basic";
     const std::string actual = mermaid::render_svg(read_all(kData + "/merman/basic.mmd"), options);
@@ -128,6 +135,7 @@ UTEST(svg_parity, edge_paths_of_basic_match_mermaid_js_markup) {
 
 // The edge labels of `basic`, position and size included.
 UTEST(svg_parity, edge_labels_of_basic_match_mermaid_js_markup) {
+    if (!references_available()) return;
     mermaid::RenderOptions options;
     options.svg_id = "basic";
     const std::string actual = mermaid::render_svg(read_all(kData + "/merman/basic.mmd"), options);
@@ -139,6 +147,7 @@ UTEST(svg_parity, edge_labels_of_basic_match_mermaid_js_markup) {
 
 // linkStyle colours: markup, style text and coloured marker copies (after <g class="root">).
 UTEST(svg_parity, edge_paths_and_markers_with_link_style_match_mermaid_js_markup) {
+    if (!references_available()) return;
     const std::string name = "stress_flowchart_amp_groups_edge_ids_034";
     mermaid::RenderOptions options;
     options.svg_id = name;
@@ -178,6 +187,7 @@ void print_diffs(const std::vector<std::string>& diffs) {
 }  // namespace
 
 UTEST(svg_parity_dagre, nodes_and_viewbox_of_basic_match) {
+    if (!references_available()) return;
     const auto nodes = compare_dagre("basic", "g.nodes", svgtest::svg_comparer(0.5));
     print_diffs(nodes);
     EXPECT_EQ(0u, nodes.size());

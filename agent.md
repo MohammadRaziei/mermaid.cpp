@@ -67,7 +67,7 @@ cli/main.cpp       mermaid_cli entry point (forwards argv to cli::run)
 examples/main.cpp  minimal library use
 tests/cpp/         test_*.cpp (utest.h), svg_compare.h (pugixml comparer)
 tests/data/merman/ fixture sources (.mmd) and merman semantic goldens
-tests/data/mermaid_js_dagre/   reference SVGs from real Mermaid + parity.tsv
+tests/data/mermaid_js_dagre/   parity.tsv (the reference SVGs are generated at build time, not committed)
 tests/fonts/                 Liberation Sans (OFL): the font every reference is rendered with
 tools/             Node scripts: render_reference.mjs, render_all_references.mjs, dump_font_metrics.mjs,
                    dump_theme_variables.mjs
@@ -82,7 +82,7 @@ Chromium comes from npm, no download from Google is needed:
 mkdir mm && cd mm && npm init -y
 npm i @sparticuz/chromium puppeteer-core mermaid@12.2.0 --no-audit --no-fund
 cp ../tools/render_all_references.mjs all.mjs
-node all.mjs ../tests/data/merman ../tests/data/mermaid_js_dagre      # every .mmd in the directory
+node all.mjs ../tests/data/merman ../refs      # every .mmd in the directory (the build does this itself)
 ```
 
 The script uses `{layout: "dagre", handDrawnSeed: 1}`, names each SVG after its file (that is also the svg id) and
@@ -100,7 +100,7 @@ PNGs: `pip install novasvg`, then `novasvg.svg2png(svg, png, width=900, backgrou
 ## Adding or promoting a fixture (parity)
 
 1. Put the diagram in `tests/data/merman/<name>.mmd`.
-2. Generate its reference into `tests/data/mermaid_js_dagre/<name>.svg`.
+2. Put its `.mmd` into `tests/data/merman/`; the build renders the reference (see below), or run the script by hand to look at it.
 3. Add a row to `tests/data/mermaid_js_dagre/parity.tsv` as `todo`; the test prints the difference count.
 4. Fix differences, smallest cause first (read the first lines the test prints). When the count is **0**, change the
    row to `pass`. Never mark `pass` with differences left.
@@ -136,12 +136,12 @@ PNGs: `pip install novasvg`, then `novasvg.svg2png(svg, png, width=900, backgrou
 - `fontFamily` from `%%{init}%%` changes the CSS only, not the text measurement.
 - Themes: all five (`default`, `dark`, `forest`, `neutral`, `base`) are ported; only three `themeVariables` keys are applied from `%%{init}%%`.
 - `utest.h` pulls in `<windows.h>` on MSVC: no `near`, `far`, `small`, `big`; avoid `min` / `max` names.
-- References can be generated at build time instead of read from the repo: `cmake -DMERMAID_GENERATE_REFERENCES=ON`
-  (Node.js, npm, network; installs mermaid@12.2.0 + puppeteer-core + a headless Chromium into `<build>/references`).
-  The script pins the fonts of `tests/fonts` for every family, so the widths do not depend on the machine; a full
-  regeneration of the 44 committed references with it was byte-identical. `mmdc` is not used: it cannot pin the font
-  without adding CSS to the SVG, and its Mermaid version is not ours.
-- Regenerating references changes `tests/data/mermaid_js_dagre/*.svg`; commit those only on purpose.
+- Reference SVGs are not committed. The build renders them with real Mermaid 12.2.0 (Node.js + npm + network;
+  `<build>/references/svg`, re-run with the `mermaid_references` target), or uses `-DMERMAID_REFERENCE_DIR=<dir>`. Without
+  either, the parity tests report `skipped`. The script pins the fonts of `tests/fonts` for every family, so widths do not
+  depend on the machine (the 44 references rendered this way were byte-identical to the ones that used to be committed).
+  CI renders them once on Linux and shares them with the macOS and Windows jobs. `mmdc` is not used: it cannot pin the
+  font without adding CSS to the SVG, and its Mermaid version is not ours.
 
 ## Keeping the docs true
 

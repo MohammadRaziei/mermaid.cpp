@@ -31,18 +31,36 @@ target_compile_definitions(test_mermaid_cpp PRIVATE
     MERMAID_TEST_DATA_DIR="${MERMAID_TEST_SOURCE_DIR}/data"
 )
 
-# Reference SVGs from real Mermaid instead of the committed copies (off by default; needs Node.js, npm and network):
-#   cmake -DMERMAID_GENERATE_REFERENCES=ON ...
-# Mermaid 12.2.0 is installed with puppeteer-core and a headless Chromium into <build>/references/node_modules and
-# tools/render_all_references.mjs renders every tests/data/merman/*.mmd with the pinned fonts of tests/fonts, so the
-# widths do not depend on the machine. Re-run with `cmake --build . --target mermaid_references`.
-option(MERMAID_GENERATE_REFERENCES "Generate the reference SVGs with Mermaid.js (Node.js, npm, network)" OFF)
-if(MERMAID_GENERATE_REFERENCES)
-    find_program(MERMAID_NODE node REQUIRED)
-    find_program(MERMAID_NPM npm REQUIRED)
+# Reference SVGs: what real Mermaid 12.2.0 (layout: dagre) draws for tests/data/merman/*.mmd. They are not committed.
+#  - MERMAID_REFERENCE_DIR=<dir>   use SVGs rendered elsewhere (CI renders them once and shares them);
+#  - otherwise, with Node.js and npm found (MERMAID_GENERATE_REFERENCES, ON by default), they are rendered at build time:
+#    Mermaid 12.2.0 is installed with puppeteer-core and a headless Chromium into <build>/references and
+#    tools/render_all_references.mjs renders every .mmd with the pinned fonts of tests/fonts, so the widths do not
+#    depend on the machine (re-run: `cmake --build . --target mermaid_references`);
+#  - without either the parity tests report that they were skipped.
+set(MERMAID_REFERENCE_DIR "" CACHE PATH "Directory with reference SVGs rendered by Mermaid.js (empty: generate them)")
+find_program(MERMAID_NODE node)
+find_program(MERMAID_NPM npm)
+if(MERMAID_NODE AND MERMAID_NPM)
+    set(MERMAID_GENERATE_DEFAULT ON)
+else()
+    set(MERMAID_GENERATE_DEFAULT OFF)
+endif()
+option(MERMAID_GENERATE_REFERENCES "Render the reference SVGs with Mermaid.js at build time (Node.js, npm, network)" ${MERMAID_GENERATE_DEFAULT})
+
+if(MERMAID_REFERENCE_DIR)
+    set(MERMAID_REFERENCE_SVG_DIR "${MERMAID_REFERENCE_DIR}")
+elseif(MERMAID_GENERATE_REFERENCES)
+    if(NOT MERMAID_NODE OR NOT MERMAID_NPM)
+        message(FATAL_ERROR "MERMAID_GENERATE_REFERENCES needs node and npm")
+    endif()
     set(MERMAID_REFERENCE_WORK ${CMAKE_BINARY_DIR}/references)
     set(MERMAID_REFERENCE_SVG_DIR ${MERMAID_REFERENCE_WORK}/svg)
     file(GLOB MERMAID_REFERENCE_INPUTS CONFIGURE_DEPENDS ${MERMAID_TEST_SOURCE_DIR}/data/merman/*.mmd)
+    file(MAKE_DIRECTORY ${MERMAID_REFERENCE_WORK})
+    if(NOT EXISTS ${MERMAID_REFERENCE_WORK}/package.json)
+        file(WRITE ${MERMAID_REFERENCE_WORK}/package.json "{\"name\":\"mermaid-references\",\"private\":true,\"type\":\"module\"}\n")
+    endif()
     add_custom_command(
         OUTPUT ${MERMAID_REFERENCE_WORK}/references.stamp
         COMMAND ${CMAKE_COMMAND} -E make_directory ${MERMAID_REFERENCE_SVG_DIR}
@@ -57,14 +75,13 @@ if(MERMAID_GENERATE_REFERENCES)
         DEPENDS ${MERMAID_REFERENCE_INPUTS} ${PROJECT_SOURCE_DIR}/tools/render_all_references.mjs
         COMMENT "Rendering the reference SVGs with Mermaid.js 12.2.0"
         VERBATIM)
-    file(MAKE_DIRECTORY ${MERMAID_REFERENCE_WORK})
-    if(NOT EXISTS ${MERMAID_REFERENCE_WORK}/package.json)
-        file(WRITE ${MERMAID_REFERENCE_WORK}/package.json "{\"name\":\"mermaid-references\",\"private\":true,\"type\":\"module\"}\n")
-    endif()
     add_custom_target(mermaid_references DEPENDS ${MERMAID_REFERENCE_WORK}/references.stamp)
     add_dependencies(test_mermaid_cpp mermaid_references)
-    target_compile_definitions(test_mermaid_cpp PRIVATE MERMAID_REFERENCE_DIR="${MERMAID_REFERENCE_SVG_DIR}")
+else()
+    set(MERMAID_REFERENCE_SVG_DIR "${CMAKE_BINARY_DIR}/no-references")
+    message(WARNING "No reference SVGs (no Node.js/npm, no MERMAID_REFERENCE_DIR): the parity tests will be skipped")
 endif()
+target_compile_definitions(test_mermaid_cpp PRIVATE MERMAID_REFERENCE_DIR="${MERMAID_REFERENCE_SVG_DIR}")
 
 add_test(NAME test_mermaid_cpp COMMAND $<TARGET_FILE:test_mermaid_cpp>)
 
