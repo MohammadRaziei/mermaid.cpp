@@ -80,8 +80,14 @@ Ordered by what is likely to matter next.
   drop-shadow flood for dark. 10 fixtures (basic + rich, five themes) pass. The init `theme` key and `-t` give the same
   picture. Not done: `themeVariables` other than `fontFamily`, `clusterBkg`, `clusterBorder` (they feed khroma
   derivations in Mermaid, e.g. `primaryColor` of `base`), which would need the colour arithmetic ported
-- [ ] **S12b** the `@{ shape: ... }` family: only the names of the classic shapes are mapped; every other name
-  (`cloud`, `bolt`, `doc`, `tag-rect`, `fork`, `lin-cyl`, ...) becomes a box. Each needs its `shapes/*.ts` read and a reference
+- [~] **S12b** the `@{ shape: ... }` family (150 names, 53 handlers in Mermaid 12.2.0). Drawn so far (verified against
+  the real SVG, 7 fixtures `s12b_*`): the 14 classic shapes, `hourglass` (`collate`), `tri` (`extract`), `flip-tri`
+  (`manual-file`), `text`, `fork` (`join`, vertical bar in LR/RL), `sm-circ` (`start`). A name that is valid but not
+  drawn yet (the rest: cloud, bang, doc, docs, delay, h-cyl, lin-cyl, curv-trap, div-rect, win-pane, f-circ, fr-circ,
+  notch-pent, sl-rect, st-rect, flag, bolt, braces, bow-rect, tag-*, lin-*, cross-circ, folder, bucket, console,
+  browser, person, datastore, paper-tape, summary, ...) is drawn as a box. An unknown name is an error, as in Mermaid:
+  `No such shape: <name>.` (the handoff's "unknown names become a box" was wrong; the lookup is exact, `Rect` fails).
+  The fork size uses the graph direction, not that of the subgraph it sits in.
 - [~] **S13** edges to and from subgraph ids. Done: an end at a subgraph id is drawn against the cluster box and the route
   is cut at its border (`toCluster` / `fromCluster`, `cutPathAtIntersect`; `data-points` keeps the route before the cut);
   loops on a closed subgraph (helpers in the parent graph) and on an open cluster (drawn around the compound box); both

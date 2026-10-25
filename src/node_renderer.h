@@ -27,8 +27,11 @@ private:
     void write_outline(SvgWriter& out, flowchart::Shape shape, const Size& size, const flowchart::Style& style) const;
     void write_label(SvgWriter& out, const std::string& text, const Size& label, const flowchart::Style& style,
                      const Point& shift, bool markdown, bool table, bool wrapped) const;
+    void write_fork(SvgWriter& out, const Rect& box, const flowchart::Style& style, const std::string& inline_style) const;
+    void write_empty_label(SvgWriter& out, const flowchart::Style& style, bool markdown) const;
     void write_rough_polygon(SvgWriter& out, const std::vector<Point>& points, const std::string& transform,
-                             const flowchart::Style& style, const std::string& inline_style) const;
+                             const flowchart::Style& style, const std::string& inline_style,
+                             const char* group_class = "basic label-container outer-path") const;
     void write_stadium(SvgWriter& out, const Size& size, const flowchart::Style& style, const std::string& inline_style) const;
     static double label_shift(flowchart::Shape shape);
 

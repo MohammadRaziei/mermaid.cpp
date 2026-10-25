@@ -12,8 +12,8 @@ namespace mermaid::flowchart::detail {
 // idea (label box + padding, plus the room their outline needs).
 class NodeSizer {
 public:
-    NodeSizer(const TextMeasurer& measurer, const LayoutOptions& options)
-        : measurer_(measurer), options_(options) {}
+    NodeSizer(const TextMeasurer& measurer, const LayoutOptions& options, Direction direction = Direction::TB)
+        : measurer_(measurer), options_(options), direction_(direction) {}
 
     struct Label {
         Size size;
@@ -27,6 +27,7 @@ public:
 private:
     const TextMeasurer& measurer_;
     const LayoutOptions& options_;
+    Direction direction_;  // forkJoin.ts is a vertical bar in LR and RL, a horizontal one otherwise
 };
 
 }  // namespace mermaid::flowchart::detail

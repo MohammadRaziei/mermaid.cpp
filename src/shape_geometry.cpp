@@ -78,6 +78,24 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size)
             out.shift = {-notch / 2, 0};
             return out;
         }
+        case Shape::Hourglass: {  // hourglass.ts: the corners of a 30 x 30 box in the order of an hourglass
+            out.points = {{0, 0}, {30, 0}, {0, 30}, {30, 30}};
+            out.rough = true;
+            out.shift = {-15, -15};
+            out.separator = ", ";
+            return out;
+        }
+        case Shape::Triangle:  // triangle.ts / flippedTriangle.ts: h wide and high, the apex up or down
+        case Shape::FlippedTriangle: {
+            const double h = size.height;
+            out.points = shape == Shape::Triangle ? std::vector<Point>{{0, 0}, {h, 0}, {h / 2, -h}}
+                                                  : std::vector<Point>{{0, -h}, {h, -h}, {h / 2, 0}};
+            out.rough = true;
+            out.shift = {-h / 2, h / 2};
+            out.group_class = "outer-path";
+            out.separator = ", ";
+            return out;
+        }
         default:
             return std::nullopt;
     }

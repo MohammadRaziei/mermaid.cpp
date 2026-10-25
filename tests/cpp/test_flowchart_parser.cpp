@@ -440,6 +440,26 @@ UTEST(flowchart_markdown, backtick_strings_are_markdown_labels_over_several_line
     ASSERT_FALSE(m.edges[1].markdown_label);
 }
 
+UTEST(flowchart_shape, unknown_shape_names_are_an_error_known_ones_are_not) {
+    // flowDb.addVertex: `No such shape: <name>.`; the lookup is exact (checked against Mermaid 12.2.0)
+    bool threw = false;
+    try {
+        Parser().parse("flowchart LR\nA@{ shape: nonexistent-shape }\n");
+    } catch (const mermaid::ParseError& e) {
+        threw = std::string(e.what()).find("No such shape: nonexistent-shape.") != std::string::npos;
+    }
+    ASSERT_TRUE(threw);
+    const Model ok = Parser().parse("flowchart LR\nA@{ shape: cloud }\nB@{ shape: rect }\n");
+    ASSERT_EQ(2u, ok.nodes.size());
+    bool case_matters = false;
+    try {
+        Parser().parse("flowchart LR\nA@{ shape: Rect }\n");
+    } catch (const mermaid::ParseError&) {
+        case_matters = true;
+    }
+    ASSERT_TRUE(case_matters);
+}
+
 // ---- `A@{ label: ... }` nodes
 
 UTEST(flowchart_node_data, data_block_advances_the_vertex_counter_twice) {

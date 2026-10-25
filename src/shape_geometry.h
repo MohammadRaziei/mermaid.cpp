@@ -20,6 +20,8 @@ struct polygon_outline {
     Size anchor;                // (w, h) of insertPolygonShape: the polygon is moved by translate(-w / 2, h / 2)
     bool rough = false;         // drawn by rough.js inside a group (odd), not as a <polygon>
     Point shift;                // transform of that group
+    const char* separator = ",";  // between the numbers of that transform (shapes differ: "5.6,0" or "-15, -15")
+    const char* group_class = "basic label-container outer-path";  // class of that group
 };
 
 // nullopt for the shapes that are not polygons. `size` is the node's size, the bounding box of the outline.

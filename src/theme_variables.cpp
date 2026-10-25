@@ -7,6 +7,7 @@ namespace mermaid::detail {
 
 theme_variables theme_variables::redux_color() {
     theme_variables t;
+    t.node_shadow = true;
     t.font_family = "\"Recursive Variable\", arial, sans-serif";
     t.font_size = "14px";
     t.text_color = "#28253D";

@@ -49,3 +49,11 @@ s13_loop_open_cluster	pass
 s13_node_into_own_cluster	todo
 s14_markdown_mixed	pass
 s14_markdown_subgraph_edge	pass
+s12b_hourglass	pass
+s12b_tri	pass
+s12b_flip-tri	pass
+s12b_text	pass
+s12b_fork	pass
+s12b_sm-circ	pass
+s12b_fork_tb	pass
+s12b_mixed_dark	pass

@@ -4,6 +4,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <map>
+#include <set>
 #include <optional>
 
 #include <mermaid/error.h>
@@ -124,6 +125,13 @@ std::optional<Direction> parse_direction(const std::string& word) {
     return std::nullopt;
 }
 
+// Every name of shapesDefs in Mermaid 12.2.0 (shortName, aliases and internal aliases). Names that are valid but have
+// no drawing here yet (checklist S12b) are drawn as a box.
+bool is_mermaid_shape_name(const std::string& name) {
+    static const std::set<std::string> names = {"bang", "bolt", "bow-rect", "bow-tie-rectangle", "brace", "brace-l", "brace-r", "braces", "browser", "bucket", "card", "circ", "circle", "cloud", "collate", "com-link", "comment", "console", "cross-circ", "crossed-circle", "curv-trap", "curved-trapezoid", "cyl", "cylinder", "das", "data-store", "database", "datastore", "db", "dbl-circ", "decision", "delay", "diam", "diamond", "directory", "disk", "display", "div-proc", "div-rect", "divided-process", "divided-rectangle", "doc", "docs", "document", "documents", "double-circle", "doublecircle", "event", "extract", "f-circ", "filled-circle", "flag", "flip-tri", "flipped-triangle", "folder", "fork", "forkJoin", "fr-circ", "fr-rect", "framed-circle", "framed-rectangle", "h-cyl", "half-rounded-rectangle", "hex", "hexagon", "horizontal-cylinder", "hourglass", "in-out", "internal-storage", "inv-trapezoid", "inv_trapezoid", "join", "junction", "lean-l", "lean-left", "lean-r", "lean-right", "lean_left", "lean_right", "lightning-bolt", "lin-cyl", "lin-doc", "lin-proc", "lin-rect", "lined-cylinder", "lined-document", "lined-process", "lined-rectangle", "loop-limit", "manual", "manual-file", "manual-input", "notch-pent", "notch-rect", "notched-pentagon", "notched-rectangle", "odd", "out-in", "paper-tape", "person", "pill", "prepare", "priority", "proc", "process", "processes", "procs", "question", "rect", "rect_left_inv_arrow", "rectangle", "rounded", "roundedRect", "shaded-process", "sl-rect", "sloped-rectangle", "sm-circ", "small-circle", "squareRect", "st-doc", "st-rect", "stacked-document", "stacked-rectangle", "stadium", "start", "stateEnd", "stateStart", "stop", "stored-data", "subproc", "subprocess", "subroutine", "summary", "tag-doc", "tag-proc", "tag-rect", "tagged-document", "tagged-process", "tagged-rectangle", "terminal", "text", "trap-b", "trap-t", "trapezoid", "trapezoid-bottom", "trapezoid-top", "tri", "triangle", "win-pane", "window-pane"};
+    return names.count(name) != 0;
+}
+
 Shape shape_from_data_name(const std::string& name) {
     static const std::map<std::string, Shape> table = {
         {"rect", Shape::Square},       {"rectangle", Shape::Square},   {"square", Shape::Square},
@@ -138,8 +146,13 @@ Shape shape_from_data_name(const std::string& name) {
         {"hexagon", Shape::Hexagon},   {"prepare", Shape::Hexagon},    {"odd", Shape::Odd},
         {"lean-r", Shape::LeanRight},  {"lean-l", Shape::LeanLeft},    {"trap-b", Shape::Trapezoid},
         {"trapezoid", Shape::Trapezoid}, {"trap-t", Shape::InvTrapezoid}, {"inv-trapezoid", Shape::InvTrapezoid},
+        {"hourglass", Shape::Hourglass}, {"collate", Shape::Hourglass}, {"tri", Shape::Triangle},
+        {"extract", Shape::Triangle},  {"triangle", Shape::Triangle},  {"flip-tri", Shape::FlippedTriangle},
+        {"manual-file", Shape::FlippedTriangle}, {"flipped-triangle", Shape::FlippedTriangle},
+        {"text", Shape::Text},         {"fork", Shape::Fork},          {"join", Shape::Fork},
+        {"sm-circ", Shape::SmallCircle}, {"start", Shape::SmallCircle}, {"small-circle", Shape::SmallCircle},
     };
-    auto it = table.find(lower(name));
+    auto it = table.find(name);
     return it == table.end() ? Shape::Default : it->second;
 }
 
@@ -381,6 +394,7 @@ private:
             } else if (key == "shape") {
                 if (value.size() >= 2 && value.front() == '"' && value.back() == '"')
                     value = value.substr(1, value.size() - 2);
+                if (!is_mermaid_shape_name(value)) fail("No such shape: " + value + ".");
                 node->shape = shape_from_data_name(value);
             }
         };

@@ -125,7 +125,7 @@ public:
         : model_(model), measurer_(measurer), options_(options), topology_(model) {}
 
     Layout build() {
-        const detail::NodeSizer sizer(measurer_, options_);
+        const detail::NodeSizer sizer(measurer_, options_, model_.direction);
         for (const Node& n : model_.nodes) {
             sizes_.push_back(sizer.size(n));
             const detail::NodeSizer::Label label = sizer.label(n);

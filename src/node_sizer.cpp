@@ -17,6 +17,8 @@ constexpr double M_PI_ = 3.14159265358979323846;
 // labelHelper + createText: the text wraps at the label width (120); a label that fits is as wide as its text, and
 // all shapes but the circles hold it to at least that width.
 NodeSizer::Label NodeSizer::label(const Node& node) const {
+    if (node.shape == Shape::Hourglass || node.shape == Shape::Fork || node.shape == Shape::SmallCircle)
+        return {{0, 0}, false};  // these shapes have no label (hourglass.ts empties it; the others never make one)
     const TextMeasurer::Wrapped text = node.markdown_label
                                            ? mermaid::detail::markdown_label(node.label).measure(measurer_, options_.min_label_width)
                                            : measurer_.measure_wrapped(node.label, options_.min_label_width);
@@ -80,6 +82,19 @@ Size NodeSizer::size(const Node& node) const {
             const double w = text_w + pad;
             const double ry = (w / 2) / (2.5 + w / 50);  // the two ellipses add 3 * ry to the height
             return {w, text_h + pad + 3 * ry};
+        }
+        case Shape::Hourglass:  // hourglass.ts: 30 x 30
+            return {30, 30};
+        case Shape::Fork:  // forkJoin.ts: 70 x 10, turned in LR and RL
+            return direction_ == Direction::LR || direction_ == Direction::RL ? Size{10, 70} : Size{70, 10};
+        case Shape::SmallCircle:  // stateStart.ts: 14 x 14
+            return {14, 14};
+        case Shape::Text:  // text.ts: the label plus the padding once
+            return {text_w + p, text_h + p};
+        case Shape::Triangle:  // triangle.ts (neo): w = text + 2 * padding, h = w + text height; the outline is h wide
+        case Shape::FlippedTriangle: {
+            const double h = text_w + 2 * p + text_h;
+            return {h, h};
         }
         case Shape::Default:
         case Shape::Square:

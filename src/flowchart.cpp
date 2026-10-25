@@ -33,6 +33,12 @@ const char* shape_name(Shape shape) noexcept {
         case Shape::LeanLeft: return "lean_left";
         case Shape::Trapezoid: return "trapezoid";
         case Shape::InvTrapezoid: return "inv_trapezoid";
+        case Shape::Hourglass: return "hourglass";
+        case Shape::Triangle: return "triangle";
+        case Shape::FlippedTriangle: return "flippedTriangle";
+        case Shape::Text: return "text";
+        case Shape::Fork: return "forkJoin";
+        case Shape::SmallCircle: return "stateStart";
     }
     return "";
 }

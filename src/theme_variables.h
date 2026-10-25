@@ -34,6 +34,7 @@ struct theme_variables {
     int theme_color_limit = 0;
     std::vector<std::string> border_color_array;
     std::vector<std::string> bkg_color_array;
+    bool node_shadow = false;    // themeVariables.nodeShadow: the small shapes of the redux themes get a drop shadow
     std::string gradient_start;  // themeVariables.gradientStart (stop of the node border gradient)
     std::string gradient_stop;
     std::string look = "neo";

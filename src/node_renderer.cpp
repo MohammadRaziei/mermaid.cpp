@@ -45,8 +45,17 @@ void node_renderer::write(SvgWriter& out, const flowchart::Node& node, const flo
     write_outline(out, layout.shape, layout.size, style);
     Point shift = label_offset(layout.shape, layout.size);
     shift.y += label_shift(layout.shape);
-    write_label(out, node.label, layout.label, style, shift, node.markdown_label,
-                !ignores_min_label_width(layout.shape) || layout.label_wrapped, layout.label_wrapped);
+    // triangle.ts puts the label near the base, flippedTriangle.ts near the top (padding / 2 = 7.5 from the edge)
+    if (layout.shape == Shape::Triangle) shift.y += layout.size.height / 2 - layout.label.height / 2 - kNodePadding / 2;
+    if (layout.shape == Shape::FlippedTriangle) shift.y += -layout.size.height / 2 + layout.label.height / 2 + kNodePadding / 2;
+    if (layout.shape == Shape::Hourglass) {  // the label is empty: a 0 x 0 box
+        write_empty_label(out, style, node.markdown_label);
+    } else if (layout.shape == Shape::Fork || layout.shape == Shape::SmallCircle) {
+        // these shapes make no label at all
+    } else {
+        write_label(out, node.label, layout.label, style, shift, node.markdown_label,
+                    !ignores_min_label_width(layout.shape) || layout.label_wrapped, layout.label_wrapped);
+    }
     out.close();
 }
 
@@ -69,10 +78,34 @@ void node_renderer::write_stadium(SvgWriter& out, const Size& size, const flowch
     write_rough_polygon(out, points, "", style, inline_style);
 }
 
+// forkJoin.ts: rc.rectangle filled solid with the line colour. The fill is the plain outline of the rectangle.
+void node_renderer::write_fork(SvgWriter& out, const Rect& box, const flowchart::Style& style, const std::string& inline_style) const {
+    const std::vector<Point> corners{{box.x, box.y}, {box.x + box.width, box.y}, {box.x + box.width, box.y + box.height}, {box.x, box.y + box.height}};
+    const auto lookup = [&](const char* key, const std::string& fallback) {
+        std::string value = fallback;
+        for (const auto& [k, v] : style)
+            if (k == key) value = v;
+        return value;
+    };
+    std::string fill_d;
+    for (size_t i = 0; i < corners.size(); ++i) fill_d += (i ? " L" : "M") + js(corners[i].x) + " " + js(corners[i].y);
+    const rough_drawing drawing = rough_polygon(corners, seed_);
+    out.open("g");
+    out.leaf("path", {{"d", fill_d}, {"stroke", "none"}, {"stroke-width", "0"}, {"fill", lookup("fill", theme_.line_color)}, {"style", inline_style}});
+    out.leaf("path", {{"d", drawing.stroke_d},
+                      {"stroke", lookup("stroke", theme_.line_color)},
+                      {"stroke-width", "1.3"},
+                      {"fill", "none"},
+                      {"stroke-dasharray", "0 0"},
+                      {"style", inline_style}});
+    out.close();
+}
+
 // A closed polygon drawn by rough.js (`rc.path`): a fill path and a stroke path in a group.
 // userNodeOverrides: the style map wins over the theme.
 void node_renderer::write_rough_polygon(SvgWriter& out, const std::vector<Point>& points, const std::string& transform,
-                                        const flowchart::Style& style, const std::string& inline_style) const {
+                                        const flowchart::Style& style, const std::string& inline_style,
+                                        const char* group_class) const {
     const auto lookup = [&](const char* key, const std::string& fallback) {
         std::string value = fallback;
         for (const auto& [k, v] : style)
@@ -94,7 +127,7 @@ void node_renderer::write_rough_polygon(SvgWriter& out, const std::vector<Point>
     }
 
     const rough_drawing drawing = rough_polygon(points, seed_);
-    SvgWriter::Attrs group{{"class", "basic label-container outer-path"}};
+    SvgWriter::Attrs group{{"class", group_class}};
     if (!transform.empty()) group.emplace_back("transform", transform);
     out.open("g", group);
     out.leaf("path", {{"d", drawing.fill_d}, {"stroke", "none"}, {"stroke-width", "0"}, {"fill", lookup("fill", theme_.main_bkg)}, {"style", inline_style}});
@@ -166,9 +199,27 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
         out.leaf("circle", {{"class", "outer-circle"}, {"style", inline_style}, {"r", js(outer)}, {"cx", "0"}, {"cy", "0"}});
         out.leaf("circle", {{"class", "inner-circle"}, {"style", inline_style}, {"r", js(outer - kDoubleCircleGap)}, {"cx", "0"}, {"cy", "0"}});
         out.close();
+    } else if (shape == Shape::Text) {
+        // text.ts: a rectangle with the class `text`, no border of its own
+        out.leaf("rect", {{"class", "text"},
+                          {"style", inline_style},
+                          {"rx", "0"},
+                          {"ry", "0"},
+                          {"x", js(box.x)},
+                          {"y", js(box.y)},
+                          {"width", js(box.width)},
+                          {"height", js(box.height)}});
+    } else if (shape == Shape::SmallCircle) {
+        // stateStart.ts: a plain circle with the small drop shadow of the neo look
+        SvgWriter::Attrs attrs{{"class", "state-start"}, {"r", js(size.width / 2)}, {"width", js(size.width)}, {"height", js(size.height)}};
+        if (theme_.node_shadow) attrs.emplace_back("style", "filter:url(#" + svg_id_ + "-drop-shadow-small)");
+        out.leaf("circle", attrs);
+    } else if (shape == Shape::Fork) {
+        write_fork(out, box, style, inline_style);
     } else if (const auto polygon = polygon_outline_of(shape, size)) {
         if (polygon->rough) {
-            write_rough_polygon(out, polygon->points, "translate(" + js(polygon->shift.x) + "," + js(polygon->shift.y) + ")", style, inline_style);
+            write_rough_polygon(out, polygon->points, "translate(" + js(polygon->shift.x) + polygon->separator + js(polygon->shift.y) + ")", style, inline_style,
+                                  polygon->group_class);
         } else {
             // insertPolygonShape: drawn from the origin and moved by translate(-w / 2, h / 2)
             std::string points;
@@ -180,6 +231,18 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
             out.leaf("polygon", attrs);
         }
     }
+}
+
+void node_renderer::write_empty_label(SvgWriter& out, const flowchart::Style& style, bool markdown) const {
+    out.open("g", {{"class", "label"}, {"style", important_label_style(style)}, {"transform", "translate(0, 0)"}});
+    out.leaf("rect");
+    out.open("foreignObject", {{"width", "0"}, {"height", "0"}});
+    out.open("div", {{"xmlns", "http://www.w3.org/1999/xhtml"},
+                     {"style", computed_label_color(style) + "display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center;"}});
+    out.leaf("span", {{"class", markdown ? "nodeLabel markdown-node-label" : "nodeLabel"}});
+    out.close();  // div
+    out.close();  // foreignObject
+    out.close();  // label group
 }
 
 void node_renderer::write_label(SvgWriter& out, const std::string& text, const Size& label, const flowchart::Style& style,

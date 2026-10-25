@@ -1,0 +1,7 @@
+flowchart TB
+  A[Start] --> F@{ shape: fork }
+  F --> B[One]
+  F --> C[Two]
+  B --> J@{ shape: join }
+  C --> J
+  J --> S@{ shape: sm-circ }

@@ -119,6 +119,7 @@ Point edge_geometry::border_point(const NodeLayout& node, const Point& outside) 
             return {node.center.x + t * dx, node.center.y + t * dy};
         }
         case Shape::Circle:
+        case Shape::SmallCircle:
         case Shape::DoubleCircle: {
             const double r = MERMAID_MIN(w, h), len = std::hypot(dx, dy);
             return {node.center.x + r * dx / len, node.center.y + r * dy / len};

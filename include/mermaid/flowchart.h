@@ -28,6 +28,12 @@ enum class Shape {
     LeanLeft,
     Trapezoid,
     InvTrapezoid,
+    Hourglass,         // `@{ shape: hourglass }` (collate)
+    Triangle,          // `tri` (extract)
+    FlippedTriangle,   // `flip-tri` (manual file)
+    Text,              // `text`: a label with no outline
+    Fork,              // `fork`, `join`: a thin bar across the flow
+    SmallCircle,       // `sm-circ` (start): a dot with a label-less 14px circle
 };
 
 enum class Stroke { Normal, Thick, Dotted, Invisible };
