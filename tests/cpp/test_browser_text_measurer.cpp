@@ -98,3 +98,19 @@ UTEST(browser_text_measurer, explicit_line_breaks_stay_and_a_word_wider_than_the
     ASSERT_TRUE(wide.wrapped);
     ASSERT_NEAR(380.546875, wide.size.width, 0.1);  // text widths may differ by a fraction of a pixel from Chromium
 }
+
+UTEST(browser_text_measurer, bold_and_italic_faces_have_their_own_widths) {
+    browser_text_measurer m;
+    ASSERT_NEAR(m.line_width("Hello"), m.line_width("Hello", FontFace::Regular), 1e-9);
+    ASSERT_TRUE(m.line_width("Hello", FontFace::Bold) > m.line_width("Hello", FontFace::Regular));
+    // `**edge** x` as an edge label of tests/data/merman/s14_markdown_strings.mmd (43.578125 in Chromium)
+    ASSERT_NEAR(43.578125, m.run_width("edge", FontFace::Bold) + m.run_width(" x", FontFace::Regular), 0.1);
+}
+
+UTEST(browser_text_measurer, wrapped_table_counts_the_blank_after_the_longest_word) {
+    // under `white-space: break-spaces` a blank stays at the end of its line, so the table needs "word " (Chromium: 121.42)
+    browser_text_measurer m;
+    const TextMeasurer::Wrapped w = m.measure_wrapped("snake_case_name and 2 * 3 * 4", 120);
+    ASSERT_TRUE(w.wrapped);
+    ASSERT_NEAR(121.421875, w.size.width, 0.1);
+}

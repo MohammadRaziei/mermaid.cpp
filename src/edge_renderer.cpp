@@ -1,10 +1,13 @@
 #include "edge_renderer.h"
 
+#include <algorithm>
+
 #include <mermaid/edge_geometry.h>
 
 #include <cctype>
 #include <cmath>
 
+#include "markdown_label.h"
 #include "style_css.h"
 
 namespace mermaid::detail {
@@ -177,14 +180,21 @@ bool EdgeRenderer::is_drawn(const flowchart::EdgeLayout& layout) {
     return layout.points.size() >= 2;  // invisible edges are drawn too, with the `invisible` thickness
 }
 
-void EdgeRenderer::write_path(SvgWriter& out, const flowchart::Edge& edge, const flowchart::EdgeLayout& layout,
-                              const flowchart::NodeLayout* tail, const flowchart::NodeLayout* head) {
+void EdgeRenderer::write_path(SvgWriter& out, const flowchart::Edge& edge, const flowchart::EdgeLayout& layout, const Ends& ends) {
     if (!is_drawn(layout)) return;
 
     // Route as Mermaid draws it: clipped to the outlines, pulled back from the arrow tips, rounded.
     // (the edge's curve, `basis` unless set, after fixCorners)
     std::vector<Point> route = layout.points;
-    if (tail && head) route = edge_geometry::clip_to_nodes(route, *tail, *head);
+    // (the loop of a cluster already sits on the border of the cluster box: it is not clipped again)
+    if (ends.tail && ends.head && !(layout.self_loop && ends.tail_is_cluster)) route = edge_geometry::clip_to_nodes(route, *ends.tail, *ends.head);
+    const std::string recorded_points = edge_geometry::points_attribute(route);  // data-points: before the cluster cuts
+    if (ends.head_is_cluster) route = edge_geometry::cut_path_at_intersect(layout.points, ends.head->rect());
+    if (ends.tail_is_cluster) {
+        std::reverse(route.begin(), route.end());
+        route = edge_geometry::cut_path_at_intersect(route, ends.tail->rect());
+        std::reverse(route.begin(), route.end());
+    }
     const std::vector<Point> drawn =
         edge_geometry::shorten_ends(edge_geometry::fix_corners(route), edge_geometry::path_offset(edge.start), edge_geometry::path_offset(edge.end));
     const double length = edge_geometry::curve_length(edge.curve, drawn);
@@ -219,7 +229,7 @@ void EdgeRenderer::write_path(SvgWriter& out, const flowchart::Edge& edge, const
                            {"data-edge", "true"},
                            {"data-et", "edge"},
                            {"data-id", edge.id},
-                           {"data-points", edge_geometry::points_attribute(route)},
+                           {"data-points", recorded_points},
                            {"data-look", "neo"}};
     if (edge.start != Head::None) attrs.emplace_back("marker-start", marker_url(edge.start, true, style_text));
     if (edge.end != Head::None) attrs.emplace_back("marker-end", marker_url(edge.end, false, style_text));
@@ -255,7 +265,9 @@ void EdgeRenderer::write_label(SvgWriter& out, const flowchart::Edge& edge, cons
     if (const std::string color = important_label_style(edge.style); !color.empty()) span_attrs.emplace_back("style", color);
     span_attrs.emplace_back("class", "edgeLabel");
     out.open("span", span_attrs);
-    if (labelled) {
+    if (labelled && edge.markdown_label) {
+        out.raw(markdown_label(edge.label).html());
+    } else if (labelled) {
         out.open("p");
         size_t start = 0;
         while (true) {

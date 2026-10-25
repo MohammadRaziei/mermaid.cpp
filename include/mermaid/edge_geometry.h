@@ -22,6 +22,10 @@ public:
     // Where the line from the node centre towards `outside` leaves the node outline.
     static Point border_point(const flowchart::NodeLayout& node, const Point& outside);
 
+    // edges.js cutPathAtIntersect: an edge that ends at a cluster id is drawn only up to the border of the cluster box;
+    // the route is cut where it first enters the box. (`points` run towards the cluster.)
+    static std::vector<Point> cut_path_at_intersect(const std::vector<Point>& points, const Rect& boundary);
+
     // `applyMarkerOffsetsToPoints`: moves the ends towards the inside by the given distances.
     static std::vector<Point> shorten_ends(const std::vector<Point>& points, double start, double end);
 

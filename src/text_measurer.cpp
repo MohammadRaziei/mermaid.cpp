@@ -33,7 +33,9 @@ TextMeasurer::Wrapped TextMeasurer::measure_wrapped(std::string_view text, doubl
     for (size_t at = 0; at <= text.size();) {
         const size_t space = text.find_first_of(" \n", at);
         const std::string_view word = text.substr(at, space == std::string_view::npos ? std::string_view::npos : space - at);
-        table_width = MERMAID_MAX(table_width, line_width(word));
+        // break-spaces keeps a blank at the end of its line, so a word followed by one needs room for it
+        const bool blank_follows = space != std::string_view::npos && text[space] == ' ';
+        table_width = MERMAID_MAX(table_width, blank_follows ? run_width(std::string(word) + " ", FontFace::Regular) : line_width(word));
         if (space == std::string_view::npos) break;
         at = space + 1;
     }

@@ -211,3 +211,23 @@ UTEST(edge_geometry, curve_bounds_of_a_basis_curve_stay_inside_the_corner_it_cut
     ASSERT_NEAR(0, b.y, 1e-6);
     ASSERT_NEAR(20, b.bottom(), 1e-2);
 }
+
+// numbers from tests/data/merman/s14_mixed_clusters.mmd as real Mermaid draws it (edges `c --> one`, `two --> d`)
+UTEST(edge_geometry, cut_path_stops_at_the_cluster_border) {
+    // `c --> one`: the route ends inside the cluster, it is cut where it meets the top border
+    const Rect one = Rect::from_center({129, 198}, {222, 190});
+    const std::vector<Point> to = edge_geometry::cut_path_at_intersect({{129, 53}, {129, 78}, {129, 103}, {129, 128}}, one);
+    ASSERT_EQ(3u, to.size());
+    ASSERT_NEAR(103, to.back().y, 1e-9);
+    ASSERT_NEAR(129, to.back().x, 1e-9);
+
+    // `two --> d`, walked from the far end: the side of the box is crossed at 447.419
+    const Rect two = Rect::from_center({124, 438}, {232, 190});
+    const std::vector<Point> from = edge_geometry::cut_path_at_intersect({{275, 465.0467422096317}, {174.5, 438}, {240, 438}}, two);
+    ASSERT_EQ(2u, from.size());
+    ASSERT_NEAR(240, from.back().x, 1e-9);
+    ASSERT_NEAR(447.419, from.back().y, 1e-3);
+
+    // a route that never enters the box stays as it is
+    ASSERT_EQ(2u, edge_geometry::cut_path_at_intersect({{0, 0}, {10, 0}}, Rect::from_center({100, 100}, {20, 20})).size());
+}

@@ -82,16 +82,24 @@ Ordered by what is likely to matter next.
   derivations in Mermaid, e.g. `primaryColor` of `base`), which would need the colour arithmetic ported
 - [ ] **S12b** the `@{ shape: ... }` family: only the names of the classic shapes are mapped; every other name
   (`cloud`, `bolt`, `doc`, `tag-rect`, `fork`, `lin-cyl`, ...) becomes a box. Each needs its `shapes/*.ts` read and a reference
-- [ ] **S13** edges to clusters that stay open: cut the path at the cluster border (`fromCluster` / `toCluster`) and
-  the "safe anchor" re-anchoring of `adjustClustersAndEdges` (ADR-0010 lists what was not ported)
-- [~] **S14** more fixtures. Done (22 of 25): BT, RL, self-loops, edge styles incl. invisible, styled shapes, long labels,
-  every curve (`flowchart.curve` init key; step, stepAfter, stepBefore, bumpX/Y, natural, monotoneX/Y, catmullRom,
-  linear, cardinal, basis; one fixture per curve plus a per-edge one), `linkStyle` colour on edge labels, classes on
-  subgraphs (`setClass` ignores unknown ids and does not create nodes), several loops on one node (they share helper
-  ids and edge keys, so only the last is drawn), a word wider than the label box (the wrapped table grows to the longest
-  word). Still `todo` rows: `s14_markdown_strings` (Markdown labels, and a quoted label may span lines: not parsed),
-  `s14_mixed_clusters` and `s14_subgraph_loop` (both need S13: edges to and loops on a subgraph id). Not yet covered:
-  `style` on a subgraph id, `class` on an edge id, `linkStyle` on more shapes than the one fixture.
+- [~] **S13** edges to and from subgraph ids. Done: an end at a subgraph id is drawn against the cluster box and the route
+  is cut at its border (`toCluster` / `fromCluster`, `cutPathAtIntersect`; `data-points` keeps the route before the cut);
+  loops on a closed subgraph (helpers in the parent graph) and on an open cluster (drawn around the compound box); both
+  directions, subgraph to subgraph, nested, labelled, LR: 8 fixtures pass (`s14_mixed_clusters`, `s14_subgraph_loop`,
+  `s13_*`). Open: a node and its own cluster (`a --> g` with `a` inside `g`, row `s13_node_into_own_cluster`, `todo`:
+  Mermaid's layout there differs in the cluster size, not understood yet), the "safe anchor" re-anchoring of
+  `adjustClustersAndEdges` (ADR-0010 lists what was not ported), `click`/links.
+- [x] **S13b** Markdown labels: a "`...`" string (it may span lines) is a Markdown label on nodes, edges and subgraph titles:
+  bold, italic, both (`**` `__` `*` `_` `***`) and line breaks, with `<strong>` / `<em>` markup (`markdown_label`), measured
+  run by run with metric tables of the four faces (`dump_font_metrics.mjs`, Liberation Sans of `tests/fonts`). The
+  wrapped table is as wide as the longest word and the blank after it (`break-spaces`), for plain labels too. 3 fixtures
+  pass. Not done: other Markdown (lists, links, code, headings), escapes with a backslash, `htmlLabels: false` text.
+- [~] **S14** more fixtures. Done (26 of 26 of the original list): BT, RL, self-loops, edge styles incl. invisible, styled
+  shapes, long labels, every curve (`flowchart.curve` init key; one fixture per curve plus a per-edge one), `linkStyle`
+  colour on edge labels, classes on subgraphs (`setClass` ignores unknown ids and does not create nodes), several loops on
+  one node (they share helper ids and edge keys, so only the last is drawn), a word wider than the label box (the
+  wrapped table grows to the longest word), mixed open and closed clusters. Not yet covered: `style` on a subgraph id,
+  `class` on an edge id, `linkStyle` on more shapes than the one fixture.
 - [ ] **S10** CI is a 3-OS build and test (`.github/workflows/cmake.yml`). Open: Doxygen docs (like liburlparser),
   benchmarks, coverage dashboard (`mermaid_coverage` target exists, needs `lcov`)
 - [ ] Init keys not read yet: other `themeVariables`, `look`, `layout`, `htmlLabels` (`theme`, `flowchart.curve` are read)

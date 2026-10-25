@@ -57,11 +57,13 @@ struct Edge {
     int length = 1;  // extra dashes make an edge span more ranks
     Style style;     // from `linkStyle`
     std::string curve;  // from `e1@{curve: ...}`; empty = the default (basis)
+    bool markdown_label = false;  // the label was a "`...`" string
 };
 
 struct Subgraph {
     std::string id;
     std::string title;
+    bool markdown_title = false;  // the title was a "`...`" string
     std::vector<std::string> members;  // node ids and nested subgraph ids
     std::vector<std::string> classes;  // from `class` statements naming the subgraph id
     std::optional<Direction> direction;

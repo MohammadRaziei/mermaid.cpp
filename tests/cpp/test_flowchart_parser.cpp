@@ -426,6 +426,20 @@ UTEST(flowchart_init, theme_key_is_read) {
     ASSERT_FALSE(Parser().parse("flowchart TD\nA-->B\n").config.theme.has_value());
 }
 
+UTEST(flowchart_markdown, backtick_strings_are_markdown_labels_over_several_lines) {
+    const Model m = Parser().parse(
+        "flowchart LR\n"
+        "A[\"`**bold** x`\"] -->|\"`**e** y`\"| B[\"`one\n  two`\"]\n"
+        "C[\"plain\"] --> A\n");
+    ASSERT_TRUE(m.find_node("A")->markdown_label);
+    ASSERT_STREQ("**bold** x", m.find_node("A")->label.c_str());
+    ASSERT_STREQ("one\n  two", m.find_node("B")->label.c_str());
+    ASSERT_FALSE(m.find_node("C")->markdown_label);
+    ASSERT_TRUE(m.edges[0].markdown_label);
+    ASSERT_STREQ("**e** y", m.edges[0].label.c_str());
+    ASSERT_FALSE(m.edges[1].markdown_label);
+}
+
 // ---- `A@{ label: ... }` nodes
 
 UTEST(flowchart_node_data, data_block_advances_the_vertex_counter_twice) {

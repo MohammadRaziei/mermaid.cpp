@@ -17,9 +17,15 @@ struct font_kerning {
     int8_t units;  // 1/64 px at 14px
 };
 
-extern const font_advance kFontAdvances[];  // sorted by code point
-extern const size_t kFontAdvanceCount;
-extern const font_kerning kFontKerning[];  // sorted by (first, second)
-extern const size_t kFontKerningCount;
+// One face: advances sorted by code point, kerning sorted by (first, second).
+struct font_table {
+    const font_advance* advances;
+    size_t advance_count;
+    const font_kerning* kerning;
+    size_t kerning_count;
+};
+
+// Regular, Bold, Italic, BoldItalic (the order of `FontFace`).
+extern const font_table kFontTables[4];
 
 }  // namespace mermaid::detail

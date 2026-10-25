@@ -5,6 +5,7 @@
 #include "rough_path.h"
 
 #include "shape_geometry.h"
+#include "markdown_label.h"
 #include "style_css.h"
 
 namespace mermaid::detail {
@@ -199,16 +200,20 @@ void node_renderer::write_label(SvgWriter& out, const std::string& text, const S
     SvgWriter::Attrs span{{"class", markdown ? "nodeLabel markdown-node-label" : "nodeLabel"}};
     if (!color.empty()) span.emplace_back("style", color);
     out.open("span", span);
-    out.open("p");
-    size_t start = 0;
-    while (true) {
-        const size_t end = text.find('\n', start);
-        out.text(text.substr(start, end == std::string::npos ? end : end - start));
-        if (end == std::string::npos) break;
-        out.raw("<br />");
-        start = end + 1;
+    if (markdown) {
+        out.raw(markdown_label(text).html());  // <p> with <strong> / <em>
+    } else {
+        out.open("p");
+        size_t start = 0;
+        while (true) {
+            const size_t end = text.find('\n', start);
+            out.text(text.substr(start, end == std::string::npos ? end : end - start));
+            if (end == std::string::npos) break;
+            out.raw("<br />");
+            start = end + 1;
+        }
+        out.close();  // p
     }
-    out.close();  // p
     out.close();  // span
     out.close();  // div
     out.close();  // foreignObject

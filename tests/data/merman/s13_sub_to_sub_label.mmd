@@ -1,0 +1,10 @@
+flowchart TB
+  subgraph one[One]
+    a --> b
+  end
+  subgraph two[Two]
+    c --> d
+  end
+  one -->|go| two
+  x --> one
+  two --> y

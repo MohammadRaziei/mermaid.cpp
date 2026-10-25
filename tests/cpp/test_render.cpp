@@ -388,3 +388,9 @@ UTEST(render, theme_option_and_init_directive_draw_the_same_diagram) {
         ASSERT_TRUE(by_option == by_init);
     }
 }
+
+UTEST(render, markdown_labels_are_html_with_strong_and_em) {
+    const std::string svg = render_svg("flowchart LR\nA[\"`**bold** and *it*`\"] -->|\"`**e** x`\"| B");
+    ASSERT_TRUE(has(svg, "<span class=\"nodeLabel markdown-node-label\"><p><strong>bold</strong> and <em>it</em></p></span>"));
+    ASSERT_TRUE(has(svg, "<span class=\"edgeLabel\"><p><strong>e</strong> x</p></span>"));
+}

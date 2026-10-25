@@ -65,6 +65,6 @@ UTEST(text_measurer, wrapped_text_grows_to_its_longest_word_and_wraps_there) {
     FixedWidthMeasurer m;
     const TextMeasurer::Wrapped w = m.measure_wrapped("aaaaaaaaaa bb cc", 5);
     ASSERT_TRUE(w.wrapped);
-    ASSERT_EQ(10.0, w.size.width);
+    ASSERT_EQ(11.0, w.size.width);  // the longest word and the blank that follows it (break-spaces keeps it)
     ASSERT_EQ(2 * 21.0, w.size.height);  // "aaaaaaaaaa" / "bb cc"
 }

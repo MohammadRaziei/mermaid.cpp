@@ -104,13 +104,17 @@ std::string decode_label(const std::string& raw) {
     return out;
 }
 
-// Quotes and markdown ticks around a whole label are dropped.
+// Quotes around a whole label are dropped. The backticks of a Markdown string stay: `mark_markdown_labels` reads them.
 std::string clean_label(const std::string& text) {
     std::string t = trim(text);
     if (t.size() >= 2 && t.front() == '"' && t.back() == '"') t = t.substr(1, t.size() - 2);
-    if (t.size() >= 2 && t.front() == '`' && t.back() == '`') t = t.substr(1, t.size() - 2);
     return decode_label(t);
 }
+
+bool is_markdown_string(const std::string& label) { return label.size() >= 2 && label.front() == '`' && label.back() == '`'; }
+
+// The text of a Markdown string: no backticks.
+std::string markdown_text(const std::string& label) { return label.substr(1, label.size() - 2); }
 
 std::optional<Direction> parse_direction(const std::string& word) {
     if (word == "TD" || word == "TB") return Direction::TB;
@@ -773,6 +777,13 @@ Model Parser::parse(std::string_view source) const {
         e.style = default_style;
         e.style.insert(e.style.end(), own[i].begin(), own[i].end());
     }
+    // "`...`" labels are Markdown strings (flowDb: labelType `markdown`)
+    for (Node& n : b.model.nodes)
+        if (is_markdown_string(n.label)) n.label = markdown_text(n.label), n.markdown_label = true;
+    for (Edge& e : b.model.edges)
+        if (is_markdown_string(e.label)) e.label = markdown_text(e.label), e.markdown_label = true;
+    for (Subgraph& g : b.model.subgraphs)
+        if (is_markdown_string(g.title)) g.title = markdown_text(g.title), g.markdown_title = true;
     b.model.config = detail::parse_init_directives(source);
     if (b.model.config.curve)
         for (Edge& e : b.model.edges)

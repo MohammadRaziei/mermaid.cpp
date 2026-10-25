@@ -1,5 +1,7 @@
 #include "node_sizer.h"
 
+#include "markdown_label.h"
+
 #include <algorithm>
 #include <cmath>
 #include <mermaid/macros.h>
@@ -15,7 +17,9 @@ constexpr double M_PI_ = 3.14159265358979323846;
 // labelHelper + createText: the text wraps at the label width (120); a label that fits is as wide as its text, and
 // all shapes but the circles hold it to at least that width.
 NodeSizer::Label NodeSizer::label(const Node& node) const {
-    const TextMeasurer::Wrapped text = measurer_.measure_wrapped(node.label, options_.min_label_width);
+    const TextMeasurer::Wrapped text = node.markdown_label
+                                           ? mermaid::detail::markdown_label(node.label).measure(measurer_, options_.min_label_width)
+                                           : measurer_.measure_wrapped(node.label, options_.min_label_width);
     if (mermaid::detail::ignores_min_label_width(node.shape)) return {text.size, text.wrapped};
     return {{MERMAID_MAX(text.size.width, options_.min_label_width), text.size.height}, text.wrapped};
 }

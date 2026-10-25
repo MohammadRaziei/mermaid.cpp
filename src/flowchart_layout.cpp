@@ -8,6 +8,7 @@
 
 #include <mermaid/dagre.h>
 
+#include "markdown_label.h"
 #include "node_sizer.h"
 #include <mermaid/macros.h>
 
@@ -224,7 +225,9 @@ private:
             info.from = resolve(e.from);
             info.to = resolve(e.to);
             if (!e.label.empty()) {
-                const TextMeasurer::Wrapped label = measurer_.measure_wrapped(e.label, options_.edge_label_max_width);
+                const TextMeasurer::Wrapped label =
+                    e.markdown_label ? mermaid::detail::markdown_label(e.label).measure(measurer_, options_.edge_label_max_width)
+                                     : measurer_.measure_wrapped(e.label, options_.edge_label_max_width);
                 info.label = label.size;
                 info.label_wrapped = label.wrapped;
             }
@@ -346,8 +349,7 @@ private:
         // prepareLayoutForDagre: a self-loop gets two helper nodes (children of the same parent) ...
         for (size_t i = 0; i < edges_.size(); ++i) {
             if (!is_self_loop(i) || edges_[i].scope != scope.owner || first_loop(i) != i) continue;
-            const std::vector<int> path = topology_.path_of(edges_[i].from.index);
-            const std::string parent = parent_id(path.empty() ? -1 : path.back());
+            const std::string parent = parent_id(parent_of(edges_[i].from));
             in.nodes.push_back({loop_helper_id(i, 1), kLoopHelperSize, kLoopHelperSize, parent});
             in.nodes.push_back({loop_helper_id(i, 2), kLoopHelperSize, kLoopHelperSize, parent});
         }
@@ -396,12 +398,14 @@ private:
 
     bool is_self_loop(size_t i) const {
         const EdgeInfo& e = edges_[i];
-        return e.placed() && e.from.type == EndRef::kind::node && e.to.type == EndRef::kind::node && e.from.index == e.to.index;
+        // a loop on a node, or on a closed subgraph (which is one node of the parent graph)
+        return e.placed() && e.from.type == e.to.type && e.from.index == e.to.index;
     }
 
     // Loops on the same node in the same scope share their helper nodes and edge keys (see make_input).
     bool same_loop_node(size_t a, size_t b) const {
-        return is_self_loop(b) && edges_[a].scope == edges_[b].scope && edges_[a].from.index == edges_[b].from.index;
+        return is_self_loop(b) && edges_[a].scope == edges_[b].scope && edges_[a].from.type == edges_[b].from.type &&
+               edges_[a].from.index == edges_[b].from.index;
     }
     size_t first_loop(size_t i) const {
         for (size_t j = 0; j < i; ++j)
@@ -416,7 +420,7 @@ private:
     }
 
     std::string loop_helper_id(size_t i, int part) const {
-        const std::string& node = model_.nodes[static_cast<size_t>(edges_[i].from.index)].id;
+        const std::string node = end_id(edges_[i].from);
         return node + "---" + node + "---" + std::to_string(part);
     }
 
@@ -427,7 +431,10 @@ private:
     EdgeLayout merged_self_loop(size_t i, const Scope& scope, const Result& result, EdgeLayout out) const {
         out.self_loop = true;
         out.label_wrapped = edges_[i].label_wrapped;
-        const dagre::NodeResult* node = result.find_node(end_id(edges_[i].from));
+        // The loop is drawn around what the edge names: for an open cluster that is its compound box, although the
+        // layout graph holds the loop on the node standing in for the cluster.
+        const dagre::NodeResult* cluster = topology_.sub(model_.edges[i].from) >= 0 ? result.find_node(model_.edges[i].from) : nullptr;
+        const dagre::NodeResult* node = cluster ? cluster : result.find_node(end_id(edges_[i].from));
         const dagre::NodeResult* h1 = result.find_node(loop_helper_id(i, 1));
         const dagre::NodeResult* h2 = result.find_node(loop_helper_id(i, 2));
 
@@ -561,7 +568,9 @@ private:
         c.id = s.id;
         c.title = s.title;
         c.color_index = color_index_[static_cast<size_t>(sub)];
-        if (!s.title.empty()) c.label = measurer_.measure(s.title);
+        c.markdown_title = s.markdown_title;
+        if (!s.title.empty())
+            c.label = s.markdown_title ? mermaid::detail::markdown_label(s.title).measure(measurer_, 1e9).size : measurer_.measure(s.title);
         // clusters.js: the box grows to the label width plus the cluster padding.
         const double width = MERMAID_MAX(r->width, c.label.width + options_.cluster_pad);
         c.rect = {r->x - width / 2, r->y - r->height / 2, width, r->height};

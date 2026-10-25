@@ -53,6 +53,7 @@ struct EdgeLayout {
 struct ClusterLayout {
     std::string id;
     std::string title;
+    bool markdown_title = false;
     Rect rect;            // the dagre compound box
     Size label;           // measured title, zero without a title
     int color_index = 0;  // declaration order, depth first (Mermaid's `colorIndex`)

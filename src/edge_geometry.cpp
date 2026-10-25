@@ -2,6 +2,7 @@
 
 #include <mermaid/macros.h>
 
+#include <algorithm>
 #include <cctype>
 #include <charconv>
 #include <cmath>
@@ -205,6 +206,64 @@ std::vector<Point> edge_geometry::clip_to_nodes(const std::vector<Point>& route,
     out.push_back(border_point(tail, inner.front()));
     out.insert(out.end(), inner.begin(), inner.end());
     out.push_back(border_point(head, inner.back()));
+    return out;
+}
+
+namespace {
+
+// edges.js `outsideNode` (note the >=: a point on the border is outside)
+bool outside_box(const Rect& node, const Point& point) {
+    const Point c = node.center();
+    return std::fabs(point.x - c.x) >= node.width / 2 || std::fabs(point.y - c.y) >= node.height / 2;
+}
+
+// intersect.js `intersection(node, outsidePoint, insidePoint)`, kept line by line (including its asymmetries)
+Point box_intersection(const Rect& node, const Point& outside, const Point& inside) {
+    const Point c = node.center();
+    const double x = c.x, y = c.y;
+    const double dx = std::fabs(x - inside.x);
+    const double w = node.width / 2;
+    double r = inside.x < outside.x ? w - dx : w + dx;
+    const double h = node.height / 2;
+    const double q_total = std::fabs(outside.y - inside.y);
+    const double r_total = std::fabs(outside.x - inside.x);
+    if (std::fabs(y - outside.y) * w > std::fabs(x - outside.x) * h) {  // the top or the bottom
+        const double q = inside.y < outside.y ? outside.y - h - y : y - h - outside.y;
+        r = r_total * q / q_total;
+        Point res{inside.x < outside.x ? inside.x + r : inside.x - r_total + r,
+                  inside.y < outside.y ? inside.y + q_total - q : inside.y - q_total + q};
+        if (r == 0) res = outside;
+        if (r_total == 0) res.x = outside.x;
+        if (q_total == 0) res.y = outside.y;
+        return res;
+    }
+    r = inside.x < outside.x ? outside.x - w - x : x - w - outside.x;  // the sides
+    const double q = q_total * r / r_total;
+    Point res{inside.x < outside.x ? inside.x + r_total - r : inside.x - r_total + r, inside.y < outside.y ? inside.y + q : inside.y - q};
+    if (r == 0) res = outside;
+    if (r_total == 0) res.x = outside.x;
+    if (q_total == 0) res.y = outside.y;
+    return res;
+}
+
+}  // namespace
+
+std::vector<Point> edge_geometry::cut_path_at_intersect(const std::vector<Point>& points, const Rect& boundary) {
+    std::vector<Point> out;
+    if (points.empty()) return out;
+    Point last_outside = points.front();
+    bool inside = false;
+    for (const Point& p : points) {
+        if (!outside_box(boundary, p) && !inside) {
+            const Point at = box_intersection(boundary, last_outside, p);
+            const bool present = std::any_of(out.begin(), out.end(), [&](const Point& q) { return q.x == at.x && q.y == at.y; });
+            if (!present) out.push_back(at);
+            inside = true;
+        } else {
+            last_outside = p;
+            if (!inside) out.push_back(p);
+        }
+    }
     return out;
 }
 

@@ -29,9 +29,9 @@ s14_subgraph_classdef	pass
 s14_linkstyle_shapes	pass
 s14_multi_loops	pass
 s14_wide_word	pass
-s14_markdown_strings	todo
-s14_mixed_clusters	todo
-s14_subgraph_loop	todo
+s14_markdown_strings	pass
+s14_mixed_clusters	pass
+s14_subgraph_loop	pass
 s11_theme_default	pass
 s11_theme_dark	pass
 s11_theme_forest	pass
@@ -42,3 +42,10 @@ s11_rich_dark	pass
 s11_rich_forest	pass
 s11_rich_neutral	pass
 s11_rich_base	pass
+s13_sub_to_sub	pass
+s13_sub_to_sub_label	pass
+s13_nested_edge	pass
+s13_loop_open_cluster	pass
+s13_node_into_own_cluster	todo
+s14_markdown_mixed	pass
+s14_markdown_subgraph_edge	pass

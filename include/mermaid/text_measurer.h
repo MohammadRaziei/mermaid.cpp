@@ -17,6 +17,9 @@ struct TextStyle {
     double line_height() const { return font_size * line_height_em; }
 };
 
+// The four faces text of a Markdown label comes in.
+enum class FontFace { Regular = 0, Bold = 1, Italic = 2, BoldItalic = 3 };
+
 class TextMeasurer {
 public:
     explicit TextMeasurer(TextStyle style = {}) : style_(style) {}
@@ -26,6 +29,13 @@ public:
 
     // Width in px of one line of UTF-8 text (no '\n' inside).
     virtual double line_width(std::string_view line) const = 0;
+
+    // The same in a face; a measurer without per-face metrics measures every face as Regular.
+    virtual double line_width(std::string_view line, FontFace) const { return line_width(line); }
+
+    // Width of a piece of a line exactly as given: spaces are neither collapsed nor trimmed (the caller did that for
+    // the whole line). The pieces of a line in several faces add up to its width.
+    virtual double run_width(std::string_view run, FontFace face) const { return line_width(run, face); }
 
     // Box of possibly multi-line text: widest line x (lines * line height).
     Size measure(std::string_view text) const;

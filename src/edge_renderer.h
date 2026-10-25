@@ -26,8 +26,15 @@ public:
 
     // Invisible edges and edges without a route draw nothing. `tail` and `head` are the layouts
     // of the end nodes (null for a subgraph): the route is clipped to their outlines.
-    void write_path(SvgWriter& out, const flowchart::Edge& edge, const flowchart::EdgeLayout& layout,
-                    const flowchart::NodeLayout* tail, const flowchart::NodeLayout* head);
+    // An end at a subgraph id is a cluster: `tail`/`head` is then the cluster box as a plain rectangle, and the
+    // route is cut at its border (edges.js `toCluster` / `fromCluster`).
+    struct Ends {
+        const flowchart::NodeLayout* tail = nullptr;
+        const flowchart::NodeLayout* head = nullptr;
+        bool tail_is_cluster = false;
+        bool head_is_cluster = false;
+    };
+    void write_path(SvgWriter& out, const flowchart::Edge& edge, const flowchart::EdgeLayout& layout, const Ends& ends);
     void write_label(SvgWriter& out, const flowchart::Edge& edge, const flowchart::EdgeLayout& layout) const;
 
     static bool is_drawn(const flowchart::EdgeLayout& layout);

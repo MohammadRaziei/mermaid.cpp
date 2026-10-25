@@ -1,9 +1,11 @@
 #include <mermaid/render.h>
+#include <memory>
 
 #include <algorithm>
 
 #include "edge_renderer.h"
 #include "flowchart_css.h"
+#include "markdown_label.h"
 #include "node_renderer.h"
 #include "rough_path.h"
 #include "style_css.h"
@@ -150,10 +152,14 @@ private:
                         {"transform", "translate(" + detail::js_number(c.rect.center().x - c.label.width / 2) + ", " +
                                           detail::js_number(c.rect.y) + ")"}});
         out_.open("foreignObject", {{"width", detail::js_number(c.label.width)}, {"height", detail::js_number(c.label.height)}});
+        // a Markdown title goes through createText with the width of the cluster: that adds max-width and centring
         out_.open("div", {{"xmlns", "http://www.w3.org/1999/xhtml"},
-                          {"style", "display: table-cell; white-space: nowrap; line-height: 1.5;"}});
+                          {"style", c.markdown_title ? "display: table-cell; white-space: nowrap; line-height: 1.5; max-width: " +
+                                                           detail::js_number(c.rect.width) + "px; text-align: center;"
+                                                     : "display: table-cell; white-space: nowrap; line-height: 1.5;"}});
         out_.open("span", {{"class", "nodeLabel"}});
-        out_.element("p", {}, c.title);
+        if (c.markdown_title) out_.raw(detail::markdown_label(c.title).html());
+        else out_.element("p", {}, c.title);
         out_.close();  // span
         out_.close();  // div
         out_.close();  // foreignObject
@@ -167,7 +173,10 @@ private:
             for (const EdgeLayout& e : layout.edges) {
                 if (e.self_loop != loops) continue;
                 const Edge& edge = model_.edges[e.model_index];
-                edges_.write_path(out_, edge, e, find_layout(layout, edge.from), find_layout(layout, edge.to));
+                detail::EdgeRenderer::Ends ends;
+                ends.tail = end_layout(layout, edge.from, ends.tail_is_cluster);
+                ends.head = end_layout(layout, edge.to, ends.head_is_cluster);
+                edges_.write_path(out_, edge, e, ends);
             }
         }
         out_.close();
@@ -177,6 +186,26 @@ private:
         for (const NodeLayout& nl : layout.nodes)
             if (nl.id == id) return &nl;
         return nullptr;  // a subgraph
+    }
+
+    // The node an edge end is drawn against: the node itself, or for a subgraph id the box of its cluster as a
+    // rectangle (kept in `cluster_ends_`, which outlives the call).
+    const NodeLayout* end_layout(const Layout& layout, const std::string& id, bool& is_cluster) {
+        if (const NodeLayout* node = find_layout(layout, id)) return node;
+        Rect box;
+        bool found = false;
+        for (const ClusterLayout& c : layout.clusters)
+            if (c.id == id) box = c.rect, found = true;
+        for (const RootLayout& r : layout.roots)
+            if (r.id == id) box = r.box, found = true;
+        if (!found) return nullptr;
+        is_cluster = true;
+        cluster_ends_.push_back(std::make_unique<NodeLayout>());
+        NodeLayout& n = *cluster_ends_.back();
+        n.id = id;
+        n.center = box.center();
+        n.size = {box.width, box.height};
+        return &n;
     }
 
     void write_edge_labels(const Layout& layout) {
@@ -253,6 +282,7 @@ private:
     const Layout& layout_;
     const RenderOptions& options_;
     detail::theme_variables vars_;
+    std::vector<std::unique_ptr<NodeLayout>> cluster_ends_;
     double line_height_;
     detail::EdgeRenderer edges_;
     SvgWriter out_;

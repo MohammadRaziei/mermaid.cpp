@@ -59,6 +59,7 @@ std::vector<Statement> split_statements(std::string_view source) {
     std::string cur;
     int line = 1, cur_line = 1, depth = 0;
     bool in_quote = false;
+    bool markdown_quote = false;  // a `"` followed by a backtick: Markdown strings may span lines
 
     auto flush = [&]() {
         std::string t = trim(cur);
@@ -70,6 +71,11 @@ std::vector<Statement> split_statements(std::string_view source) {
     for (size_t i = 0; i < s.size(); ++i) {
         char c = s[i];
         if (c == '\r') continue;
+        if (c == '\n' && in_quote && markdown_quote) {  // the string goes on in the next line
+            cur += '\n';
+            ++line;
+            continue;
+        }
         if (c == '\n') {
             in_quote = false;
             flush();
@@ -86,7 +92,10 @@ std::vector<Statement> split_statements(std::string_view source) {
             cur_line = line;
             continue;
         }
-        if (c == '"') in_quote = !in_quote;
+        if (c == '"') {
+            in_quote = !in_quote;
+            markdown_quote = in_quote && i + 1 < s.size() && s[i + 1] == '`';
+        }
         if (!in_quote) {
             if (c == '[' || c == '(' || c == '{') ++depth;
             else if ((c == ']' || c == ')' || c == '}') && depth > 0) --depth;
