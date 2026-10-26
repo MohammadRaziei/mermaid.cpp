@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include <mermaid/macros.h>
+
 namespace mermaid::detail {
 
 using flowchart::Shape;
@@ -176,6 +178,82 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             out.shift = {0, -amplitude / 2};
             return out;
         }
+        case Shape::Flag: {  // waveRectangle.ts: one full wave along the bottom and one back along the top
+            const double w = label.width + 2 * 16, h = label.height + 20;
+            const double amplitude = h / 8, final_h = h + amplitude * 2;
+            out.points = {{-w / 2, final_h / 2}};
+            const std::vector<Point> bottom = sine_wave_points(-w / 2, final_h / 2, w / 2, final_h / 2, amplitude, 1);
+            const std::vector<Point> top = sine_wave_points(w / 2, -final_h / 2, -w / 2, -final_h / 2, amplitude, -1);
+            out.points.insert(out.points.end(), bottom.begin(), bottom.end());
+            out.points.push_back({w / 2, -final_h / 2});
+            out.points.insert(out.points.end(), top.begin(), top.end());
+            out.rough = true;
+            out.has_shift = false;
+            out.group_class = "basic label-container";
+            return out;
+        }
+        case Shape::Delay: {  // halfRoundedRectangle.ts: generateCirclePoints(-w / 2 + r, 0, r, 50, 90, 270) mirrors both axes
+            constexpr double pi = 3.14159265358979323846;
+            const double h = MERMAID_MAX(10.0, label.height) + 2 * 12, r = h / 2;
+            const double clearance = r - std::sqrt(MERMAID_MAX(0.0, r * r - (label.height / 2) * (label.height / 2)));
+            const double w = MERMAID_MAX(15.0, label.width) + clearance * 2 + 2 * 16;
+            out.points = {{-w / 2, -h / 2}, {w / 2 - r, -h / 2}};
+            const double start = 90 * pi / 180, step = (270 * pi / 180 - start) / 49;
+            for (int i = 0; i < 50; ++i) {
+                const double angle = start + i * step;
+                out.points.push_back({-((-w / 2 + r) + r * std::cos(angle)), -(0 + r * std::sin(angle))});
+            }
+            out.points.push_back({w / 2 - r, h / 2});
+            out.points.push_back({-w / 2, h / 2});
+            out.rough = true;
+            out.has_shift = false;
+            return out;
+        }
+        case Shape::NotchedPentagon: {  // trapezoidalPentagon.ts
+            const double w = label.width + 2 * 16, h = label.height + 2 * 12;
+            out.points = {{-w / 2 * 0.8, -h / 2}, {w / 2 * 0.8, -h / 2}, {w / 2, -h / 2 * 0.6}, {w / 2, h / 2}, {-w / 2, h / 2}, {-w / 2, -h / 2 * 0.6}};
+            out.rough = true;
+            out.has_shift = false;
+            return out;
+        }
+        case Shape::SlopedRectangle: {  // slopedRect.ts: drawn in a box of height h, moved down by h / 4
+            const double w = label.width + 2 * 16, h = label.height + 2 * 12;
+            const double x = -w / 2, y = -h / 2;
+            out.points = {{x, y}, {x, y + h}, {x + w, y + h}, {x + w, y - h / 2}};
+            out.rough = true;
+            out.shift = {0, h / 4};
+            out.separator = ", ";
+            out.group_class = "basic label-container  outer-path";
+            return out;
+        }
+        case Shape::NotchedRectangle: {  // card.ts: insertPolygonShape, the notch is 12
+            const double w = label.width + 2 * 28, h = label.height + 2 * 24;
+            out.points = {{12, -h}, {w, -h}, {w, 0}, {0, 0}, {0, -h + 12}, {12, -h}};
+            out.anchor = {w, h};
+            return out;
+        }
+        case Shape::LinedRectangle: {  // shadedProcess.ts: rc.polygon, edges meet the box
+            constexpr double frame = 8;
+            const double total_w = label.width + 2 * 16 + frame, h = label.height + 2 * 12;
+            const double w = total_w - frame, x = frame - total_w / 2, y = -h / 2;
+            const std::vector<Point> pts = {{x, y}, {x + w, y}, {x + w, y + h}, {x - frame, y + h}, {x - frame, y}, {x, y}, {x, y + h}};
+            out.points = pts;
+            out.layers = {{pts, false, true}};
+            out.has_shift = false;
+            out.hit_as_rect = true;
+            out.group_style = true;
+            return out;
+        }
+        case Shape::DividedRectangle: {  // dividedRectangle.ts: rc.polygon, edges meet the box
+            const double w = label.width + 16, h = label.height + 16, offset = h * 0.2;
+            const double x = -w / 2, y = -h / 2 - offset / 2;
+            const std::vector<Point> pts = {{x, y + offset}, {-x, y + offset}, {-x, -y}, {x, -y}, {x, y}, {-x, y}, {-x, y + offset}};
+            out.points = pts;
+            out.layers = {{pts, false, true}};
+            out.has_shift = false;
+            out.hit_as_rect = true;
+            return out;
+        }
         default:
             return std::nullopt;
     }
@@ -185,6 +263,12 @@ Point label_offset(Shape shape, const Size& size, const Size& label) {
     if (shape == Shape::Odd) return {size.height / 8, 0};  // -notch / 2, notch = -h / 4
     // waveEdgedRectangle.ts: the label starts at -w / 2 + padding (15), above the wave; the box is 1.5 x h high
     if (shape == Shape::Document) return {-1, 3 - size.height / 6};
+    if (shape == Shape::SlopedRectangle) {  // -w / 2 + padding, -h / 4 + padding: from the centred label
+        const double h = label.height + 2 * 12;
+        return {-16 + kNodePadding, -h / 4 + kNodePadding + label.height / 2};
+    }
+    if (shape == Shape::LinedRectangle) return {8.0 / 2, 0};  // FRAME_WIDTH / 2 - bbox.width / 2
+    if (shape == Shape::DividedRectangle) return {-0.5, (label.height + 16) * 0.1 - 0.5};  // padding 15 / 2 against the 16 of the box
     if (shape == Shape::Documents) return {-10, 10 - (label.height + 3 * 12) / 4};  // -bbox.w / 2 - 10, -bbox.h / 2 + 10 - amplitude
     if (shape == Shape::TaggedDocument) return {0, -(label.height + 2 * kNodePadding) / 16};  // -amplitude / 2, amplitude = h / 8
     if (shape == Shape::LinedDocument) {
@@ -196,7 +280,7 @@ Point label_offset(Shape shape, const Size& size, const Size& label) {
 
 std::optional<Point> polygon_border_point(const flowchart::NodeLayout& node, const Point& outside) {
     const std::optional<polygon_outline> outline = polygon_outline_of(node.shape, node.size, node.label);
-    if (!outline) return std::nullopt;
+    if (!outline || outline->hit_as_rect) return std::nullopt;
 
     double min_x = outline->points.front().x, min_y = outline->points.front().y;
     for (const Point& p : outline->points) {

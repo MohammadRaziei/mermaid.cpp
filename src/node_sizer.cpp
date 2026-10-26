@@ -112,6 +112,28 @@ Size NodeSizer::size(const Node& node) const {
             const double w = text_w + 2 * 16, h = text_h + 2 * 12;
             return {1.1 * w, h + 2 * (h / 4)};
         }
+        case Shape::Flag: {  // waveRectangle.ts (neo): padding 16 x 20, two waves of h / 8 each
+            const double h = text_h + 20;
+            return {text_w + 2 * 16, h + 4 * (h / 8)};
+        }
+        case Shape::Delay: {  // halfRoundedRectangle.ts (neo): the round end clears the label by capClearance on both sides
+            const double h = MERMAID_MAX(10.0, text_h) + 2 * 12;
+            const double r = h / 2;
+            const double clearance = r - std::sqrt(MERMAID_MAX(0.0, r * r - (text_h / 2) * (text_h / 2)));
+            return {MERMAID_MAX(15.0, text_w) + clearance * 2 + 2 * 16, h};
+        }
+        case Shape::NotchedPentagon:  // trapezoidalPentagon.ts (neo): padding 16 x 12
+            return {text_w + 2 * 16, text_h + 2 * 12};
+        case Shape::SlopedRectangle:  // slopedRect.ts (neo): the box is 1.5 times its height
+            return {text_w + 2 * 16, (text_h + 2 * 12) * 1.5};
+        case Shape::NotchedRectangle:  // card.ts (neo): padding 28 x 24
+            return {text_w + 2 * 28, text_h + 2 * 24};
+        case Shape::LinedRectangle:  // shadedProcess.ts (neo): padding 16 x 12 plus the 8 px bar
+            return {text_w + 2 * 16 + 8, text_h + 2 * 12};
+        case Shape::DividedRectangle: {  // dividedRectangle.ts (neo): padding 16, the divider adds 20 % of the height
+            const double h = text_h + 16;
+            return {text_w + 16, h + h * 0.2};
+        }
         case Shape::Default:
         case Shape::Square:
             break;

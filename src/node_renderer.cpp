@@ -153,8 +153,10 @@ void node_renderer::write_rough_polygon(SvgWriter& out, const std::vector<Point>
 // Document shapes: several drawings, one of them possibly in a <g> inside the group that carries class and transform.
 void node_renderer::write_rough_layers(SvgWriter& out, const polygon_outline& outline, const flowchart::Style& style,
                                        const std::string& inline_style) const {
-    out.open("g", {{"class", outline.group_class},
-                   {"transform", "translate(" + js(outline.shift.x) + outline.separator + js(outline.shift.y) + ")"}});
+    SvgWriter::Attrs group{{"class", outline.group_class}};
+    if (outline.has_shift) group.emplace_back("transform", "translate(" + js(outline.shift.x) + outline.separator + js(outline.shift.y) + ")");
+    if (outline.group_style) group.emplace_back("style", "");
+    out.open("g", group);
     for (const polygon_outline::layer& layer : outline.layers) {
         if (layer.nested) out.open("g");
         write_rough_paths(out, layer.polygon_fill ? rough_polygon_filled_plainly(layer.points, seed_) : rough_polygon(layer.points, seed_),
@@ -244,7 +246,7 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
         if (!polygon->layers.empty()) {
             write_rough_layers(out, *polygon, style, inline_style);
         } else if (polygon->rough) {
-            write_rough_polygon(out, polygon->points, "translate(" + js(polygon->shift.x) + polygon->separator + js(polygon->shift.y) + ")", style, inline_style,
+            write_rough_polygon(out, polygon->points, polygon->has_shift ? "translate(" + js(polygon->shift.x) + polygon->separator + js(polygon->shift.y) + ")" : std::string(), style, inline_style,
                                   polygon->group_class);
         } else {
             // insertPolygonShape: drawn from the origin and moved by translate(-w / 2, h / 2)

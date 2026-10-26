@@ -63,3 +63,10 @@ s12b_lin-doc	pass
 s12b_tag-doc	pass
 s12b_st-doc	pass
 s12b_documents_tb	pass
+s12b_flag	pass
+s12b_delay	pass
+s12b_notch-pent	pass
+s12b_sl-rect	pass
+s12b_notch-rect	pass
+s12b_lin-rect	pass
+s12b_div-rect	pass

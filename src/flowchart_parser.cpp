@@ -154,7 +154,15 @@ Shape shape_from_data_name(const std::string& name) {
         {"docs", Shape::Documents},    {"documents", Shape::Documents}, {"st-doc", Shape::Documents},
         {"stacked-document", Shape::Documents}, {"tag-doc", Shape::TaggedDocument},
         {"tagged-document", Shape::TaggedDocument}, {"lin-doc", Shape::LinedDocument},
-        {"lined-document", Shape::LinedDocument},
+        {"lined-document", Shape::LinedDocument}, {"delay", Shape::Delay}, {"half-rounded-rectangle", Shape::Delay},
+        {"notch-pent", Shape::NotchedPentagon}, {"loop-limit", Shape::NotchedPentagon}, {"notched-pentagon", Shape::NotchedPentagon},
+        {"sl-rect", Shape::SlopedRectangle}, {"manual-input", Shape::SlopedRectangle}, {"sloped-rectangle", Shape::SlopedRectangle},
+        {"notch-rect", Shape::NotchedRectangle}, {"card", Shape::NotchedRectangle}, {"notched-rectangle", Shape::NotchedRectangle},
+        {"lin-rect", Shape::LinedRectangle}, {"lined-rectangle", Shape::LinedRectangle}, {"lined-process", Shape::LinedRectangle},
+        {"lin-proc", Shape::LinedRectangle}, {"shaded-process", Shape::LinedRectangle},
+        {"div-rect", Shape::DividedRectangle}, {"div-proc", Shape::DividedRectangle}, {"divided-rectangle", Shape::DividedRectangle},
+        {"divided-process", Shape::DividedRectangle},
+        {"flag", Shape::Flag}, {"paper-tape", Shape::Flag},
         {"sm-circ", Shape::SmallCircle}, {"start", Shape::SmallCircle}, {"small-circle", Shape::SmallCircle},
     };
     auto it = table.find(name);

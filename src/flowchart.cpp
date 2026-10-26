@@ -43,6 +43,13 @@ const char* shape_name(Shape shape) noexcept {
         case Shape::Documents: return "multiWaveEdgedRectangle";
         case Shape::TaggedDocument: return "taggedWaveEdgedRectangle";
         case Shape::LinedDocument: return "linedWaveEdgedRect";
+        case Shape::Flag: return "waveRectangle";
+        case Shape::NotchedRectangle: return "card";
+        case Shape::LinedRectangle: return "shadedProcess";
+        case Shape::DividedRectangle: return "dividedRectangle";
+        case Shape::Delay: return "halfRoundedRectangle";
+        case Shape::NotchedPentagon: return "trapezoidalPentagon";
+        case Shape::SlopedRectangle: return "slopedRect";
     }
     return "";
 }

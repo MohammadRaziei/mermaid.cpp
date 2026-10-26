@@ -38,6 +38,13 @@ enum class Shape {
     Documents,         // `docs`, `st-doc` (multiWaveEdgedRectangle): two stacked sheets
     TaggedDocument,    // `tag-doc` (taggedWaveEdgedRectangle): a document with a tag in the corner
     LinedDocument,     // `lin-doc` (linedWaveEdgedRect): a document with a margin line
+    Flag,              // `flag`, `paper-tape` (waveRectangle): both long edges are waves
+    Delay,             // `delay` (halfRoundedRectangle): a box with a round right end
+    NotchedPentagon,   // `notch-pent` (trapezoidalPentagon): cut top corners
+    SlopedRectangle,   // `sl-rect` (slopedRect): a rectangle whose top edge slopes
+    NotchedRectangle,  // `notch-rect` (card): a rectangle with a cut top left corner
+    LinedRectangle,    // `lin-rect` (shadedProcess): a rectangle with a bar on the left
+    DividedRectangle,  // `div-rect` (dividedRectangle): a rectangle with a divider near the top
 };
 
 enum class Stroke { Normal, Thick, Dotted, Invisible };
