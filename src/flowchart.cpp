@@ -44,6 +44,9 @@ const char* shape_name(Shape shape) noexcept {
         case Shape::TaggedDocument: return "taggedWaveEdgedRectangle";
         case Shape::LinedDocument: return "linedWaveEdgedRect";
         case Shape::Flag: return "waveRectangle";
+        case Shape::Cloud: return "cloud";
+        case Shape::Bang: return "bang";
+        case Shape::LightningBolt: return "lightningBolt";
         case Shape::BowTieRectangle: return "bowTieRect";
         case Shape::StackedRectangle: return "multiRect";
         case Shape::TaggedRectangle: return "taggedRect";

@@ -14,6 +14,16 @@ namespace mermaid::detail {
 // `ignoreMinWidth` of labelHelper: circles size their label to the text, other shapes to at least 120.
 bool ignores_min_label_width(flowchart::Shape shape);
 
+// Shapes drawn as one path of elliptical arcs (cloud, bang): the path data as Mermaid writes it, the size of its
+// bounding box and the box the path is laid out in (`nominal`: the transform is translate(-w / 2, -h / 2)).
+struct arc_shape {
+    std::string d;
+    Size bounds;
+    Size nominal;
+    Point origin;  // top left of the bounding box, from where the path starts
+};
+std::optional<arc_shape> arc_shape_of(flowchart::Shape shape, const Size& label);
+
 // True for the shapes whose label transform is written by the shape itself, as `translate(x,y)`.
 bool writes_tight_label_transform(flowchart::Shape shape);
 

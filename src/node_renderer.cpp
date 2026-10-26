@@ -50,7 +50,7 @@ void node_renderer::write(SvgWriter& out, const flowchart::Node& node, const flo
     if (layout.shape == Shape::FlippedTriangle) shift.y += -layout.size.height / 2 + layout.label.height / 2 + kNodePadding / 2;
     if (layout.shape == Shape::Hourglass) {  // the label is empty: a 0 x 0 box
         write_empty_label(out, style, node.markdown_label);
-    } else if (layout.shape == Shape::Fork || layout.shape == Shape::SmallCircle) {
+    } else if (layout.shape == Shape::Fork || layout.shape == Shape::SmallCircle || layout.shape == Shape::LightningBolt) {
         // these shapes make no label at all
     } else {
         write_label(out, node.label, layout.label, style, shift, node.markdown_label,
@@ -225,6 +225,12 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
                           {"class", "basic label-container outer-path"},
                           {"style", inline_style},
                           {"transform", translate(-w / 2, -(h / 2 + ry))}});
+    } else if (const auto arcs = arc_shape_of(shape, label)) {
+        // cloud.ts, bang.ts: one path, laid out in its nominal box and moved by translate(-w / 2, -h / 2)
+        out.leaf("path", {{"class", "basic label-container"},
+                          {"style", inline_style},
+                          {"d", arcs->d},
+                          {"transform", translate(-arcs->nominal.width / 2, -arcs->nominal.height / 2)}});
     } else if (shape == Shape::LinedCylinder) {
         // linedCylinder.ts: like the cylinder plus a second lid line, moved by translate(-w / 2, -(h / 2 + ry)).
         const double w = size.width, rx = w / 2, ry = rx / (2.5 + w / 50);

@@ -81,18 +81,20 @@ Ordered by what is likely to matter next.
   picture. Not done: `themeVariables` other than `fontFamily`, `clusterBkg`, `clusterBorder` (they feed khroma
   derivations in Mermaid, e.g. `primaryColor` of `base`), which would need the colour arithmetic ported
 - [~] **S12b** the `@{ shape: ... }` family (150 names, 53 handlers in Mermaid 12.2.0). Drawn so far (verified against
-  the real SVG, 27 fixtures `s12b_*`, all `pass`): the 14 classic shapes, `hourglass` (`collate`), `tri` (`extract`),
+  the real SVG, 30 fixtures `s12b_*`, all `pass`): the 14 classic shapes, `hourglass` (`collate`), `tri` (`extract`),
   `flip-tri` (`manual-file`), `text`, `fork` (`join`, vertical bar in LR/RL), `sm-circ` (`start`), the paper shapes
   `doc`, `docs` (`st-doc`), `lin-doc`, `tag-doc`, `flag` (`paper-tape`), and `delay`, `notch-pent`, `sl-rect`,
   `notch-rect` (`card`), `lin-rect` (`shaded-process`), `div-rect`, `curv-trap` (`display`), `h-cyl` (`das`),
   `lin-cyl` (`disk`), `st-rect` (`procs`, a `mergePaths` shape: one merged `<path>` per box), `tag-rect`, `bow-rect`
-  (`stored-data`; sized from its sampled outline, because the left arc bulges out of the box). Each fixture has a short label in LR and a label
+  (`stored-data`; sized from its sampled outline, because the left arc bulges out of the box), `bolt`
+  (`com-link`; no label, 35 x 70), `cloud` and `bang` (one path of arcs; the node is the exact bounding box of the arcs,
+  and the viewBox follows the drawn path, which sits at its nominal offset). Each fixture has a short label in LR and a label
   that wraps; `s12b_documents_tb` mixes the paper shapes in TB with an edge label. Several rough.js drawings
   (`polygon_outline::layers`: one may nest in a `<g>`; `rc.polygon` has a plain `M L L` fill and `fill-rule="evenodd"`);
   sizes and outlines derive from the label box, not from the size, so no rounding is lost; `lin-rect` and `div-rect`
   clip edges to the node box (`intersect.rect`), the others to their outline. A name that is valid but not drawn yet
-  (the rest: cloud, bang, win-pane (several `M` subpaths, the rough generator handles one
-  polygon only), f-circ, fr-circ, bolt, braces, cross-circ, folder, bucket, console,
+  (the rest: win-pane (several `M` subpaths, the rough generator handles one
+  polygon only), f-circ, fr-circ, braces (`brace`, `brace-r`, `braces`: fill none, a second invisible box), cross-circ, folder, bucket, console,
   browser, person, datastore, summary, ...) is drawn as a box. An unknown name is an error, as in Mermaid:
   `No such shape: <name>.` (the lookup is exact, `Rect` fails). The fork size uses the graph direction, not that of the
   subgraph it sits in.

@@ -169,6 +169,8 @@ Shape shape_from_data_name(const std::string& name) {
         {"stacked-rectangle", Shape::StackedRectangle}, {"tag-rect", Shape::TaggedRectangle}, {"tagged-rectangle", Shape::TaggedRectangle},
         {"tag-proc", Shape::TaggedRectangle}, {"tagged-process", Shape::TaggedRectangle},
         {"bow-rect", Shape::BowTieRectangle}, {"stored-data", Shape::BowTieRectangle}, {"bow-tie-rectangle", Shape::BowTieRectangle},
+        {"bolt", Shape::LightningBolt}, {"com-link", Shape::LightningBolt}, {"lightning-bolt", Shape::LightningBolt},
+        {"cloud", Shape::Cloud}, {"bang", Shape::Bang},
         {"flag", Shape::Flag}, {"paper-tape", Shape::Flag},
         {"sm-circ", Shape::SmallCircle}, {"start", Shape::SmallCircle}, {"small-circle", Shape::SmallCircle},
     };

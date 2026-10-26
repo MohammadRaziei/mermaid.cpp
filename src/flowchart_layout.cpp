@@ -10,6 +10,7 @@
 
 #include "markdown_label.h"
 #include "node_sizer.h"
+#include "shape_geometry.h"
 #include <mermaid/macros.h>
 
 namespace mermaid::flowchart {
@@ -608,7 +609,14 @@ private:
     void measure_bounds(Layout& layout) const {
         std::optional<Rect> bounds;
         auto include = [&](const Rect& r) { bounds = bounds ? bounds->united(r) : r; };
-        for (const NodeLayout& n : layout.nodes) include(n.rect());
+        for (const NodeLayout& n : layout.nodes) {
+            if (const auto arcs = mermaid::detail::arc_shape_of(n.shape, n.label)) {  // the path is moved by its nominal box, not its bounds
+                include({n.center.x - arcs->nominal.width / 2 + arcs->origin.x, n.center.y - arcs->nominal.height / 2 + arcs->origin.y,
+                         arcs->bounds.width, arcs->bounds.height});
+            } else {
+                include(n.rect());
+            }
+        }
         for (const ClusterLayout& c : layout.clusters) include(c.rect);
         for (const RootLayout& r : layout.roots) include(r.box);
         for (const LoopHelper& h : layout.loop_helpers) include({h.center.x, h.center.y, 0.1, 0.1});  // their drawn rect

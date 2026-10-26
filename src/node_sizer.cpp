@@ -17,7 +17,8 @@ constexpr double M_PI_ = 3.14159265358979323846;
 // labelHelper + createText: the text wraps at the label width (120); a label that fits is as wide as its text, and
 // all shapes but the circles hold it to at least that width.
 NodeSizer::Label NodeSizer::label(const Node& node) const {
-    if (node.shape == Shape::Hourglass || node.shape == Shape::Fork || node.shape == Shape::SmallCircle)
+    if (node.shape == Shape::Hourglass || node.shape == Shape::Fork || node.shape == Shape::SmallCircle ||
+        node.shape == Shape::LightningBolt)
         return {{0, 0}, false};  // these shapes have no label (hourglass.ts empties it; the others never make one)
     const TextMeasurer::Wrapped text = node.markdown_label
                                            ? mermaid::detail::markdown_label(node.label).measure(measurer_, options_.min_label_width)
@@ -164,6 +165,11 @@ Size NodeSizer::size(const Node& node) const {
             }
             return {max_x - min_x, text_h + 12};
         }
+        case Shape::LightningBolt:  // lightningBolt.ts: no label, 35 wide, the zigzag is 2 * 35 high
+            return {35, 70};
+        case Shape::Cloud:  // cloud.ts / bang.ts: the node is the bounding box of the arcs
+        case Shape::Bang:
+            return mermaid::detail::arc_shape_of(node.shape, label)->bounds;
         case Shape::Default:
         case Shape::Square:
             break;

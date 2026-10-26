@@ -5,6 +5,8 @@
 
 #include <mermaid/macros.h>
 
+#include "rough_path.h"
+
 namespace mermaid::detail {
 
 using flowchart::Shape;
@@ -51,6 +53,68 @@ std::vector<Point> arc_points(double x1, double y1, double x2, double y2, double
     return points;
 }
 
+struct arc_segment {
+    double rx, ry, rotation;
+    bool sweep;
+    double dx, dy;
+};
+
+// Bounding box of a relative path of arcs (large-arc flag 0) starting at 0,0, as getBBox measures it:
+// the endpoint parametrization of the SVG specification (F.6.5), then the extremes of the ellipse.
+Rect arc_path_bounds(const std::vector<arc_segment>& segments) {
+    constexpr double pi = 3.14159265358979323846;
+    double min_x = 0, max_x = 0, min_y = 0, max_y = 0, x0 = 0, y0 = 0;
+    const auto include = [&](double x, double y) {
+        min_x = MERMAID_MIN(min_x, x); max_x = MERMAID_MAX(max_x, x);
+        min_y = MERMAID_MIN(min_y, y); max_y = MERMAID_MAX(max_y, y);
+    };
+    for (const arc_segment& s : segments) {
+        const double x1 = x0, y1 = y0, x2 = x0 + s.dx, y2 = y0 + s.dy;
+        const double phi = s.rotation * pi / 180, cp = std::cos(phi), sp = std::sin(phi);
+        double rx = std::fabs(s.rx), ry = std::fabs(s.ry);
+        const double hx = (x1 - x2) / 2, hy = (y1 - y2) / 2;
+        const double x1p = cp * hx + sp * hy, y1p = -sp * hx + cp * hy;
+        const double lambda = x1p * x1p / (rx * rx) + y1p * y1p / (ry * ry);
+        if (lambda > 1) { rx *= std::sqrt(lambda); ry *= std::sqrt(lambda); }
+        const double num = rx * rx * ry * ry - rx * rx * y1p * y1p - ry * ry * x1p * x1p;
+        const double den = rx * rx * y1p * y1p + ry * ry * x1p * x1p;
+        const double coef = (s.sweep ? 1 : -1) * std::sqrt(MERMAID_MAX(0.0, num / den));  // large-arc 0: the signs differ from the flag
+        const double cxp = coef * rx * y1p / ry, cyp = -coef * ry * x1p / rx;
+        const double cx = cp * cxp - sp * cyp + (x1 + x2) / 2, cy = sp * cxp + cp * cyp + (y1 + y2) / 2;
+        const double theta1 = std::atan2((y1p - cyp) / ry, (x1p - cxp) / rx);
+        double delta = std::atan2((-y1p - cyp) / ry, (-x1p - cxp) / rx) - theta1;
+        if (!s.sweep && delta > 0) delta -= 2 * pi;
+        if (s.sweep && delta < 0) delta += 2 * pi;
+        include(x2, y2);
+        const double candidates[4] = {std::atan2(-ry * sp, rx * cp), std::atan2(-ry * sp, rx * cp) + pi,
+                                      std::atan2(ry * cp, rx * sp), std::atan2(ry * cp, rx * sp) + pi};
+        for (double t : candidates) {
+            double rel = std::fmod(t - theta1, 2 * pi);
+            if (delta >= 0 ? rel < 0 : rel > 0) rel += delta >= 0 ? 2 * pi : -2 * pi;
+            if (std::fabs(rel) <= std::fabs(delta))
+                include(cx + rx * cp * std::cos(t) - ry * sp * std::sin(t), cy + rx * sp * std::cos(t) + ry * cp * std::sin(t));
+        }
+        x0 = x2;
+        y0 = y2;
+    }
+    return {min_x, min_y, max_x - min_x, max_y - min_y};
+}
+
+// The path text of a template literal: arcs of a group on lines of their own, groups apart by a blank line.
+std::string arc_path_text(const std::vector<std::vector<arc_segment>>& groups) {
+    std::string d = "M0 0 ";
+    for (size_t g = 0; g < groups.size(); ++g) {
+        d += g == 0 ? "\n    " : "\n\n    ";
+        for (size_t i = 0; i < groups[g].size(); ++i) {
+            const arc_segment& s = groups[g][i];
+            if (i != 0) d += "\n    ";
+            d += "a" + js_number(s.rx) + "," + js_number(s.ry) + " " + js_number(s.rotation) + " 0," + (s.sweep ? "1" : "0") + " " +
+                 js_number(s.dx) + "," + js_number(s.dy);
+        }
+    }
+    return d + "\n  H0 V0 Z";
+}
+
 // generateFullSineWavePoints (50 steps)
 std::vector<Point> sine_wave_points(double x1, double y1, double x2, double y2, double amplitude, double cycles) {
     constexpr double pi = 3.14159265358979323846;
@@ -68,6 +132,35 @@ std::vector<Point> sine_wave_points(double x1, double y1, double x2, double y2, 
 }  // namespace
 
 bool ignores_min_label_width(Shape shape) { return shape == Shape::Circle || shape == Shape::DoubleCircle; }
+
+std::optional<arc_shape> arc_shape_of(Shape shape, const Size& label) {
+    const double half_padding = kNodePadding / 2;
+    std::vector<std::vector<arc_segment>> groups;
+    Size nominal;
+    if (shape == Shape::Cloud) {  // cloud.ts
+        const double w = label.width + 2 * half_padding, h = label.height + 2 * half_padding;
+        const double r1 = 0.15 * w, r2 = 0.25 * w, r3 = 0.35 * w, r4 = 0.2 * w;
+        groups = {{{r1, r1, 0, true, w * 0.25, -1 * w * 0.1}, {r3, r3, 1, true, w * 0.4, -1 * w * 0.1}, {r2, r2, 1, true, w * 0.35, w * 0.2}},
+                  {{r1, r1, 1, true, w * 0.15, h * 0.35}, {r4, r4, 1, true, -1 * w * 0.15, h * 0.65}},
+                  {{r2, r1, 1, true, -1 * w * 0.25, w * 0.15}, {r3, r3, 1, true, -1 * w * 0.5, 0}, {r1, r1, 1, true, -1 * w * 0.25, -1 * w * 0.15}},
+                  {{r1, r1, 1, true, -1 * w * 0.1, -1 * h * 0.35}, {r4, r4, 1, true, w * 0.1, -1 * h * 0.65}}};
+        nominal = {w, h};
+    } else if (shape == Shape::Bang) {  // bang.ts
+        const double w = label.width + 10 * half_padding, h = label.height + 8 * half_padding, r = 0.15 * w;
+        const double ew = MERMAID_MAX(w, label.width + 20), eh = MERMAID_MAX(h, label.height + 20);
+        groups = {{{r, r, 1, false, ew * 0.25, -1 * eh * 0.1}, {r, r, 1, false, ew * 0.25, 0}, {r, r, 1, false, ew * 0.25, 0}, {r, r, 1, false, ew * 0.25, eh * 0.1}},
+                  {{r, r, 1, false, ew * 0.15, eh * 0.33}, {r * 0.8, r * 0.8, 1, false, 0, eh * 0.34}, {r, r, 1, false, -1 * ew * 0.15, eh * 0.33}},
+                  {{r, r, 1, false, -1 * ew * 0.25, eh * 0.15}, {r, r, 1, false, -1 * ew * 0.25, 0}, {r, r, 1, false, -1 * ew * 0.25, 0}, {r, r, 1, false, -1 * ew * 0.25, -1 * eh * 0.15}},
+                  {{r, r, 1, false, -1 * ew * 0.1, -1 * eh * 0.33}, {r * 0.8, r * 0.8, 1, false, 0, -1 * eh * 0.34}, {r, r, 1, false, ew * 0.1, -1 * eh * 0.33}}};
+        nominal = {ew, eh};
+    } else {
+        return std::nullopt;
+    }
+    std::vector<arc_segment> all;
+    for (const auto& g : groups) all.insert(all.end(), g.begin(), g.end());
+    const Rect box = arc_path_bounds(all);
+    return arc_shape{arc_path_text(groups), {box.width, box.height}, nominal, {box.x, box.y}};
+}
 
 bool writes_tight_label_transform(Shape shape) {
     return shape == Shape::Document || shape == Shape::TaggedDocument || shape == Shape::LinedDocument;  // multiWave writes `, `
@@ -327,6 +420,15 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             out.rough = true;
             out.shift = {rx / 2, 0};
             out.separator = ", ";
+            return out;
+        }
+        case Shape::LightningBolt: {  // lightningBolt.ts: drawn from 0,0 (35 x 70), moved by translate(-17.5,-35); no label
+            constexpr double width = 35, height = 35, gap = 7;
+            out.points = {{width, 0}, {0, height + gap / 2}, {width - 2 * gap, height + gap / 2}, {0, 2 * height}, {width, height - gap / 2}, {2 * gap, height - gap / 2}};
+            out.rough = true;
+            out.shift = {-width / 2, -height};
+            out.separator = ",";
+            out.group_class = "outer-path";
             return out;
         }
         default:

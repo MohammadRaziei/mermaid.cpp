@@ -76,3 +76,6 @@ s12b_lin-cyl	pass
 s12b_st-rect	pass
 s12b_tag-rect	pass
 s12b_bow-rect	pass
+s12b_bolt	pass
+s12b_cloud	pass
+s12b_bang	pass

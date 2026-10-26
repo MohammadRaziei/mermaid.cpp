@@ -150,3 +150,4 @@ PNGs: `pip install novasvg`, then `novasvg.svg2png(svg, png, width=900, backgrou
 - A decision that changes or a new one that matters gets an ADR (`docs/adr/0000-template.md`); supersede, do not
   rewrite history.
 - When the owner adds a principle, put it here (rules above) and, if it has consequences, in an ADR.
+- The viewBox comes from what is drawn, not from the node boxes: `cloud` and `bang` draw their path at `translate(-w / 2, -h / 2)` of the nominal box, so it sticks out of the node box (`arc_shape::origin`, used by `measure_bounds`). Any new shape whose drawing is not centred on its node needs the same.
