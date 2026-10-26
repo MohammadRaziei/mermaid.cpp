@@ -30,6 +30,27 @@ std::optional<Point> intersect_line(const Point& p1, const Point& p2, const Poin
     return Point{(b1 * c2 - b2 * c1) / denom, (a2 * c1 - a1 * c2) / denom};
 }
 
+// generateArcPoints: 20 points of the elliptical arc between two points
+std::vector<Point> arc_points(double x1, double y1, double x2, double y2, double rx, double ry, bool clockwise) {
+    constexpr double pi = 3.14159265358979323846;
+    const double mid_x = (x1 + x2) / 2, mid_y = (y1 + y2) / 2, angle = std::atan2(y2 - y1, x2 - x1);
+    const double dx = (x2 - x1) / 2, dy = (y2 - y1) / 2;
+    const double distance = std::sqrt((dx / rx) * (dx / rx) + (dy / ry) * (dy / ry));
+    const double scaled = std::sqrt(MERMAID_MAX(0.0, 1 - distance * distance));
+    const double cx = mid_x + scaled * ry * std::sin(angle) * (clockwise ? -1 : 1);
+    const double cy = mid_y - scaled * rx * std::cos(angle) * (clockwise ? -1 : 1);
+    const double start = std::atan2((y1 - cy) / ry, (x1 - cx) / rx);
+    double range = std::atan2((y2 - cy) / ry, (x2 - cx) / rx) - start;
+    if (clockwise && range < 0) range += 2 * pi;
+    if (!clockwise && range > 0) range -= 2 * pi;
+    std::vector<Point> points;
+    for (int i = 0; i < 20; ++i) {
+        const double a = start + (i / 19.0) * range;
+        points.push_back({cx + rx * std::cos(a), cy + ry * std::sin(a)});
+    }
+    return points;
+}
+
 // generateFullSineWavePoints (50 steps)
 std::vector<Point> sine_wave_points(double x1, double y1, double x2, double y2, double amplitude, double cycles) {
     constexpr double pi = 3.14159265358979323846;
@@ -272,6 +293,42 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             out.separator = ", ";
             return out;
         }
+        case Shape::StackedRectangle: {  // multiRect.ts: two outlines, each merged into one path
+            constexpr double r = 10;
+            const double w = label.width + 2 * 16, h = label.height + 2 * 12, x = -w / 2, y = -h / 2;
+            const std::vector<Point> outer = {{x - r, y + r}, {x - r, y + h + r}, {x + w - r, y + h + r}, {x + w - r, y + h}, {x + w, y + h},
+                                              {x + w, y + h - r}, {x + w + r, y + h - r}, {x + w + r, y - r}, {x + r, y - r}, {x + r, y},
+                                              {x, y}, {x, y + r}};
+            const std::vector<Point> inner = {{x, y + r}, {x + w - r, y + r}, {x + w - r, y + h}, {x + w, y + h}, {x + w, y}, {x, y}};
+            out.points = outer;
+            out.layers = {{outer, true, false, true}, {inner, true, false, true}};
+            out.has_shift = false;
+            return out;
+        }
+        case Shape::TaggedRectangle: {  // taggedRect.ts: the box nests in the group of the tag
+            const double h = label.height + 2 * 12, tag = 0.2 * h;
+            const double w = label.width + 2 * 16, x = -w / 2, y = -h / 2;
+            const std::vector<Point> rect = {{x - tag / 2, y}, {x + w + tag / 2, y}, {x + w + tag / 2, y + h}, {x - tag / 2, y + h}};
+            const std::vector<Point> tag_points = {{x + w - tag / 2, y + h}, {x + w + tag / 2, y + h}, {x + w + tag / 2, y + h - tag}};
+            out.points = rect;
+            out.layers = {{rect, true, false, false}, {tag_points, false, false, false}};
+            out.has_shift = false;
+            return out;
+        }
+        case Shape::BowTieRectangle: {  // bowTieRect.ts: two inward arcs, the whole drawing moved right by rx / 2
+            const double w = label.width + 2 * 16, h = label.height + 12;
+            const double ry = h / 2, rx = ry / (2.5 + h / 50);
+            out.points = {{w / 2, -h / 2}, {-w / 2, -h / 2}};
+            const std::vector<Point> left = arc_points(-w / 2, -h / 2, -w / 2, h / 2, rx, ry, false);
+            out.points.insert(out.points.end(), left.begin(), left.end());
+            out.points.push_back({w / 2, h / 2});
+            const std::vector<Point> right = arc_points(w / 2, h / 2, w / 2, -h / 2, rx, ry, true);
+            out.points.insert(out.points.end(), right.begin(), right.end());
+            out.rough = true;
+            out.shift = {rx / 2, 0};
+            out.separator = ", ";
+            return out;
+        }
         default:
             return std::nullopt;
     }
@@ -293,6 +350,7 @@ Point label_offset(Shape shape, const Size& size, const Size& label) {
         const double w = label.width + 2 * 16;
         return {0, (w / 2) / (2.5 + w / 50)};
     }
+    if (shape == Shape::StackedRectangle) return {-10, 10};  // -rectOffset, +rectOffset
     if (shape == Shape::LinedRectangle) return {8.0 / 2, 0};  // FRAME_WIDTH / 2 - bbox.width / 2
     if (shape == Shape::DividedRectangle) return {-0.5, (label.height + 16) * 0.1 - 0.5};  // padding 15 / 2 against the 16 of the box
     if (shape == Shape::Documents) return {-10, 10 - (label.height + 3 * 12) / 4};  // -bbox.w / 2 - 10, -bbox.h / 2 + 10 - amplitude

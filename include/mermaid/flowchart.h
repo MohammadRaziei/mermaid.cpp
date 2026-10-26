@@ -47,6 +47,9 @@ enum class Shape {
     DividedRectangle,  // `div-rect` (dividedRectangle): a rectangle with a divider near the top
     TiltedCylinder,    // `h-cyl` (tiltedCylinder): a cylinder lying on its side
     LinedCylinder,     // `lin-cyl` (linedCylinder): a cylinder with a second lid line
+    StackedRectangle,  // `st-rect` (multiRect): two stacked boxes
+    TaggedRectangle,   // `tag-rect` (taggedRect): a box with a tag in the corner
+    BowTieRectangle,   // `bow-rect` (bowTieRect): a box with both short sides curved inwards
     CurvedTrapezoid,   // `curv-trap` (curvedTrapezoid): a pointed left end and a round right end
 };
 

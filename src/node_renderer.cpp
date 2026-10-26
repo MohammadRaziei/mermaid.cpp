@@ -150,6 +150,26 @@ void node_renderer::write_rough_polygon(SvgWriter& out, const std::vector<Point>
     out.close();
 }
 
+// mergePaths (shapes.ts): the fill and the outline of one drawing joined into a single path.
+void node_renderer::write_merged_path(SvgWriter& out, const rough_drawing& drawing, const flowchart::Style& style,
+                                      const std::string& inline_style) const {
+    const auto lookup = [&](const char* key, const std::string& fallback) {
+        std::string value = fallback;
+        for (const auto& [k, v] : style)
+            if (k == key) value = v;
+        return value;
+    };
+    std::string stroke_width = lookup("stroke-width", "1.3");
+    if (stroke_width.size() > 2 && stroke_width.compare(stroke_width.size() - 2, 2, "px") == 0) stroke_width.resize(stroke_width.size() - 2);
+    out.leaf("path", {{"d", drawing.fill_d + " " + drawing.stroke_d},
+                      {"fill", lookup("fill", theme_.main_bkg)},
+                      {"fill-opacity", "1"},
+                      {"stroke", lookup("stroke", theme_.node_border)},
+                      {"stroke-width", stroke_width},
+                      {"stroke-opacity", "1"},
+                      {"style", inline_style}});
+}
+
 // Document shapes: several drawings, one of them possibly in a <g> inside the group that carries class and transform.
 void node_renderer::write_rough_layers(SvgWriter& out, const polygon_outline& outline, const flowchart::Style& style,
                                        const std::string& inline_style) const {
@@ -159,6 +179,11 @@ void node_renderer::write_rough_layers(SvgWriter& out, const polygon_outline& ou
     out.open("g", group);
     for (const polygon_outline::layer& layer : outline.layers) {
         if (layer.nested) out.open("g");
+        if (layer.merged) {
+            write_merged_path(out, rough_polygon(layer.points, seed_), style, inline_style);
+            if (layer.nested) out.close();
+            continue;
+        }
         write_rough_paths(out, layer.polygon_fill ? rough_polygon_filled_plainly(layer.points, seed_) : rough_polygon(layer.points, seed_),
                           style, inline_style, layer.polygon_fill);
         if (layer.nested) out.close();

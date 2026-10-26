@@ -31,6 +31,7 @@ struct polygon_outline {
         std::vector<Point> points;
         bool nested = false;
         bool polygon_fill = false;  // rc.polygon: the fill is a plain `M L L`, tagged fill-rule="evenodd"
+        bool merged = false;        // mergePaths: fill and outline become one <path>
     };
     std::vector<layer> layers;
     bool hit_as_rect = false;  // edges are clipped to the node box (intersect.rect), not to the outline

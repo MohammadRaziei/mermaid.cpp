@@ -165,6 +165,10 @@ Shape shape_from_data_name(const std::string& name) {
         {"curv-trap", Shape::CurvedTrapezoid}, {"curved-trapezoid", Shape::CurvedTrapezoid}, {"display", Shape::CurvedTrapezoid},
         {"h-cyl", Shape::TiltedCylinder}, {"das", Shape::TiltedCylinder}, {"horizontal-cylinder", Shape::TiltedCylinder},
         {"lin-cyl", Shape::LinedCylinder}, {"disk", Shape::LinedCylinder}, {"lined-cylinder", Shape::LinedCylinder},
+        {"st-rect", Shape::StackedRectangle}, {"procs", Shape::StackedRectangle}, {"processes", Shape::StackedRectangle},
+        {"stacked-rectangle", Shape::StackedRectangle}, {"tag-rect", Shape::TaggedRectangle}, {"tagged-rectangle", Shape::TaggedRectangle},
+        {"tag-proc", Shape::TaggedRectangle}, {"tagged-process", Shape::TaggedRectangle},
+        {"bow-rect", Shape::BowTieRectangle}, {"stored-data", Shape::BowTieRectangle}, {"bow-tie-rectangle", Shape::BowTieRectangle},
         {"flag", Shape::Flag}, {"paper-tape", Shape::Flag},
         {"sm-circ", Shape::SmallCircle}, {"start", Shape::SmallCircle}, {"small-circle", Shape::SmallCircle},
     };

@@ -33,6 +33,8 @@ private:
     void write_empty_label(SvgWriter& out, const flowchart::Style& style, bool markdown) const;
     void write_rough_paths(SvgWriter& out, const rough_drawing& drawing, const flowchart::Style& style,
                            const std::string& inline_style, bool polygon_fill) const;
+    void write_merged_path(SvgWriter& out, const rough_drawing& drawing, const flowchart::Style& style,
+                           const std::string& inline_style) const;
     void write_rough_layers(SvgWriter& out, const polygon_outline& outline, const flowchart::Style& style,
                             const std::string& inline_style) const;
     void write_rough_polygon(SvgWriter& out, const std::vector<Point>& points, const std::string& transform,

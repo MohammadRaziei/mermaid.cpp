@@ -149,6 +149,21 @@ Size NodeSizer::size(const Node& node) const {
             const double w = text_w + 2 * 16, rx = w / 2, ry = rx / (2.5 + w / 50);
             return {w, text_h + ry + 2 * 24 + 2 * ry};
         }
+        case Shape::StackedRectangle:  // multiRect.ts (neo): padding 16 x 12, the second box sticks out 10 on each side
+            return {text_w + 2 * 16 + 20, text_h + 2 * 12 + 20};
+        case Shape::TaggedRectangle: {  // taggedRect.ts (neo): the tag is a fifth of the height wide
+            const double h = text_h + 2 * 12;
+            return {text_w + 2 * 16 + 0.2 * h, h};
+        }
+        case Shape::BowTieRectangle: {  // bowTieRect.ts (neo): the left arc bulges out of the box; getBBox sees the sampled points
+            const auto outline = mermaid::detail::polygon_outline_of(Shape::BowTieRectangle, {0, 0}, label);
+            double min_x = outline->points.front().x, max_x = min_x;
+            for (const Point& p : outline->points) {
+                min_x = MERMAID_MIN(min_x, p.x);
+                max_x = MERMAID_MAX(max_x, p.x);
+            }
+            return {max_x - min_x, text_h + 12};
+        }
         case Shape::Default:
         case Shape::Square:
             break;

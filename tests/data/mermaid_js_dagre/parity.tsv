@@ -73,3 +73,6 @@ s12b_div-rect	pass
 s12b_curv-trap	pass
 s12b_h-cyl	pass
 s12b_lin-cyl	pass
+s12b_st-rect	pass
+s12b_tag-rect	pass
+s12b_bow-rect	pass
