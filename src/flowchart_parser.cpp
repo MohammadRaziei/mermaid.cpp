@@ -150,6 +150,11 @@ Shape shape_from_data_name(const std::string& name) {
         {"extract", Shape::Triangle},  {"triangle", Shape::Triangle},  {"flip-tri", Shape::FlippedTriangle},
         {"manual-file", Shape::FlippedTriangle}, {"flipped-triangle", Shape::FlippedTriangle},
         {"text", Shape::Text},         {"fork", Shape::Fork},          {"join", Shape::Fork},
+        {"doc", Shape::Document},        {"document", Shape::Document},
+        {"docs", Shape::Documents},    {"documents", Shape::Documents}, {"st-doc", Shape::Documents},
+        {"stacked-document", Shape::Documents}, {"tag-doc", Shape::TaggedDocument},
+        {"tagged-document", Shape::TaggedDocument}, {"lin-doc", Shape::LinedDocument},
+        {"lined-document", Shape::LinedDocument},
         {"sm-circ", Shape::SmallCircle}, {"start", Shape::SmallCircle}, {"small-circle", Shape::SmallCircle},
     };
     auto it = table.find(name);

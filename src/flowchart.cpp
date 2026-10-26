@@ -39,6 +39,10 @@ const char* shape_name(Shape shape) noexcept {
         case Shape::Text: return "text";
         case Shape::Fork: return "forkJoin";
         case Shape::SmallCircle: return "stateStart";
+        case Shape::Document: return "waveEdgedRectangle";
+        case Shape::Documents: return "multiWaveEdgedRectangle";
+        case Shape::TaggedDocument: return "taggedWaveEdgedRectangle";
+        case Shape::LinedDocument: return "linedWaveEdgedRect";
     }
     return "";
 }

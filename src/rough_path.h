@@ -22,6 +22,10 @@ struct rough_drawing {
 // The closed polygon through `points`. A seed of 0 is treated as 1 (rough.js would use Math.random()).
 rough_drawing rough_polygon(const std::vector<Point>& points, int seed);
 
+// `rc.polygon(points, {roughness: 0, fillStyle: "solid"})`: the same outline, but the fill is the plain `M L L ...` of
+// the points (renderer.js solidFillPolygon), not a closed path.
+rough_drawing rough_polygon_filled_plainly(const std::vector<Point>& points, int seed);
+
 // A number the way JavaScript's Number#toString writes it.
 std::string js_number(double value);
 

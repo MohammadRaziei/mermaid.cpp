@@ -10,6 +10,7 @@ using flowchart::Shape;
 namespace {
 
 constexpr double kSubroutineFrame = 8;  // subroutine.ts FRAME_WIDTH
+constexpr double kNodePadding = 15;     // the flowchart padding handed to every shape as node.padding
 
 // intersect-line.js
 std::optional<Point> intersect_line(const Point& p1, const Point& p2, const Point& q1, const Point& q2) {
@@ -27,11 +28,29 @@ std::optional<Point> intersect_line(const Point& p1, const Point& p2, const Poin
     return Point{(b1 * c2 - b2 * c1) / denom, (a2 * c1 - a1 * c2) / denom};
 }
 
+// generateFullSineWavePoints (50 steps)
+std::vector<Point> sine_wave_points(double x1, double y1, double x2, double y2, double amplitude, double cycles) {
+    constexpr double pi = 3.14159265358979323846;
+    std::vector<Point> points;
+    const double delta_x = x2 - x1;
+    const double frequency = 2 * pi / (delta_x / cycles);
+    const double mid_y = y1 + (y2 - y1) / 2;
+    for (int i = 0; i <= 50; ++i) {
+        const double x = x1 + (i / 50.0) * delta_x;
+        points.push_back({x, mid_y + amplitude * std::sin(frequency * (x - x1))});
+    }
+    return points;
+}
+
 }  // namespace
 
 bool ignores_min_label_width(Shape shape) { return shape == Shape::Circle || shape == Shape::DoubleCircle; }
 
-std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size) {
+bool writes_tight_label_transform(Shape shape) {
+    return shape == Shape::Document || shape == Shape::TaggedDocument || shape == Shape::LinedDocument;  // multiWave writes `, `
+}
+
+std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size, const Size& label) {
     polygon_outline out;
     switch (shape) {
         case Shape::Hexagon: {  // hexagon.ts: m = h / 3.5 in the neo look
@@ -96,18 +115,87 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size)
             out.separator = ", ";
             return out;
         }
+        case Shape::Document: {  // waveEdgedRectangle.ts: the bottom edge is 0.8 of a sine cycle of amplitude h / 4
+            const double w = size.width, amplitude = size.height / 6, final_h = size.height * 5 / 6;
+            out.points = {{-w / 2, final_h / 2}};
+            const std::vector<Point> wave = sine_wave_points(-w / 2, final_h / 2, w / 2, final_h / 2, amplitude, 0.8);
+            out.points.insert(out.points.end(), wave.begin(), wave.end());
+            out.points.push_back({w / 2, -final_h / 2});
+            out.points.push_back({-w / 2, -final_h / 2});
+            out.rough = true;
+            out.shift = {0, -amplitude / 2};
+            return out;
+        }
+        case Shape::Documents: {  // multiWaveEdgedRectangle.ts (neo)
+            constexpr double r = 10;  // rectOffset2
+            const double w = label.width + 2 * 16, h = label.height + 3 * 12;
+            const double amplitude = h / 4, final_h = h + amplitude / 2;
+            const double x = -w / 2, y = -final_h / 2;
+            const std::vector<Point> wave = sine_wave_points(x - r, y + final_h + r, x + w - r, y + final_h + r, amplitude, 0.8);
+            const double last_y = wave.back().y;
+            std::vector<Point> outer = {{x - r, y + r}, {x - r, y + final_h + r}};
+            outer.insert(outer.end(), wave.begin(), wave.end());
+            for (const Point& p : std::vector<Point>{{x + w - r, last_y - r}, {x + w, last_y - r}, {x + w, last_y - 2 * r},
+                                                      {x + w + r, last_y - 2 * r}, {x + w + r, y - r}, {x + r, y - r},
+                                                      {x + r, y}, {x, y}, {x, y + r}})
+                outer.push_back(p);
+            const std::vector<Point> inner = {{x, y + r}, {x + w - r, y + r}, {x + w - r, last_y - r}, {x + w, last_y - r}, {x + w, y}, {x, y}};
+            out.points = outer;
+            out.layers = {{outer, false, false}, {inner, true, false}};
+            out.shift = {0, -amplitude / 2};
+            return out;
+        }
+        case Shape::TaggedDocument: {  // taggedWaveEdgedRectangle.ts: uses the node padding, not the neo paddings
+            const double w = label.width + 2 * kNodePadding, h = label.height + 2 * kNodePadding;
+            const double amplitude = h / 8, tag_w = 0.2 * w, tag_h = 0.2 * h, final_h = h + amplitude;
+            std::vector<Point> body = {{-w / 2 - w / 2 * 0.1, final_h / 2}};
+            const std::vector<Point> wave = sine_wave_points(-w / 2 - w / 2 * 0.1, final_h / 2, w / 2 + w / 2 * 0.1, final_h / 2, amplitude, 0.8);
+            body.insert(body.end(), wave.begin(), wave.end());
+            body.push_back({w / 2 + w / 2 * 0.1, -final_h / 2});
+            body.push_back({-w / 2 - w / 2 * 0.1, -final_h / 2});
+            const double x = -w / 2 + w / 2 * 0.1, y = -final_h / 2 - tag_h * 0.4;
+            std::vector<Point> tag = {{x + w - tag_w, (y + h) * 1.3}, {x + w, y + h - tag_h}, {x + w, (y + h) * 0.9}};
+            const std::vector<Point> tag_wave = sine_wave_points(x + w, (y + h) * 1.25, x + w - tag_w, (y + h) * 1.3, -h * 0.02, 0.5);
+            tag.insert(tag.end(), tag_wave.begin(), tag_wave.end());
+            out.points = body;
+            out.layers = {{body, true, false}, {tag, false, false}};  // the tag is the group itself, the body nests in it
+            out.shift = {0, -amplitude / 2};
+            return out;
+        }
+        case Shape::LinedDocument: {  // linedWaveEdgedRect.ts (neo)
+            const double w = label.width + 2 * 16, h = label.height + 2 * 12;
+            const double amplitude = h / 4, final_h = h + amplitude, m = w / 2 * 0.1;
+            std::vector<Point> pts = {{-w / 2 - m, -final_h / 2}, {-w / 2 - m, final_h / 2}};
+            const std::vector<Point> wave = sine_wave_points(-w / 2 - m, final_h / 2, w / 2 + m, final_h / 2, amplitude, 0.8);
+            pts.insert(pts.end(), wave.begin(), wave.end());
+            for (const Point& p : std::vector<Point>{{w / 2 + m, -final_h / 2}, {-w / 2 - m, -final_h / 2}, {-w / 2, -final_h / 2},
+                                                      {-w / 2, final_h / 2 * 1.1}, {-w / 2, -final_h / 2}})
+                pts.push_back(p);
+            out.points = pts;
+            out.layers = {{pts, false, true}};
+            out.shift = {0, -amplitude / 2};
+            return out;
+        }
         default:
             return std::nullopt;
     }
 }
 
-Point label_offset(Shape shape, const Size& size) {
+Point label_offset(Shape shape, const Size& size, const Size& label) {
     if (shape == Shape::Odd) return {size.height / 8, 0};  // -notch / 2, notch = -h / 4
+    // waveEdgedRectangle.ts: the label starts at -w / 2 + padding (15), above the wave; the box is 1.5 x h high
+    if (shape == Shape::Document) return {-1, 3 - size.height / 6};
+    if (shape == Shape::Documents) return {-10, 10 - (label.height + 3 * 12) / 4};  // -bbox.w / 2 - 10, -bbox.h / 2 + 10 - amplitude
+    if (shape == Shape::TaggedDocument) return {0, -(label.height + 2 * kNodePadding) / 16};  // -amplitude / 2, amplitude = h / 8
+    if (shape == Shape::LinedDocument) {
+        const double w = label.width + 2 * 16, h = label.height + 2 * 12;
+        return {-16 + kNodePadding + w / 2 * 0.1 / 2, kNodePadding - 12 - h / 4};
+    }
     return {0, 0};
 }
 
 std::optional<Point> polygon_border_point(const flowchart::NodeLayout& node, const Point& outside) {
-    const std::optional<polygon_outline> outline = polygon_outline_of(node.shape, node.size);
+    const std::optional<polygon_outline> outline = polygon_outline_of(node.shape, node.size, node.label);
     if (!outline) return std::nullopt;
 
     double min_x = outline->points.front().x, min_y = outline->points.front().y;

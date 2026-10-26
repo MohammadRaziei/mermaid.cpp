@@ -146,4 +146,13 @@ rough_drawing rough_polygon(const std::vector<Point>& points, int seed) {
     return {ops_to_path(fill, true), ops_to_path(stroke, false)};
 }
 
+rough_drawing rough_polygon_filled_plainly(const std::vector<Point>& points, int seed) {
+    rough_random random(seed == 0 ? 1 : seed);
+    const std::vector<rough_op> stroke = svg_path(points, false, random);
+    std::string fill;
+    for (size_t i = 0; i < points.size(); ++i)
+        fill += std::string(i == 0 ? "M" : " L") + js_number(points[i].x) + " " + js_number(points[i].y);
+    return {fill, ops_to_path(stroke, false)};
+}
+
 }  // namespace mermaid::detail

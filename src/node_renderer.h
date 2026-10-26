@@ -9,6 +9,8 @@
 #include <mermaid/flowchart.h>
 #include <mermaid/flowchart_layout.h>
 
+#include "rough_path.h"
+#include "shape_geometry.h"
 #include "svg_writer.h"
 #include "theme_variables.h"
 
@@ -24,11 +26,15 @@ public:
                const flowchart::Style& style) const;
 
 private:
-    void write_outline(SvgWriter& out, flowchart::Shape shape, const Size& size, const flowchart::Style& style) const;
+    void write_outline(SvgWriter& out, flowchart::Shape shape, const Size& size, const Size& label, const flowchart::Style& style) const;
     void write_label(SvgWriter& out, const std::string& text, const Size& label, const flowchart::Style& style,
-                     const Point& shift, bool markdown, bool table, bool wrapped) const;
+                     const Point& shift, bool markdown, bool table, bool wrapped, bool tight = false) const;
     void write_fork(SvgWriter& out, const Rect& box, const flowchart::Style& style, const std::string& inline_style) const;
     void write_empty_label(SvgWriter& out, const flowchart::Style& style, bool markdown) const;
+    void write_rough_paths(SvgWriter& out, const rough_drawing& drawing, const flowchart::Style& style,
+                           const std::string& inline_style, bool polygon_fill) const;
+    void write_rough_layers(SvgWriter& out, const polygon_outline& outline, const flowchart::Style& style,
+                            const std::string& inline_style) const;
     void write_rough_polygon(SvgWriter& out, const std::vector<Point>& points, const std::string& transform,
                              const flowchart::Style& style, const std::string& inline_style,
                              const char* group_class = "basic label-container outer-path") const;

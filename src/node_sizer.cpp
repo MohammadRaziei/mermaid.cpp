@@ -96,6 +96,22 @@ Size NodeSizer::size(const Node& node) const {
             const double h = text_w + 2 * p + text_h;
             return {h, h};
         }
+        case Shape::Document: {  // waveEdgedRectangle.ts (neo): padding 16 x 12, the wave adds a quarter of the box height twice
+            const double h = text_h + 2 * 12;
+            return {text_w + 2 * 16, h + h / 2};
+        }
+        case Shape::Documents: {  // multiWaveEdgedRectangle.ts (neo): padding 16 x 12 x 3, two sheets 10 px apart
+            const double h = text_h + 3 * 12;
+            return {text_w + 2 * 16 + 20, h + 1.5 * (h / 4) + 20};
+        }
+        case Shape::TaggedDocument: {  // taggedWaveEdgedRectangle.ts: node padding on every side, wave h / 8, 10 % margin
+            const double w = text_w + 2 * p, h = text_h + 2 * p;
+            return {1.1 * w, h + 2 * (h / 8)};
+        }
+        case Shape::LinedDocument: {  // linedWaveEdgedRect.ts (neo): padding 16 x 12, wave h / 4, 10 % margin
+            const double w = text_w + 2 * 16, h = text_h + 2 * 12;
+            return {1.1 * w, h + 2 * (h / 4)};
+        }
         case Shape::Default:
         case Shape::Square:
             break;

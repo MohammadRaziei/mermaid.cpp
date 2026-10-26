@@ -14,6 +14,9 @@ namespace mermaid::detail {
 // `ignoreMinWidth` of labelHelper: circles size their label to the text, other shapes to at least 120.
 bool ignores_min_label_width(flowchart::Shape shape);
 
+// True for the shapes whose label transform is written by the shape itself, as `translate(x,y)`.
+bool writes_tight_label_transform(flowchart::Shape shape);
+
 // A shape drawn as a polygon (hexagon, lean, trapezoid, subroutine) or a rough polygon (odd).
 struct polygon_outline {
     std::vector<Point> points;  // as the shape computes them, in its own local coordinates
@@ -22,13 +25,22 @@ struct polygon_outline {
     Point shift;                // transform of that group
     const char* separator = ",";  // between the numbers of that transform (shapes differ: "5.6,0" or "-15, -15")
     const char* group_class = "basic label-container outer-path";  // class of that group
+    // Shapes made of several rough.js drawings (documents): in document order, a `nested` one sits in a <g> of its own.
+    // `points` is then only what edges are clipped to.
+    struct layer {
+        std::vector<Point> points;
+        bool nested = false;
+        bool polygon_fill = false;  // rc.polygon: the fill is a plain `M L L`, tagged fill-rule="evenodd"
+    };
+    std::vector<layer> layers;
 };
 
 // nullopt for the shapes that are not polygons. `size` is the node's size, the bounding box of the outline.
-std::optional<polygon_outline> polygon_outline_of(flowchart::Shape shape, const Size& size);
+// `label` is the label box, from which the document shapes derive their outline exactly.
+std::optional<polygon_outline> polygon_outline_of(flowchart::Shape shape, const Size& size, const Size& label = {});
 
 // The label sits at the centre of the node, except that odd moves it with its notch.
-Point label_offset(flowchart::Shape shape, const Size& size);
+Point label_offset(flowchart::Shape shape, const Size& size, const Size& label = {});
 
 // intersect-polygon.js: where the line from the node centre to `outside` leaves the outline. nullopt when the shape
 // is not a polygon.

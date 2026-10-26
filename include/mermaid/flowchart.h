@@ -34,6 +34,10 @@ enum class Shape {
     Text,              // `text`: a label with no outline
     Fork,              // `fork`, `join`: a thin bar across the flow
     SmallCircle,       // `sm-circ` (start): a dot with a label-less 14px circle
+    Document,          // `doc` (waveEdgedRectangle): a box whose bottom edge is a wave
+    Documents,         // `docs`, `st-doc` (multiWaveEdgedRectangle): two stacked sheets
+    TaggedDocument,    // `tag-doc` (taggedWaveEdgedRectangle): a document with a tag in the corner
+    LinedDocument,     // `lin-doc` (linedWaveEdgedRect): a document with a margin line
 };
 
 enum class Stroke { Normal, Thick, Dotted, Invisible };

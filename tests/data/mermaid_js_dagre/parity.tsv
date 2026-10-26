@@ -57,3 +57,9 @@ s12b_fork	pass
 s12b_sm-circ	pass
 s12b_fork_tb	pass
 s12b_mixed_dark	pass
+s12b_doc	pass
+s12b_docs	pass
+s12b_lin-doc	pass
+s12b_tag-doc	pass
+s12b_st-doc	pass
+s12b_documents_tb	pass
