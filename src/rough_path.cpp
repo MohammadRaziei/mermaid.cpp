@@ -151,6 +151,47 @@ rough_drawing rough_stroke_path(const std::vector<Point>& points, bool closed, i
     return {"", ops_to_path(svg_path(points, false, random, closed), false)};
 }
 
+rough_drawing rough_circle(double diameter) {  // roughjs ellipse() with roughness 0: generateEllipseParams, _computeEllipsePoints, _curve
+    constexpr double pi = 3.14159265358979323846;
+    const double rx = std::fabs(diameter / 2), ry = std::fabs(diameter / 2);
+    const double psq = std::sqrt(2 * pi * std::sqrt((std::pow(diameter / 2, 2) + std::pow(diameter / 2, 2)) / 2));
+    const double steps = std::ceil(std::max(9.0, 9.0 / std::sqrt(200.0) * psq));
+    const double increment = (2 * pi / steps) / 4;
+    std::vector<Point> p = {{rx * std::cos(-increment), ry * std::sin(-increment)}};
+    for (double a = 0; a <= 2 * pi; a += increment) p.push_back({rx * std::cos(a), ry * std::sin(a)});
+    p.push_back({rx * std::cos(0.0), ry * std::sin(0.0)});
+    p.push_back({rx * std::cos(increment), ry * std::sin(increment)});
+    std::vector<rough_op> ops;
+    rough_op move;
+    move.data[0] = p[1].x;
+    move.data[1] = p[1].y;
+    ops.push_back(move);
+    for (size_t e = 1; e + 2 < p.size(); ++e) {
+        rough_op c;
+        c.curve = true;
+        c.data[0] = p[e].x + (p[e + 1].x - p[e - 1].x) / 6;
+        c.data[1] = p[e].y + (p[e + 1].y - p[e - 1].y) / 6;
+        c.data[2] = p[e + 1].x + (p[e].x - p[e + 2].x) / 6;
+        c.data[3] = p[e + 1].y + (p[e].y - p[e + 2].y) / 6;
+        c.data[4] = p[e + 1].x;
+        c.data[5] = p[e + 1].y;
+        ops.push_back(c);
+    }
+    const std::string d = ops_to_path(ops, false);
+    return {d, d};  // the solid fill of an ellipse is the same curve
+}
+
+rough_drawing rough_open_subpaths(const std::vector<std::vector<Point>>& subpaths, int seed) {
+    rough_random random(seed == 0 ? 1 : seed);
+    std::vector<rough_op> stroke;
+    for (const std::vector<Point>& sub : subpaths)  // one random stream through every `M ... L ...` run
+        for (const rough_op& op : svg_path(sub, false, random, false)) stroke.push_back(op);
+    std::string fill;  // solidFillPolygon skips runs of two points, so only a first run of more points is filled
+    const std::vector<Point>& first = subpaths.front();
+    for (size_t i = 0; first.size() > 2 && i < first.size(); ++i) fill += std::string(i == 0 ? "M" : " L") + js_number(first[i].x) + " " + js_number(first[i].y);
+    return {fill, ops_to_path(stroke, false)};
+}
+
 rough_drawing rough_polygon_filled_plainly(const std::vector<Point>& points, int seed) {
     rough_random random(seed == 0 ? 1 : seed);
     const std::vector<rough_op> stroke = svg_path(points, false, random);

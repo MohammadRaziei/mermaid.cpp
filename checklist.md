@@ -80,26 +80,23 @@ Ordered by what is likely to matter next.
   drop-shadow flood for dark. 10 fixtures (basic + rich, five themes) pass. The init `theme` key and `-t` give the same
   picture. Not done: `themeVariables` other than `fontFamily`, `clusterBkg`, `clusterBorder` (they feed khroma
   derivations in Mermaid, e.g. `primaryColor` of `base`), which would need the colour arithmetic ported
-- [~] **S12b** the `@{ shape: ... }` family (150 names, 53 handlers in Mermaid 12.2.0). Drawn so far (verified against
-  the real SVG, 33 fixtures `s12b_*`, all `pass`): the 14 classic shapes, `hourglass` (`collate`), `tri` (`extract`),
-  `flip-tri` (`manual-file`), `text`, `fork` (`join`, vertical bar in LR/RL), `sm-circ` (`start`), the paper shapes
-  `doc`, `docs` (`st-doc`), `lin-doc`, `tag-doc`, `flag` (`paper-tape`), and `delay`, `notch-pent`, `sl-rect`,
-  `notch-rect` (`card`), `lin-rect` (`shaded-process`), `div-rect`, `curv-trap` (`display`), `h-cyl` (`das`),
-  `lin-cyl` (`disk`), `st-rect` (`procs`, a `mergePaths` shape: one merged `<path>` per box), `tag-rect`, `bow-rect`
-  (`stored-data`; sized from its sampled outline, because the left arc bulges out of the box), `bolt`
-  (`com-link`; no label, 35 x 70), `cloud` and `bang` (one path of arcs; the node is the exact bounding box of the arcs,
-  and the viewBox follows the drawn path, which sits at its nominal offset), `brace` (`brace-l`, `comment`), `brace-r`,
-  `braces` (open stroke-only paths and an invisible box; the node is the union of all drawings, the braces stick out of the
-  box; `brace-r` uses the circle-point variant that does not mirror). Each fixture has a short label in LR and a label
-  that wraps; `s12b_documents_tb` mixes the paper shapes in TB with an edge label. Several rough.js drawings
-  (`polygon_outline::layers`: one may nest in a `<g>`; `rc.polygon` has a plain `M L L` fill and `fill-rule="evenodd"`);
-  sizes and outlines derive from the label box, not from the size, so no rounding is lost; `lin-rect` and `div-rect`
-  clip edges to the node box (`intersect.rect`), the others to their outline. A name that is valid but not drawn yet
-  (the rest: win-pane (several `M` subpaths, the rough generator handles one
-  polygon only), f-circ, fr-circ, cross-circ, folder, bucket, console,
-  browser, person, datastore, summary, ...) is drawn as a box. An unknown name is an error, as in Mermaid:
-  `No such shape: <name>.` (the lookup is exact, `Rect` fails). The fork size uses the graph direction, not that of the
-  subgraph it sits in.
+- [~] **S12b** the `@{ shape: ... }` family (150 names, 53 handlers in Mermaid 12.2.0). 47 of the 53 handlers are
+  drawn, verified against the real SVG (36 fixtures `s12b_*`, all `pass`, each with a short label and a label that
+  wraps where the shape has one): the 14 classic shapes, the paper shapes (`doc`, `docs`, `lin-doc`, `tag-doc`, `flag`),
+  `delay`, `notch-pent`, `sl-rect`, `notch-rect`, `lin-rect`, `div-rect`, `curv-trap`, `h-cyl`, `lin-cyl`, `st-rect`,
+  `tag-rect`, `bow-rect`, `win-pane`, `bolt`, `cloud`, `bang`, the braces (`brace`, `brace-r`, `braces`), `hourglass`,
+  `tri`, `flip-tri`, `text`, `fork`, `sm-circ` and the circles `f-circ`, `fr-circ`, `cross-circ` (rc.circle of rough.js with
+  roughness 0 is ported: `rough_circle`). How they are built: several rough.js drawings
+  (`polygon_outline::layers`: nested `<g>`, `rc.polygon` plain fill with `fill-rule="evenodd"`, `mergePaths`, stroke-only,
+  open and multi-run paths); sizes and outlines derive from the label box, not from the size, so no rounding is lost;
+  `lin-rect` and `div-rect` clip edges to the node box (`intersect.rect`), the others to their outline; `cloud` and
+  `bang` are the exact bounding box of their arcs and the viewBox follows the drawn path; the node of the braces is the
+  union of all drawings. **Still drawn as a box (valid names)**: `folder` (`directory`), `bucket`, `console`,
+  `browser`, `person`, `data-store` (`datastore`): the six icon-like handlers. An unknown name is an error, as in
+  Mermaid: `No such shape: <name>.` (the lookup is exact, `Rect` fails). Every alias of the 53 groups maps to the same
+  shape as its short name (unit test `shape_aliases_are_the_same_shape_as_their_short_name`; 20 aliases such as
+  `lean-right`, `manual`, `priority`, `double-circle`, `stateStart` had been boxes before). The fork size uses the graph
+  direction, not that of the subgraph it sits in.
 - [~] **S13** edges to and from subgraph ids. Done: an end at a subgraph id is drawn against the cluster box and the route
   is cut at its border (`toCluster` / `fromCluster`, `cutPathAtIntersect`; `data-points` keeps the route before the cut);
   loops on a closed subgraph (helpers in the parent graph) and on an open cluster (drawn around the compound box); both

@@ -82,3 +82,6 @@ s12b_bang	pass
 s12b_brace	pass
 s12b_brace-r	pass
 s12b_braces	pass
+s12b_win-pane	pass
+s12b_circles	pass
+s12b_circles_tb	pass

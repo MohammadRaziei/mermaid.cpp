@@ -18,7 +18,8 @@ constexpr double M_PI_ = 3.14159265358979323846;
 // all shapes but the circles hold it to at least that width.
 NodeSizer::Label NodeSizer::label(const Node& node) const {
     if (node.shape == Shape::Hourglass || node.shape == Shape::Fork || node.shape == Shape::SmallCircle ||
-        node.shape == Shape::LightningBolt)
+        node.shape == Shape::LightningBolt || node.shape == Shape::FilledCircle || node.shape == Shape::FramedCircle ||
+        node.shape == Shape::CrossedCircle)
         return {{0, 0}, false};  // these shapes have no label (hourglass.ts empties it; the others never make one)
     const TextMeasurer::Wrapped text = node.markdown_label
                                            ? mermaid::detail::markdown_label(node.label).measure(measurer_, options_.min_label_width)
@@ -89,7 +90,11 @@ Size NodeSizer::size(const Node& node) const {
         case Shape::Fork:  // forkJoin.ts: 70 x 10, turned in LR and RL
             return direction_ == Direction::LR || direction_ == Direction::RL ? Size{10, 70} : Size{70, 10};
         case Shape::SmallCircle:  // stateStart.ts: 14 x 14
+        case Shape::FilledCircle:  // filledCircle.ts: radius 7; stateEnd.ts: width 14
+        case Shape::FramedCircle:
             return {14, 14};
+        case Shape::CrossedCircle:  // crossedCircle.ts: radius max(30, width)
+            return {60, 60};
         case Shape::Text:  // text.ts: the label plus the padding once
             return {text_w + p, text_h + p};
         case Shape::Triangle:  // triangle.ts (neo): w = text + 2 * padding, h = w + text height; the outline is h wide
@@ -180,6 +185,8 @@ Size NodeSizer::size(const Node& node) const {
             }
             return {max_x - min_x, max_y - min_y};
         }
+        case Shape::WindowPane:  // windowPane.ts (neo): padding 16 x 12 plus rectOffset 10 on the top left
+            return {text_w + 2 * 16 + 10, text_h + 2 * 12 + 10};
         case Shape::Cloud:  // cloud.ts / bang.ts: the node is the bounding box of the arcs
         case Shape::Bang:
             return mermaid::detail::arc_shape_of(node.shape, label)->bounds;

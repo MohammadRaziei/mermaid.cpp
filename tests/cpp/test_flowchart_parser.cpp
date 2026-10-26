@@ -1,6 +1,10 @@
 #include <algorithm>
+#include <cstdio>
 #include <fstream>
+#include <set>
 #include <sstream>
+#include <string>
+#include <vector>
 
 #include <mermaid/error.h>
 #include <mermaid/flowchart_parser.h>
@@ -476,4 +480,78 @@ UTEST(flowchart_node_data, label_from_a_data_block_is_markdown_unless_told_other
     ASSERT_FALSE(m.find_node("B")->markdown_label);
     ASSERT_FALSE(m.find_node("C")->markdown_label);
     ASSERT_FALSE(m.find_node("D")->markdown_label);  // no label given
+}
+
+// Every name of a shape in Mermaid 12.2's shapesDefs (short name, aliases, internal aliases) is the same shape.
+// The rows were taken from `chunk-VFTINRM2.mjs`; a name that has no drawing yet is a box, like `rect`.
+UTEST(flowchart_parser, shape_aliases_are_the_same_shape_as_their_short_name) {
+    static const std::vector<std::vector<std::string>> groups = {
+        {"rect", "proc", "process", "rectangle", "squareRect"},
+        {"rounded", "event", "roundedRect"},
+        {"stadium", "terminal", "pill"},
+        {"fr-rect", "subprocess", "subproc", "framed-rectangle", "subroutine"},
+        {"cyl", "db", "database", "cylinder"},
+        {"datastore", "data-store"},
+        {"folder", "directory"},
+        {"bucket"},
+        {"console"},
+        {"browser"},
+        {"person"},
+        {"circle", "circ"},
+        {"bang"},
+        {"cloud"},
+        {"diam", "decision", "diamond", "question"},
+        {"hex", "hexagon", "prepare"},
+        {"lean-r", "lean-right", "in-out", "lean_right"},
+        {"lean-l", "lean-left", "out-in", "lean_left"},
+        {"trap-b", "priority", "trapezoid-bottom", "trapezoid"},
+        {"trap-t", "manual", "trapezoid-top", "inv-trapezoid", "inv_trapezoid"},
+        {"dbl-circ", "double-circle", "doublecircle"},
+        {"text"},
+        {"notch-rect", "card", "notched-rectangle"},
+        {"lin-rect", "lined-rectangle", "lined-process", "lin-proc", "shaded-process"},
+        {"sm-circ", "start", "small-circle", "stateStart"},
+        {"fr-circ", "stop", "framed-circle", "stateEnd"},
+        {"fork", "join", "forkJoin"},
+        {"hourglass", "collate"},
+        {"brace", "comment", "brace-l"},
+        {"brace-r"},
+        {"braces"},
+        {"bolt", "com-link", "lightning-bolt"},
+        {"doc", "document"},
+        {"delay", "half-rounded-rectangle"},
+        {"h-cyl", "das", "horizontal-cylinder"},
+        {"lin-cyl", "disk", "lined-cylinder"},
+        {"curv-trap", "curved-trapezoid", "display"},
+        {"div-rect", "div-proc", "divided-rectangle", "divided-process"},
+        {"tri", "extract", "triangle"},
+        {"win-pane", "internal-storage", "window-pane"},
+        {"f-circ", "junction", "filled-circle"},
+        {"notch-pent", "loop-limit", "notched-pentagon"},
+        {"flip-tri", "manual-file", "flipped-triangle"},
+        {"sl-rect", "manual-input", "sloped-rectangle"},
+        {"docs", "documents", "st-doc", "stacked-document"},
+        {"st-rect", "procs", "processes", "stacked-rectangle"},
+        {"bow-rect", "stored-data", "bow-tie-rectangle"},
+        {"cross-circ", "summary", "crossed-circle"},
+        {"tag-doc", "tagged-document"},
+        {"tag-rect", "tagged-rectangle", "tag-proc", "tagged-process"},
+        {"flag", "paper-tape"},
+        {"odd", "rect_left_inv_arrow"},
+        {"lin-doc", "lined-document"},
+    };
+    static const std::set<std::string> not_drawn_yet = {"folder", "bucket", "console", "browser", "person", "data-store"};
+    std::string problems;
+    for (const auto& group : groups) {
+        const auto shape_of = [](const std::string& name) {
+            return Parser().parse("flowchart LR\n  A@{ shape: " + name + " }").find_node("A")->shape;
+        };
+        const Shape expected = shape_of(group.front());
+        for (const std::string& name : group)
+            if (expected != shape_of(name)) problems += " " + name + " (is not " + group.front() + ")";
+        if (group.front() != "rect" && not_drawn_yet.count(group.front()) == 0 && expected == Shape::Square)
+            problems += " " + group.front() + " (drawn as a box)";
+    }
+    if (!problems.empty()) std::printf("shape names that are wrong:%s\n", problems.c_str());
+    ASSERT_TRUE(problems.empty());
 }

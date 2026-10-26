@@ -135,6 +135,13 @@ bool is_mermaid_shape_name(const std::string& name) {
 Shape shape_from_data_name(const std::string& name) {
     static const std::map<std::string, Shape> table = {
         {"rect", Shape::Square},       {"rectangle", Shape::Square},   {"square", Shape::Square},
+        {"squareRect", Shape::Square}, {"roundedRect", Shape::Round},  {"subprocess", Shape::Subroutine},
+        {"framed-rectangle", Shape::Subroutine}, {"lean-right", Shape::LeanRight}, {"in-out", Shape::LeanRight},
+        {"lean_right", Shape::LeanRight}, {"lean-left", Shape::LeanLeft}, {"out-in", Shape::LeanLeft},
+        {"lean_left", Shape::LeanLeft}, {"priority", Shape::Trapezoid}, {"trapezoid-bottom", Shape::Trapezoid},
+        {"manual", Shape::InvTrapezoid}, {"trapezoid-top", Shape::InvTrapezoid}, {"inv_trapezoid", Shape::InvTrapezoid},
+        {"double-circle", Shape::DoubleCircle}, {"stateStart", Shape::SmallCircle}, {"stateEnd", Shape::FramedCircle},
+        {"forkJoin", Shape::Fork}, {"rect_left_inv_arrow", Shape::Odd},
         {"proc", Shape::Square},       {"process", Shape::Square},     {"rounded", Shape::Round},
         {"round", Shape::Round},       {"event", Shape::Round},        {"stadium", Shape::Stadium},
         {"pill", Shape::Stadium},      {"terminal", Shape::Stadium},   {"subproc", Shape::Subroutine},
@@ -173,6 +180,10 @@ Shape shape_from_data_name(const std::string& name) {
         {"cloud", Shape::Cloud}, {"bang", Shape::Bang},
         {"brace", Shape::BraceLeft}, {"brace-l", Shape::BraceLeft}, {"comment", Shape::BraceLeft},
         {"brace-r", Shape::BraceRight}, {"braces", Shape::Braces},
+        {"win-pane", Shape::WindowPane}, {"internal-storage", Shape::WindowPane}, {"window-pane", Shape::WindowPane},
+        {"f-circ", Shape::FilledCircle}, {"junction", Shape::FilledCircle}, {"filled-circle", Shape::FilledCircle},
+        {"fr-circ", Shape::FramedCircle}, {"stop", Shape::FramedCircle}, {"framed-circle", Shape::FramedCircle},
+        {"cross-circ", Shape::CrossedCircle}, {"summary", Shape::CrossedCircle}, {"crossed-circle", Shape::CrossedCircle},
         {"flag", Shape::Flag}, {"paper-tape", Shape::Flag},
         {"sm-circ", Shape::SmallCircle}, {"start", Shape::SmallCircle}, {"small-circle", Shape::SmallCircle},
     };

@@ -27,6 +27,12 @@ rough_drawing rough_polygon(const std::vector<Point>& points, int seed);
 // `rc.path(d, {fill: "none"})`: only the outline, with or without the closing `Z`; `fill_d` stays empty.
 rough_drawing rough_stroke_path(const std::vector<Point>& points, bool closed, int seed);
 
+// `rc.circle(0, 0, diameter, {roughness: 0, fillStyle: "solid"})`: the fill and the outline are the same curve.
+rough_drawing rough_circle(double diameter);
+
+// `rc.path` of several `M ... L ...` runs, none closed: the outline of all of them and the fill of the first.
+rough_drawing rough_open_subpaths(const std::vector<std::vector<Point>>& subpaths, int seed);
+
 rough_drawing rough_polygon_filled_plainly(const std::vector<Point>& points, int seed);
 
 // A number the way JavaScript's Number#toString writes it.

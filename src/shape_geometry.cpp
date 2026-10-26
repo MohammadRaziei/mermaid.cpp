@@ -432,6 +432,19 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             out.group_class = "outer-path";
             return out;
         }
+        case Shape::WindowPane: {  // windowPane.ts: one path of three runs, moved by (5, 5)
+            constexpr double r = 10;
+            const double w = label.width + 2 * 16, h = label.height + 2 * 12, x = -w / 2, y = -h / 2;
+            polygon_outline::layer l;
+            l.points = {{x - r, y - r}, {x + w, y - r}, {x + w, y + h}, {x - r, y + h}, {x - r, y - r}};
+            l.more = {{{x - r, y}, {x + w, y}}, {{x, y - r}, {x, y + h}}};
+            l.nested = false;
+            out.layers = {l};
+            out.points = {{x - r, y - r}, {x - r, y + h}, {x + w, y + h}, {x + w, y - r}};
+            out.shift = {r / 2, r / 2};
+            out.separator = ", ";
+            return out;
+        }
         case Shape::BraceLeft:
         case Shape::BraceRight:
         case Shape::Braces: {  // curlyBraceLeft.ts, curlyBraceRight.ts, curlyBraces.ts: open outlines with no fill, and an invisible box
@@ -526,6 +539,7 @@ Point label_offset(Shape shape, const Size& size, const Size& label) {
         return {r - 9, -6 + kNodePadding / 2};
     }
     if (shape == Shape::BraceRight || shape == Shape::Braces) return {-18 + kNodePadding / 2, -12 + kNodePadding / 2};
+    if (shape == Shape::WindowPane) return {5, 5};  // rectOffset / 2
     if (shape == Shape::StackedRectangle) return {-10, 10};  // -rectOffset, +rectOffset
     if (shape == Shape::LinedRectangle) return {8.0 / 2, 0};  // FRAME_WIDTH / 2 - bbox.width / 2
     if (shape == Shape::DividedRectangle) return {-0.5, (label.height + 16) * 0.1 - 0.5};  // padding 15 / 2 against the 16 of the box

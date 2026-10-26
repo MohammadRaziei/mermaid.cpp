@@ -56,6 +56,10 @@ enum class Shape {
     BraceLeft,         // `brace`, `brace-l`, `comment` (curlyBraceLeft): a curly brace, no fill
     BraceRight,        // `brace-r` (curlyBraceRight)
     Braces,            // `braces` (curlyBraces): both braces
+    WindowPane,        // `win-pane` (windowPane): a box with a cross of lines at its top left
+    FilledCircle,      // `f-circ` (filledCircle): a label-less filled dot of 14 px
+    FramedCircle,      // `fr-circ` (stateEnd): a label-less ring with a dot inside
+    CrossedCircle,     // `cross-circ` (crossedCircle): a label-less circle of 60 px with a cross
     CurvedTrapezoid,   // `curv-trap` (curvedTrapezoid): a pointed left end and a round right end
 };
 

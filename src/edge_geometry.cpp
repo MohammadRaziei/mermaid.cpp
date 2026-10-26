@@ -120,6 +120,9 @@ Point edge_geometry::border_point(const NodeLayout& node, const Point& outside) 
         }
         case Shape::Circle:
         case Shape::SmallCircle:
+        case Shape::FilledCircle:
+        case Shape::FramedCircle:
+        case Shape::CrossedCircle:
         case Shape::DoubleCircle: {
             const double r = MERMAID_MIN(w, h), len = std::hypot(dx, dy);
             return {node.center.x + r * dx / len, node.center.y + r * dy / len};

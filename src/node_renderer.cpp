@@ -50,7 +50,8 @@ void node_renderer::write(SvgWriter& out, const flowchart::Node& node, const flo
     if (layout.shape == Shape::FlippedTriangle) shift.y += -layout.size.height / 2 + layout.label.height / 2 + kNodePadding / 2;
     if (layout.shape == Shape::Hourglass) {  // the label is empty: a 0 x 0 box
         write_empty_label(out, style, node.markdown_label);
-    } else if (layout.shape == Shape::Fork || layout.shape == Shape::SmallCircle || layout.shape == Shape::LightningBolt) {
+    } else if (layout.shape == Shape::Fork || layout.shape == Shape::SmallCircle || layout.shape == Shape::LightningBolt ||
+               layout.shape == Shape::FilledCircle || layout.shape == Shape::FramedCircle || layout.shape == Shape::CrossedCircle) {
         // these shapes make no label at all
     } else {
         write_label(out, node.label, layout.label, style, shift, node.markdown_label,
@@ -150,6 +151,44 @@ void node_renderer::write_rough_polygon(SvgWriter& out, const std::vector<Point>
     out.close();
 }
 
+// The fill <path> and the outline <path> of one rough.js drawing with explicit colours.
+static void write_pair(SvgWriter& out, const rough_drawing& drawing, const std::string& fill, const std::string& stroke,
+                       const std::string& stroke_width, const std::string& inline_style) {
+    out.leaf("path", {{"d", drawing.fill_d}, {"stroke", "none"}, {"stroke-width", "0"}, {"fill", fill}, {"style", inline_style}});
+    out.leaf("path", {{"d", drawing.stroke_d}, {"stroke", stroke}, {"stroke-width", stroke_width}, {"fill", "none"},
+                      {"stroke-dasharray", "0 0"}, {"style", inline_style}});
+}
+
+// filledCircle.ts, stateEnd.ts, crossedCircle.ts: rc.circle drawings (roughness 0), label-less.
+void node_renderer::write_circle_shape(SvgWriter& out, Shape shape, const flowchart::Style&, const std::string& inline_style) const {
+    if (shape == Shape::FilledCircle) {
+        out.open("g");
+        write_pair(out, rough_circle(14), theme_.main_bkg, theme_.node_border, "1.3",
+                   inline_style.empty() ? "fill: " + theme_.node_border + " !important;" : inline_style);
+        out.close();
+    } else if (shape == Shape::FramedCircle) {
+        SvgWriter::Attrs group{{"class", "outer-path"}};
+        if (theme_.node_shadow) group.emplace_back("style", "filter:url(#" + svg_id_ + "-drop-shadow-small)");
+        out.open("g", group);
+        write_pair(out, rough_circle(14), theme_.main_bkg, theme_.line_color, "2", inline_style);
+        out.open("g");
+        write_pair(out, rough_circle(14.0 * 5 / 14), theme_.node_border, theme_.node_border, "2", inline_style);
+        out.close();
+        out.close();
+    } else {
+        constexpr double radius = 30;
+        const double q = radius * 2 / 2 * std::cos(3.14159265358979323846 / 4);  // createLine: half the line length times cos(45 degrees)
+        const double q_y = radius * 2 / 2 * std::sin(3.14159265358979323846 / 4);
+        out.open("g", {{"class", "outer-path"}});
+        write_pair(out, rough_circle(radius * 2), theme_.main_bkg, theme_.node_border, "1.3", inline_style);
+        out.open("g");
+        const rough_drawing cross = rough_open_subpaths({{{-q, q_y}, {q, -q_y}}, {{q, q_y}, {-q, -q_y}}}, seed_);
+        write_pair(out, cross, theme_.main_bkg, theme_.node_border, "1.3", inline_style);
+        out.close();
+        out.close();
+    }
+}
+
 // mergePaths (shapes.ts): the fill and the outline of one drawing joined into a single path.
 void node_renderer::write_merged_path(SvgWriter& out, const rough_drawing& drawing, const flowchart::Style& style,
                                       const std::string& inline_style) const {
@@ -181,6 +220,13 @@ void node_renderer::write_rough_layers(SvgWriter& out, const polygon_outline& ou
         if (layer.nested) {
             if (layer.hidden) out.open("g", {{"stroke-opacity", "0"}});
             else out.open("g");
+        }
+        if (!layer.more.empty()) {
+            std::vector<std::vector<Point>> runs{layer.points};
+            runs.insert(runs.end(), layer.more.begin(), layer.more.end());
+            write_rough_paths(out, rough_open_subpaths(runs, seed_), style, inline_style, false);
+            if (layer.nested) out.close();
+            continue;
         }
         if (layer.stroke_only) {
             write_rough_paths(out, rough_stroke_path(layer.points, !layer.open, seed_), style, inline_style, false, true);
@@ -296,6 +342,8 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
                           {"y", js(box.y)},
                           {"width", js(box.width)},
                           {"height", js(box.height)}});
+    } else if (shape == Shape::FilledCircle || shape == Shape::FramedCircle || shape == Shape::CrossedCircle) {
+        write_circle_shape(out, shape, style, inline_style);
     } else if (shape == Shape::SmallCircle) {
         // stateStart.ts: a plain circle with the small drop shadow of the neo look
         SvgWriter::Attrs attrs{{"class", "state-start"}, {"r", js(size.width / 2)}, {"width", js(size.width)}, {"height", js(size.height)}};
