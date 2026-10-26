@@ -200,6 +200,28 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
                           {"class", "basic label-container outer-path"},
                           {"style", inline_style},
                           {"transform", translate(-w / 2, -(h / 2 + ry))}});
+    } else if (shape == Shape::LinedCylinder) {
+        // linedCylinder.ts: like the cylinder plus a second lid line, moved by translate(-w / 2, -(h / 2 + ry)).
+        const double w = size.width, rx = w / 2, ry = rx / (2.5 + w / 50);
+        const double h = size.height - 2 * ry;
+        const std::string arc = "a" + js(rx) + "," + js(ry) + " 0,0,0 ";
+        const std::string d = "M0," + js(ry) + " " + arc + js(w) + ",0 " + arc + js(-w) + ",0 l0," + js(h) + " " + arc + js(w) + ",0 l0," +
+                              js(-h) + " M0," + js(ry + h * 0.1) + " " + arc + js(w) + ",0";
+        out.leaf("path", {{"d", d},
+                          {"class", "basic label-container outer-path"},
+                          {"style", inline_style},
+                          {"transform", translate(-w / 2, -(h / 2 + ry))}});
+    } else if (shape == Shape::TiltedCylinder) {
+        // tiltedCylinder.ts: drawn from 0,0 and moved by translate(-w / 2, h / 2 ) (sic, the space is Mermaid's).
+        const double h = label.height + 12, ry = h / 2, rx = ry / (2.5 + h / 50), w = label.width + rx + 12;
+        const std::string arc = "a" + js(rx) + "," + js(ry) + " 0,0,";
+        const std::string nl = "\n    ";  // createCylinderPathD3 is a template literal: its line breaks stay in the attribute
+        const std::string d = "M0,0" + nl + arc + "1 0," + js(-h) + nl + "l" + js(w) + ",0" + nl + arc + "1 0," + js(h) + nl + "M" + js(w) + "," +
+                              js(-h) + nl + arc + "0 0," + js(h) + nl + "l" + js(-w) + ",0";
+        out.leaf("path", {{"d", d},
+                          {"class", "basic label-container outer-path"},
+                          {"style", inline_style},
+                          {"transform", "translate(" + js(-w / 2) + ", " + js(h / 2) + " )"}});
     } else if (shape == Shape::Stadium) {
         write_stadium(out, size, style, inline_style);
     } else if (shape == Shape::Round) {

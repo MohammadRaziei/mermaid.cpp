@@ -81,15 +81,16 @@ Ordered by what is likely to matter next.
   picture. Not done: `themeVariables` other than `fontFamily`, `clusterBkg`, `clusterBorder` (they feed khroma
   derivations in Mermaid, e.g. `primaryColor` of `base`), which would need the colour arithmetic ported
 - [~] **S12b** the `@{ shape: ... }` family (150 names, 53 handlers in Mermaid 12.2.0). Drawn so far (verified against
-  the real SVG, 21 fixtures `s12b_*`, all `pass`): the 14 classic shapes, `hourglass` (`collate`), `tri` (`extract`),
+  the real SVG, 24 fixtures `s12b_*`, all `pass`): the 14 classic shapes, `hourglass` (`collate`), `tri` (`extract`),
   `flip-tri` (`manual-file`), `text`, `fork` (`join`, vertical bar in LR/RL), `sm-circ` (`start`), the paper shapes
   `doc`, `docs` (`st-doc`), `lin-doc`, `tag-doc`, `flag` (`paper-tape`), and `delay`, `notch-pent`, `sl-rect`,
-  `notch-rect` (`card`), `lin-rect` (`shaded-process`), `div-rect`. Each fixture has a short label in LR and a label
+  `notch-rect` (`card`), `lin-rect` (`shaded-process`), `div-rect`, `curv-trap` (`display`), `h-cyl` (`das`),
+  `lin-cyl` (`disk`). Each fixture has a short label in LR and a label
   that wraps; `s12b_documents_tb` mixes the paper shapes in TB with an edge label. Several rough.js drawings
   (`polygon_outline::layers`: one may nest in a `<g>`; `rc.polygon` has a plain `M L L` fill and `fill-rule="evenodd"`);
   sizes and outlines derive from the label box, not from the size, so no rounding is lost; `lin-rect` and `div-rect`
   clip edges to the node box (`intersect.rect`), the others to their outline. A name that is valid but not drawn yet
-  (the rest: cloud, bang, h-cyl, lin-cyl, curv-trap, win-pane (several `M` subpaths, the rough generator handles one
+  (the rest: cloud, bang, win-pane (several `M` subpaths, the rough generator handles one
   polygon only), f-circ, fr-circ, st-rect, bolt, braces, bow-rect, tag-rect, cross-circ, folder, bucket, console,
   browser, person, datastore, summary, ...) is drawn as a box. An unknown name is an error, as in Mermaid:
   `No such shape: <name>.` (the lookup is exact, `Rect` fails). The fork size uses the graph direction, not that of the
@@ -148,6 +149,7 @@ Ordered by what is likely to matter next.
 | s14_edge_styles | dotted, thick, invisible, `--o`, `--x`, `<-->`, long edges, labelled dotted/thick |
 
 ## Unverified (implemented from the Mermaid source, no reference SVG covers it)
+- `h-cyl` and `lin-cyl`: Mermaid adjusts the edge end on their ellipse (`intersect` of tiltedCylinder.ts / linedCylinder.ts, like cylinder.ts); we clip to the node box. The fan-out fixtures `s12b_h-cyl` and `s12b_lin-cyl` agree within the 0.5 tolerance, but an edge that meets a lid far from the centre is not covered (the classic cylinder has the same gap).
 
 - `linkStyle` label colours, dotted dash pattern, thick class, every curve other than the default
 - shapes with labels wider than the 120 px label width (wrapping), and shapes with `classDef` / `style` fill and stroke (only box, diamond, cylinder, stadium were checked with styles)

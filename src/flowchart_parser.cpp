@@ -162,6 +162,9 @@ Shape shape_from_data_name(const std::string& name) {
         {"lin-proc", Shape::LinedRectangle}, {"shaded-process", Shape::LinedRectangle},
         {"div-rect", Shape::DividedRectangle}, {"div-proc", Shape::DividedRectangle}, {"divided-rectangle", Shape::DividedRectangle},
         {"divided-process", Shape::DividedRectangle},
+        {"curv-trap", Shape::CurvedTrapezoid}, {"curved-trapezoid", Shape::CurvedTrapezoid}, {"display", Shape::CurvedTrapezoid},
+        {"h-cyl", Shape::TiltedCylinder}, {"das", Shape::TiltedCylinder}, {"horizontal-cylinder", Shape::TiltedCylinder},
+        {"lin-cyl", Shape::LinedCylinder}, {"disk", Shape::LinedCylinder}, {"lined-cylinder", Shape::LinedCylinder},
         {"flag", Shape::Flag}, {"paper-tape", Shape::Flag},
         {"sm-circ", Shape::SmallCircle}, {"start", Shape::SmallCircle}, {"small-circle", Shape::SmallCircle},
     };

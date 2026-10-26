@@ -134,6 +134,21 @@ Size NodeSizer::size(const Node& node) const {
             const double h = text_h + 16;
             return {text_w + 16, h + h * 0.2};
         }
+        case Shape::CurvedTrapezoid: {  // curvedTrapezoid.ts (neo): padding 16 x 12, the round end clears the label
+            const double h = MERMAID_MAX(5.0, text_h + 2 * 12), r = h / 2;
+            const double clearance = r - std::sqrt(MERMAID_MAX(0.0, r * r - (text_h / 2) * (text_h / 2)));
+            const double side = MERMAID_MAX(h / 4, clearance);
+            const double w = MERMAID_MAX(MERMAID_MAX(20.0, text_w + 2 * 16 + side * 2), (text_w + 2 * 16) * 1.25);
+            return {w, h};
+        }
+        case Shape::TiltedCylinder: {  // tiltedCylinder.ts (neo): label padding 12, the two lids add 2 * rx on each side
+            const double h = text_h + 12, ry = h / 2, rx = ry / (2.5 + h / 50);
+            return {text_w + rx + 12 + 2 * rx, h};
+        }
+        case Shape::LinedCylinder: {  // linedCylinder.ts (neo): padding 16 x 24, the two lids add 2 * ry
+            const double w = text_w + 2 * 16, rx = w / 2, ry = rx / (2.5 + w / 50);
+            return {w, text_h + ry + 2 * 24 + 2 * ry};
+        }
         case Shape::Default:
         case Shape::Square:
             break;

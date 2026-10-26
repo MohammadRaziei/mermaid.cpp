@@ -254,6 +254,24 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             out.hit_as_rect = true;
             return out;
         }
+        case Shape::CurvedTrapezoid: {  // curvedTrapezoid.ts: drawn from the top left corner, then moved by (-w / 2, -h / 2)
+            constexpr double pi = 3.14159265358979323846;
+            const double h = MERMAID_MAX(5.0, label.height + 2 * 12), r = h / 2;
+            const double clearance = r - std::sqrt(MERMAID_MAX(0.0, r * r - (label.height / 2) * (label.height / 2)));
+            const double side = MERMAID_MAX(h / 4, clearance);
+            const double w = MERMAID_MAX(MERMAID_MAX(20.0, label.width + 2 * 16 + side * 2), (label.width + 2 * 16) * 1.25);
+            const double rw = w - r, tw = h / 4;
+            out.points = {{rw, 0}, {tw, 0}, {0, h / 2}, {tw, h}, {rw, h}};
+            const double start = 270 * pi / 180, step = (90 * pi / 180 - start) / 49;
+            for (int i = 0; i < 50; ++i) {  // generateCirclePoints(-rw, -h / 2, r, 50, 270, 90) mirrors both axes
+                const double angle = start + i * step;
+                out.points.push_back({-(-rw + r * std::cos(angle)), -(-h / 2 + r * std::sin(angle))});
+            }
+            out.rough = true;
+            out.shift = {-w / 2, -h / 2};
+            out.separator = ", ";
+            return out;
+        }
         default:
             return std::nullopt;
     }
@@ -266,6 +284,14 @@ Point label_offset(Shape shape, const Size& size, const Size& label) {
     if (shape == Shape::SlopedRectangle) {  // -w / 2 + padding, -h / 4 + padding: from the centred label
         const double h = label.height + 2 * 12;
         return {-16 + kNodePadding, -h / 4 + kNodePadding + label.height / 2};
+    }
+    if (shape == Shape::TiltedCylinder) {  // -bbox.width / 2 - rx
+        const double h = label.height + 12;
+        return {-(h / 2) / (2.5 + h / 50), 0};
+    }
+    if (shape == Shape::LinedCylinder) {  // -bbox.height / 2 + ry
+        const double w = label.width + 2 * 16;
+        return {0, (w / 2) / (2.5 + w / 50)};
     }
     if (shape == Shape::LinedRectangle) return {8.0 / 2, 0};  // FRAME_WIDTH / 2 - bbox.width / 2
     if (shape == Shape::DividedRectangle) return {-0.5, (label.height + 16) * 0.1 - 0.5};  // padding 15 / 2 against the 16 of the box

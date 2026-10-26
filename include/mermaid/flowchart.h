@@ -45,6 +45,9 @@ enum class Shape {
     NotchedRectangle,  // `notch-rect` (card): a rectangle with a cut top left corner
     LinedRectangle,    // `lin-rect` (shadedProcess): a rectangle with a bar on the left
     DividedRectangle,  // `div-rect` (dividedRectangle): a rectangle with a divider near the top
+    TiltedCylinder,    // `h-cyl` (tiltedCylinder): a cylinder lying on its side
+    LinedCylinder,     // `lin-cyl` (linedCylinder): a cylinder with a second lid line
+    CurvedTrapezoid,   // `curv-trap` (curvedTrapezoid): a pointed left end and a round right end
 };
 
 enum class Stroke { Normal, Thick, Dotted, Invisible };

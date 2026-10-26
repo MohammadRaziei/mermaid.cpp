@@ -70,3 +70,6 @@ s12b_sl-rect	pass
 s12b_notch-rect	pass
 s12b_lin-rect	pass
 s12b_div-rect	pass
+s12b_curv-trap	pass
+s12b_h-cyl	pass
+s12b_lin-cyl	pass
