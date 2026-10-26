@@ -167,6 +167,19 @@ Size NodeSizer::size(const Node& node) const {
         }
         case Shape::LightningBolt:  // lightningBolt.ts: no label, 35 wide, the zigzag is 2 * 35 high
             return {35, 70};
+        case Shape::BraceLeft:  // curlyBrace*.ts: the node is the box of the invisible outline round the braces
+        case Shape::BraceRight:
+        case Shape::Braces: {
+            const auto outline = mermaid::detail::polygon_outline_of(node.shape, {0, 0}, label);
+            double min_x = outline->points.front().x, max_x = min_x, min_y = outline->points.front().y, max_y = min_y;
+            for (const auto& layer : outline->layers) {  // the braces can stick out of the invisible box
+                for (const Point& p : layer.points) {
+                    min_x = MERMAID_MIN(min_x, p.x); max_x = MERMAID_MAX(max_x, p.x);
+                    min_y = MERMAID_MIN(min_y, p.y); max_y = MERMAID_MAX(max_y, p.y);
+                }
+            }
+            return {max_x - min_x, max_y - min_y};
+        }
         case Shape::Cloud:  // cloud.ts / bang.ts: the node is the bounding box of the arcs
         case Shape::Bang:
             return mermaid::detail::arc_shape_of(node.shape, label)->bounds;

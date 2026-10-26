@@ -24,6 +24,9 @@ rough_drawing rough_polygon(const std::vector<Point>& points, int seed);
 
 // `rc.polygon(points, {roughness: 0, fillStyle: "solid"})`: the same outline, but the fill is the plain `M L L ...` of
 // the points (renderer.js solidFillPolygon), not a closed path.
+// `rc.path(d, {fill: "none"})`: only the outline, with or without the closing `Z`; `fill_d` stays empty.
+rough_drawing rough_stroke_path(const std::vector<Point>& points, bool closed, int seed);
+
 rough_drawing rough_polygon_filled_plainly(const std::vector<Point>& points, int seed);
 
 // A number the way JavaScript's Number#toString writes it.

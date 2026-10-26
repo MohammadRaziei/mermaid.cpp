@@ -80,7 +80,7 @@ void double_line(std::vector<rough_op>& ops, const Point& a, const Point& b, boo
 }
 
 // renderer.js svgPath for a path made of M, L... and Z.
-std::vector<rough_op> svg_path(const std::vector<Point>& points, bool single, rough_random& random) {
+std::vector<rough_op> svg_path(const std::vector<Point>& points, bool single, rough_random& random, bool closed = true) {
     std::vector<rough_op> ops;
     if (points.empty()) return ops;
     Point current = points.front();
@@ -88,7 +88,7 @@ std::vector<rough_op> svg_path(const std::vector<Point>& points, bool single, ro
         double_line(ops, current, points[i], single, random);
         current = points[i];
     }
-    double_line(ops, current, points.front(), single, random);  // Z
+    if (closed) double_line(ops, current, points.front(), single, random);  // Z
     return ops;
 }
 
@@ -144,6 +144,11 @@ rough_drawing rough_polygon(const std::vector<Point>& points, int seed) {
     const std::vector<rough_op> stroke = svg_path(points, false, random);
     const std::vector<rough_op> fill = svg_path(points, true, random);
     return {ops_to_path(fill, true), ops_to_path(stroke, false)};
+}
+
+rough_drawing rough_stroke_path(const std::vector<Point>& points, bool closed, int seed) {
+    rough_random random(seed == 0 ? 1 : seed);
+    return {"", ops_to_path(svg_path(points, false, random, closed), false)};
 }
 
 rough_drawing rough_polygon_filled_plainly(const std::vector<Point>& points, int seed) {

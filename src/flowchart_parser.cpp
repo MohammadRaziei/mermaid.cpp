@@ -171,6 +171,8 @@ Shape shape_from_data_name(const std::string& name) {
         {"bow-rect", Shape::BowTieRectangle}, {"stored-data", Shape::BowTieRectangle}, {"bow-tie-rectangle", Shape::BowTieRectangle},
         {"bolt", Shape::LightningBolt}, {"com-link", Shape::LightningBolt}, {"lightning-bolt", Shape::LightningBolt},
         {"cloud", Shape::Cloud}, {"bang", Shape::Bang},
+        {"brace", Shape::BraceLeft}, {"brace-l", Shape::BraceLeft}, {"comment", Shape::BraceLeft},
+        {"brace-r", Shape::BraceRight}, {"braces", Shape::Braces},
         {"flag", Shape::Flag}, {"paper-tape", Shape::Flag},
         {"sm-circ", Shape::SmallCircle}, {"start", Shape::SmallCircle}, {"small-circle", Shape::SmallCircle},
     };

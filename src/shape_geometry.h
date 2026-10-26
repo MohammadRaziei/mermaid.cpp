@@ -42,6 +42,9 @@ struct polygon_outline {
         bool nested = false;
         bool polygon_fill = false;  // rc.polygon: the fill is a plain `M L L`, tagged fill-rule="evenodd"
         bool merged = false;        // mergePaths: fill and outline become one <path>
+        bool stroke_only = false;   // rc.path with fill "none": no fill <path>
+        bool open = false;          // the path text had its `Z` removed
+        bool hidden = false;        // the <g> of the drawing has stroke-opacity 0
     };
     std::vector<layer> layers;
     bool hit_as_rect = false;  // edges are clipped to the node box (intersect.rect), not to the outline

@@ -105,7 +105,7 @@ void node_renderer::write_fork(SvgWriter& out, const Rect& box, const flowchart:
 // The two <path>s of one rough.js drawing: the solid fill and the outline.
 // userNodeOverrides: the style map wins over the theme.
 void node_renderer::write_rough_paths(SvgWriter& out, const rough_drawing& drawing, const flowchart::Style& style,
-                                      const std::string& inline_style, bool polygon_fill) const {
+                                      const std::string& inline_style, bool polygon_fill, bool stroke_only) const {
     const auto lookup = [&](const char* key, const std::string& fallback) {
         std::string value = fallback;
         for (const auto& [k, v] : style)
@@ -129,7 +129,7 @@ void node_renderer::write_rough_paths(SvgWriter& out, const rough_drawing& drawi
     SvgWriter::Attrs fill{{"d", drawing.fill_d}, {"stroke", "none"}, {"stroke-width", "0"}, {"fill", lookup("fill", theme_.main_bkg)}};
     if (polygon_fill) fill.emplace_back("fill-rule", "evenodd");
     fill.emplace_back("style", inline_style);
-    out.leaf("path", fill);
+    if (!stroke_only) out.leaf("path", fill);
     out.leaf("path", {{"d", drawing.stroke_d},
                       {"stroke", lookup("stroke", theme_.node_border)},
                       {"stroke-width", stroke_width},
@@ -178,7 +178,15 @@ void node_renderer::write_rough_layers(SvgWriter& out, const polygon_outline& ou
     if (outline.group_style) group.emplace_back("style", "");
     out.open("g", group);
     for (const polygon_outline::layer& layer : outline.layers) {
-        if (layer.nested) out.open("g");
+        if (layer.nested) {
+            if (layer.hidden) out.open("g", {{"stroke-opacity", "0"}});
+            else out.open("g");
+        }
+        if (layer.stroke_only) {
+            write_rough_paths(out, rough_stroke_path(layer.points, !layer.open, seed_), style, inline_style, false, true);
+            if (layer.nested) out.close();
+            continue;
+        }
         if (layer.merged) {
             write_merged_path(out, rough_polygon(layer.points, seed_), style, inline_style);
             if (layer.nested) out.close();

@@ -32,7 +32,7 @@ private:
     void write_fork(SvgWriter& out, const Rect& box, const flowchart::Style& style, const std::string& inline_style) const;
     void write_empty_label(SvgWriter& out, const flowchart::Style& style, bool markdown) const;
     void write_rough_paths(SvgWriter& out, const rough_drawing& drawing, const flowchart::Style& style,
-                           const std::string& inline_style, bool polygon_fill) const;
+                           const std::string& inline_style, bool polygon_fill, bool stroke_only = false) const;
     void write_merged_path(SvgWriter& out, const rough_drawing& drawing, const flowchart::Style& style,
                            const std::string& inline_style) const;
     void write_rough_layers(SvgWriter& out, const polygon_outline& outline, const flowchart::Style& style,

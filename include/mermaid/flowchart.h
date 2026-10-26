@@ -53,6 +53,9 @@ enum class Shape {
     LightningBolt,     // `bolt` (lightningBolt): a label-less 35 x 70 zigzag
     Cloud,             // `cloud`: a path of circular arcs (a mindmap shape)
     Bang,              // `bang`: a spiky path of circular arcs (a mindmap shape)
+    BraceLeft,         // `brace`, `brace-l`, `comment` (curlyBraceLeft): a curly brace, no fill
+    BraceRight,        // `brace-r` (curlyBraceRight)
+    Braces,            // `braces` (curlyBraces): both braces
     CurvedTrapezoid,   // `curv-trap` (curvedTrapezoid): a pointed left end and a round right end
 };
 

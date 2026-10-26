@@ -163,7 +163,8 @@ std::optional<arc_shape> arc_shape_of(Shape shape, const Size& label) {
 }
 
 bool writes_tight_label_transform(Shape shape) {
-    return shape == Shape::Document || shape == Shape::TaggedDocument || shape == Shape::LinedDocument;  // multiWave writes `, `
+    return shape == Shape::Document || shape == Shape::TaggedDocument || shape == Shape::LinedDocument ||
+           shape == Shape::BraceLeft || shape == Shape::BraceRight || shape == Shape::Braces;  // multiWave writes `, `
 }
 
 std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size, const Size& label) {
@@ -431,6 +432,74 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             out.group_class = "outer-path";
             return out;
         }
+        case Shape::BraceLeft:
+        case Shape::BraceRight:
+        case Shape::Braces: {  // curlyBraceLeft.ts, curlyBraceRight.ts, curlyBraces.ts: open outlines with no fill, and an invisible box
+            const bool left = shape == Shape::BraceLeft;  // the left brace pads by 18 x 12 once, the others twice
+            const double w = label.width + (left ? 18 : 2 * 18), h = label.height + (left ? 12 : 2 * 12);
+            const double r = MERMAID_MAX(5.0, h * 0.1);
+            const double sign = shape == Shape::BraceRight ? 1 : -1;  // curlyBraceRight.ts uses the variant that does not mirror
+            const auto gcp = [sign](double cx, double cy, double radius, int n, double from, double to) {  // generateCirclePoints
+                constexpr double pi = 3.14159265358979323846;
+                std::vector<Point> pts;
+                const double start = from * pi / 180, step = (to * pi / 180 - start) / (n - 1);
+                for (int i = 0; i < n; ++i) {
+                    const double a = start + i * step;
+                    pts.push_back({sign * (cx + radius * std::cos(a)), sign * (cy + radius * std::sin(a))});
+                }
+                return pts;
+            };
+            const auto join = [](std::vector<std::vector<Point>> parts) {
+                std::vector<Point> all;
+                for (const auto& part : parts) all.insert(all.end(), part.begin(), part.end());
+                return all;
+            };
+            const auto left_brace = [&](int top_count) {
+                return join({gcp(w / 2, -h / 2, r, top_count, -90, 0), {{-w / 2 - r, r}}, gcp(w / 2 + r * 2, -r, r, 20, -180, -270),
+                             gcp(w / 2 + r * 2, r, r, 20, -90, -180), {{-w / 2 - r, -h / 2}}, gcp(w / 2, h / 2, r, 20, 0, 90)});
+            };
+            const auto right_brace = [&]() {
+                return join({gcp(w / 2, -h / 2, r, 20, -90, 0), {{w / 2 + r, -r}}, gcp(w / 2 + r * 2, -r, r, 20, -180, -270),
+                             gcp(w / 2 + r * 2, r, r, 20, -90, -180), {{w / 2 + r, h / 2}}, gcp(w / 2, h / 2, r, 20, 0, 90)});
+            };
+            const auto inner_right_brace = [&]() {  // the right half of `braces`
+                return join({gcp(-w / 2 + r + r / 2, -h / 2, r, 20, -90, -180), {{w / 2 - r / 2, r}}, gcp(-w / 2 - r / 2, -r, r, 20, 0, 90),
+                             gcp(-w / 2 - r / 2, r, r, 20, -90, 0), {{w / 2 - r / 2, -r}}, gcp(-w / 2 + r + r / 2, h / 2, r, 30, -180, -270)});
+            };
+            const auto stroke_layer = [](std::vector<Point> pts, bool open, bool hidden) {
+                polygon_outline::layer l;
+                l.points = std::move(pts);
+                l.nested = true;
+                l.stroke_only = true;
+                l.open = open;
+                l.hidden = hidden;
+                return l;
+            };
+            std::vector<Point> rect;
+            if (shape == Shape::BraceLeft) {
+                rect = join({{{w / 2, -h / 2 - r}, {-w / 2, -h / 2 - r}}, gcp(w / 2, -h / 2, r, 20, -90, 0), {{-w / 2 - r, -r}},
+                             gcp(w / 2 + w * 0.1, -r, r, 20, -180, -270), gcp(w / 2 + w * 0.1, r, r, 20, -90, -180), {{-w / 2 - r, h / 2}},
+                             gcp(w / 2, h / 2, r, 20, 0, 90), {{-w / 2, h / 2 + r}, {w / 2, h / 2 + r}}});
+                out.layers = {stroke_layer(left_brace(30), true, false), stroke_layer(rect, false, true)};
+                out.shift = {r, 0};
+            } else if (shape == Shape::BraceRight) {
+                rect = join({{{-w / 2, -h / 2 - r}, {w / 2, -h / 2 - r}}, gcp(w / 2, -h / 2, r, 20, -90, 0), {{w / 2 + r, -r}},
+                             gcp(w / 2 + r * 2, -r, r, 20, -180, -270), gcp(w / 2 + r * 2, r, r, 20, -90, -180), {{w / 2 + r, h / 2}},
+                             gcp(w / 2, h / 2, r, 20, 0, 90), {{w / 2, h / 2 + r}, {-w / 2, h / 2 + r}}});
+                out.layers = {stroke_layer(right_brace(), true, false), stroke_layer(rect, false, true)};
+                out.shift = {-r, 0};
+            } else {
+                rect = join({{{w / 2, -h / 2 - r}, {-w / 2, -h / 2 - r}}, gcp(w / 2, -h / 2, r, 20, -90, 0), {{-w / 2 - r, -r}},
+                             gcp(w / 2 + r * 2, -r, r, 20, -180, -270), gcp(w / 2 + r * 2, r, r, 20, -90, -180), {{-w / 2 - r, h / 2}},
+                             gcp(w / 2, h / 2, r, 20, 0, 90), {{-w / 2, h / 2 + r}, {w / 2 - r - r / 2, h / 2 + r}}, inner_right_brace()});
+                out.layers = {stroke_layer(inner_right_brace(), true, false), stroke_layer(left_brace(30), true, false), stroke_layer(rect, false, true)};
+                out.shift = {r - r / 4, 0};
+            }
+            out.points = rect;
+            out.separator = ", ";
+            out.group_class = "text";
+            return out;
+        }
         default:
             return std::nullopt;
     }
@@ -452,6 +521,11 @@ Point label_offset(Shape shape, const Size& size, const Size& label) {
         const double w = label.width + 2 * 16;
         return {0, (w / 2) / (2.5 + w / 50)};
     }
+    if (shape == Shape::BraceLeft) {  // translate(-w / 2 + radius, -h / 2 + padding / 2), padded by 18 x 12 once
+        const double h = label.height + 12, r = MERMAID_MAX(5.0, h * 0.1);
+        return {r - 9, -6 + kNodePadding / 2};
+    }
+    if (shape == Shape::BraceRight || shape == Shape::Braces) return {-18 + kNodePadding / 2, -12 + kNodePadding / 2};
     if (shape == Shape::StackedRectangle) return {-10, 10};  // -rectOffset, +rectOffset
     if (shape == Shape::LinedRectangle) return {8.0 / 2, 0};  // FRAME_WIDTH / 2 - bbox.width / 2
     if (shape == Shape::DividedRectangle) return {-0.5, (label.height + 16) * 0.1 - 0.5};  // padding 15 / 2 against the 16 of the box
