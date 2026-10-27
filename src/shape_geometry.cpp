@@ -167,9 +167,34 @@ bool writes_tight_label_transform(Shape shape) {
            shape == Shape::BraceLeft || shape == Shape::BraceRight || shape == Shape::Braces;  // multiWave writes `, `
 }
 
+bucket_geometry bucket_geometry_of(const Size& size) {
+    const double w = size.width, rim = MERMAID_MAX(MERMAID_MIN(w * 0.08, 12.0), 5.0), total = size.height - rim;
+    return {w, w * 0.72, rim, -total / 2 + rim, total / 2};
+}
+
+Point drawing_shift(Shape shape, const Size& size) {
+    return shape == Shape::Bucket ? Point{0, bucket_geometry_of(size).rim_ry / 2} : Point{0, 0};
+}
+
 std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size, const Size& label) {
     polygon_outline out;
     switch (shape) {
+        case Shape::Bucket: {  // the outline edges are clipped to: two half ellipses of 13 points, 12 segments each
+            constexpr double pi = 3.14159265358979323846;
+            const bucket_geometry g = bucket_geometry_of(size);
+            const auto arc = [&](double rx, double cy, double y_sign) {
+                std::vector<Point> pts;
+                for (int i = 0; i <= 12; ++i) {
+                    const double theta = pi - i * pi / 12;
+                    pts.push_back({rx * std::cos(theta), cy + y_sign * g.rim_ry * std::sin(theta)});
+                }
+                return pts;
+            };
+            out.points = arc(g.w / 2, g.top_y, -1);
+            std::vector<Point> bottom = arc(g.bottom_w / 2, g.bottom_y, 1);
+            out.points.insert(out.points.end(), bottom.rbegin(), bottom.rend());
+            return out;
+        }
         case Shape::Hexagon: {  // hexagon.ts: m = h / 3.5 in the neo look
             const double w = size.width, h = size.height, m = h / 3.5;
             out.points = {{m, 0}, {w - m, 0}, {w, -h / 2}, {w - m, -h}, {m, -h}, {0, -h / 2}};
@@ -339,6 +364,13 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             out.shift = {0, h / 4};
             out.separator = ", ";
             out.group_class = "basic label-container  outer-path";
+            return out;
+        }
+        case Shape::Folder: {  // folder.ts: a plain path round the centre; the tab is on the top left
+            const double w = size.width, h = size.height, content = label.height + 2 * kNodePadding;
+            const double tab_h = h - content, tab_w = MERMAID_MAX(w * 0.38, 28.0), top = -h / 2;
+            out.points = {{-w / 2, top}, {-w / 2 + tab_w, top}, {-w / 2 + tab_w, top + tab_h}, {w / 2, top + tab_h}, {w / 2, h / 2}, {-w / 2, h / 2}};
+            out.plain_path = true;
             return out;
         }
         case Shape::NotchedRectangle: {  // card.ts: insertPolygonShape, the notch is 12
@@ -539,6 +571,11 @@ Point label_offset(Shape shape, const Size& size, const Size& label) {
         return {r - 9, -6 + kNodePadding / 2};
     }
     if (shape == Shape::BraceRight || shape == Shape::Braces) return {-18 + kNodePadding / 2, -12 + kNodePadding / 2};
+    if (shape == Shape::Bucket) {  // the label sits in the middle of the body, between the rim and the bottom
+        const bucket_geometry g = bucket_geometry_of(size);
+        return {0, g.top_y + (g.bottom_y - g.top_y) / 2};
+    }
+    if (shape == Shape::Folder) return {0, (size.height - (label.height + 2 * kNodePadding)) / 2};  // the label sits in the body, below the tab
     if (shape == Shape::WindowPane) return {5, 5};  // rectOffset / 2
     if (shape == Shape::StackedRectangle) return {-10, 10};  // -rectOffset, +rectOffset
     if (shape == Shape::LinedRectangle) return {8.0 / 2, 0};  // FRAME_WIDTH / 2 - bbox.width / 2

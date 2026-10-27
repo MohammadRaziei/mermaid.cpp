@@ -614,7 +614,8 @@ private:
                 include({n.center.x - arcs->nominal.width / 2 + arcs->origin.x, n.center.y - arcs->nominal.height / 2 + arcs->origin.y,
                          arcs->bounds.width, arcs->bounds.height});
             } else {
-                include(n.rect());
+                const Point shift = mermaid::detail::drawing_shift(n.shape, n.size);  // bucket: drawn off centre
+                include({n.rect().x + shift.x, n.rect().y + shift.y, n.rect().width, n.rect().height});
             }
         }
         for (const ClusterLayout& c : layout.clusters) include(c.rect);

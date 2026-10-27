@@ -61,6 +61,8 @@ enum class Shape {
     FramedCircle,      // `fr-circ` (stateEnd): a label-less ring with a dot inside
     CrossedCircle,     // `cross-circ` (crossedCircle): a label-less circle of 60 px with a cross
     CurvedTrapezoid,   // `curv-trap` (curvedTrapezoid): a pointed left end and a round right end
+    Bucket,            // `bucket`: a cup with an elliptical rim and a rounded bottom
+    Folder,            // `folder`, `directory`: a box with a tab on its top left
 };
 
 enum class Stroke { Normal, Thick, Dotted, Invisible };

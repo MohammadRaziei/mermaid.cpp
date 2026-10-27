@@ -351,8 +351,24 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
         out.leaf("circle", attrs);
     } else if (shape == Shape::Fork) {
         write_fork(out, box, style, inline_style);
+    } else if (shape == Shape::Bucket) {
+        // bucket.ts: a group with the cup (two arcs) and the rim ellipse, drawn round the node's origin
+        const bucket_geometry g = bucket_geometry_of(size);
+        const std::string d = "M" + js(-g.w / 2) + "," + js(g.top_y) + " L" + js(-g.bottom_w / 2) + "," + js(g.bottom_y) + " A" + js(g.bottom_w / 2) + "," +
+                              js(g.rim_ry) + " 0 0 0 " + js(g.bottom_w / 2) + "," + js(g.bottom_y) + " L" + js(g.w / 2) + "," + js(g.top_y) + " A" +
+                              js(g.w / 2) + "," + js(g.rim_ry) + " 0 0 0 " + js(-g.w / 2) + "," + js(g.top_y) + " Z";
+        const std::string accent = theme_.node_border.empty() ? theme_.line_color : theme_.node_border;
+        out.open("g", {{"class", "basic label-container"}});
+        out.leaf("path", {{"d", d}, {"style", inline_style}});
+        out.leaf("ellipse", {{"cx", "0"}, {"cy", js(g.top_y)}, {"rx", js(g.w / 2)}, {"ry", js(g.rim_ry)},
+                             {"style", "fill:none;stroke:" + accent + ";stroke-width:1px"}});
+        out.close();
     } else if (const auto polygon = polygon_outline_of(shape, size, label)) {
-        if (!polygon->layers.empty()) {
+        if (polygon->plain_path) {
+            std::string d;
+            for (const Point& p : polygon->points) d += (d.empty() ? "M" : " L") + js(p.x) + "," + js(p.y);
+            out.leaf("path", {{"d", d + " Z"}, {"class", "basic label-container"}, {"style", inline_style}});
+        } else if (!polygon->layers.empty()) {
             write_rough_layers(out, *polygon, style, inline_style);
         } else if (polygon->rough) {
             write_rough_polygon(out, polygon->points, polygon->has_shift ? "translate(" + js(polygon->shift.x) + polygon->separator + js(polygon->shift.y) + ")" : std::string(), style, inline_style,

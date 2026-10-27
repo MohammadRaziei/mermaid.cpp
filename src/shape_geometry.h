@@ -51,7 +51,17 @@ struct polygon_outline {
     bool hit_as_rect = false;  // edges are clipped to the node box (intersect.rect), not to the outline
     bool group_style = false;  // the group carries an (empty) style attribute: shadedProcess.ts sets `style` from cssStyles
     bool has_shift = true;  // the group carries translate(shift); flag does not
+    bool plain_path = false;  // one `<path d="M L L Z">` in node coordinates, no transform (folder)
 };
+
+// bucket.ts: where the cup is drawn, in node coordinates (the drawing is not centred on the node box).
+struct bucket_geometry {
+    double w, bottom_w, rim_ry, top_y, bottom_y;
+};
+bucket_geometry bucket_geometry_of(const Size& size);
+
+// How far a shape's drawing is moved from the centre of its node box (bucket only).
+Point drawing_shift(flowchart::Shape shape, const Size& size);
 
 // nullopt for the shapes that are not polygons. `size` is the node's size, the bounding box of the outline.
 // `label` is the label box, from which the document shapes derive their outline exactly.

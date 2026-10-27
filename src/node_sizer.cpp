@@ -147,6 +147,14 @@ Size NodeSizer::size(const Node& node) const {
             const double w = MERMAID_MAX(MERMAID_MAX(20.0, text_w + 2 * 16 + side * 2), (text_w + 2 * 16) * 1.25);
             return {w, h};
         }
+        case Shape::Bucket: {  // bucket.ts: the rim ellipse sticks out above and the bottom arc below, so the box is rimRy higher
+            const double w = MERMAID_MAX(text_w + 2 * p, 80.0), rim = MERMAID_MAX(MERMAID_MIN(w * 0.08, 12.0), 5.0);
+            return {w, text_h + 2 * p + 2 * rim};
+        }
+        case Shape::Folder: {  // folder.ts: padding 15, a tab of 16 % of the content height (8 to 14) on top, at least 90 wide
+            const double content = text_h + 2 * p;
+            return {MERMAID_MAX(text_w + 2 * p, 90.0), content + MERMAID_MAX(MERMAID_MIN(content * 0.16, 14.0), 8.0)};
+        }
         case Shape::TiltedCylinder: {  // tiltedCylinder.ts (neo): label padding 12, the two lids add 2 * rx on each side
             const double h = text_h + 12, ry = h / 2, rx = ry / (2.5 + h / 50);
             return {text_w + rx + 12 + 2 * rx, h};

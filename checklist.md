@@ -80,19 +80,20 @@ Ordered by what is likely to matter next.
   drop-shadow flood for dark. 10 fixtures (basic + rich, five themes) pass. The init `theme` key and `-t` give the same
   picture. Not done: `themeVariables` other than `fontFamily`, `clusterBkg`, `clusterBorder` (they feed khroma
   derivations in Mermaid, e.g. `primaryColor` of `base`), which would need the colour arithmetic ported
-- [~] **S12b** the `@{ shape: ... }` family (150 names, 53 handlers in Mermaid 12.2.0). 47 of the 53 handlers are
-  drawn, verified against the real SVG (36 fixtures `s12b_*`, all `pass`, each with a short label and a label that
+- [~] **S12b** the `@{ shape: ... }` family (150 names, 53 handlers in Mermaid 12.2.0). 49 of the 53 handlers are
+  drawn, verified against the real SVG (40 fixtures `s12b_*`, all `pass`, each with a short label and a label that
   wraps where the shape has one): the 14 classic shapes, the paper shapes (`doc`, `docs`, `lin-doc`, `tag-doc`, `flag`),
   `delay`, `notch-pent`, `sl-rect`, `notch-rect`, `lin-rect`, `div-rect`, `curv-trap`, `h-cyl`, `lin-cyl`, `st-rect`,
   `tag-rect`, `bow-rect`, `win-pane`, `bolt`, `cloud`, `bang`, the braces (`brace`, `brace-r`, `braces`), `hourglass`,
-  `tri`, `flip-tri`, `text`, `fork`, `sm-circ` and the circles `f-circ`, `fr-circ`, `cross-circ` (rc.circle of rough.js with
+  `tri`, `flip-tri`, `text`, `fork`, `folder` (a plain six-point `<path>`, `polygon_outline::plain_path`), `bucket` (a group with a path and the rim
+  ellipse, drawn off the centre of its node box: `drawing_shift` moves the bounds, edges clip to 26 sampled points), `sm-circ` and the circles `f-circ`, `fr-circ`, `cross-circ` (rc.circle of rough.js with
   roughness 0 is ported: `rough_circle`). How they are built: several rough.js drawings
   (`polygon_outline::layers`: nested `<g>`, `rc.polygon` plain fill with `fill-rule="evenodd"`, `mergePaths`, stroke-only,
   open and multi-run paths); sizes and outlines derive from the label box, not from the size, so no rounding is lost;
   `lin-rect` and `div-rect` clip edges to the node box (`intersect.rect`), the others to their outline; `cloud` and
   `bang` are the exact bounding box of their arcs and the viewBox follows the drawn path; the node of the braces is the
-  union of all drawings. **Still drawn as a box (valid names)**: `folder` (`directory`), `bucket`, `console`,
-  `browser`, `person`, `data-store` (`datastore`): the six icon-like handlers. An unknown name is an error, as in
+  union of all drawings. **Still drawn as a box (valid names)**: `console`,
+  `browser`, `person`, `data-store` (`datastore`): four icon-like handlers. An unknown name is an error, as in
   Mermaid: `No such shape: <name>.` (the lookup is exact, `Rect` fails). Every alias of the 53 groups maps to the same
   shape as its short name (unit test `shape_aliases_are_the_same_shape_as_their_short_name`; 20 aliases such as
   `lean-right`, `manual`, `priority`, `double-circle`, `stateStart` had been boxes before). The fork size uses the graph
@@ -153,6 +154,10 @@ Ordered by what is likely to matter next.
 ## Unverified (implemented from the Mermaid source, no reference SVG covers it)
 - `h-cyl` and `lin-cyl`: Mermaid adjusts the edge end on their ellipse (`intersect` of tiltedCylinder.ts / linedCylinder.ts, like cylinder.ts); we clip to the node box. The fan-out fixtures `s12b_h-cyl` and `s12b_lin-cyl` agree within the 0.5 tolerance, but an edge that meets a lid far from the centre is not covered (the classic cylinder has the same gap).
 
+- `folder` and `bucket`: user `style fill` / `stroke` and the dark, forest and neutral themes (the bucket rim ellipse takes
+  `nodeBorder`, falling back to `lineColor`; only the default theme was compared)
+- a literal `\n` inside the quoted `@{ label: "a\nb" }` is a line break in Mermaid (found with a bucket fixture: height 42,
+  `<br />`); the parser keeps it as text. Not fixed yet.
 - `linkStyle` label colours, dotted dash pattern, thick class, every curve other than the default
 - shapes with labels wider than the 120 px label width (wrapping), and shapes with `classDef` / `style` fill and stroke (only box, diamond, cylinder, stadium were checked with styles)
 - the "safe anchor" and `fromCluster` / `toCluster` paths of cluster edges (not implemented)
