@@ -568,6 +568,14 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
                 out.shift = {r - r / 4, 0};
             }
             out.points = rect;
+            {  // getBBox of the group: the invisible box bulges past the node box (by 1.9 on the left of a `brace`)
+                double lo_x = rect.front().x, hi_x = lo_x, lo_y = rect.front().y, hi_y = lo_y;
+                for (const Point& p : rect) {
+                    lo_x = MERMAID_MIN(lo_x, p.x), hi_x = MERMAID_MAX(hi_x, p.x);
+                    lo_y = MERMAID_MIN(lo_y, p.y), hi_y = MERMAID_MAX(hi_y, p.y);
+                }
+                out.drawn = Rect{lo_x + out.shift.x, lo_y + out.shift.y, hi_x - lo_x, hi_y - lo_y};
+            }
             out.separator = ", ";
             out.group_class = "text";
             return out;

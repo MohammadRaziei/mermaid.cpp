@@ -12,22 +12,22 @@ namespace mermaid::flowchart::detail {
 // idea (label box + padding, plus the room their outline needs).
 class NodeSizer {
 public:
-    NodeSizer(const TextMeasurer& measurer, const LayoutOptions& options, Direction direction = Direction::TB)
-        : measurer_(measurer), options_(options), direction_(direction) {}
+    NodeSizer(const TextMeasurer& measurer, const LayoutOptions& options) : measurer_(measurer), options_(options) {}
 
     struct Label {
         Size size;
         bool wrapped = false;  // the text had to break to fit the label width
     };
 
-    Size size(const Node& node) const;
+    // `direction` is the one resolveNodeDir finds for the node: that of the nearest subgraph around it that has its own
+    // `direction`, else the diagram's. forkJoin.ts is a vertical bar in LR and RL, a horizontal one otherwise.
+    Size size(const Node& node, Direction direction) const;
     Label label(const Node& node) const;
     Size label_size(const Node& node) const { return label(node).size; }
 
 private:
     const TextMeasurer& measurer_;
     const LayoutOptions& options_;
-    Direction direction_;  // forkJoin.ts is a vertical bar in LR and RL, a horizontal one otherwise
 };
 
 }  // namespace mermaid::flowchart::detail

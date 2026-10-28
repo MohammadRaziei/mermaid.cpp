@@ -29,7 +29,7 @@ NodeSizer::Label NodeSizer::label(const Node& node) const {
 }
 
 // The sizes follow shapes/*.ts of Mermaid 12.2 in the neo look.
-Size NodeSizer::size(const Node& node) const {
+Size NodeSizer::size(const Node& node, Direction direction) const {
     const Size label = label_size(node);
     const double text_w = label.width;
     const double text_h = label.height;
@@ -88,7 +88,7 @@ Size NodeSizer::size(const Node& node) const {
         case Shape::Hourglass:  // hourglass.ts: 30 x 30
             return {30, 30};
         case Shape::Fork:  // forkJoin.ts: 70 x 10, turned in LR and RL
-            return direction_ == Direction::LR || direction_ == Direction::RL ? Size{10, 70} : Size{70, 10};
+            return direction == Direction::LR || direction == Direction::RL ? Size{10, 70} : Size{70, 10};
         case Shape::SmallCircle:  // stateStart.ts: 14 x 14
         case Shape::FilledCircle:  // filledCircle.ts: radius 7; stateEnd.ts: width 14
         case Shape::FramedCircle:

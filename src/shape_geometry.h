@@ -49,8 +49,9 @@ struct polygon_outline {
     };
     std::vector<layer> layers;
     bool hit_as_rect = false;  // edges are clipped to the node box (intersect.rect), not to the outline
-    bool group_style = false;  // the group carries an (empty) style attribute: shadedProcess.ts sets `style` from cssStyles
+    bool group_style = false;  // the group carries a style attribute: shadedProcess.ts sets `style` from cssStyles
     bool has_shift = true;  // the group carries translate(shift); flag does not
+    std::optional<Rect> drawn;  // where the drawing really is, relative to the node centre, when that is not the node box (braces)
     bool plain_path = false;  // one `<path d="M L L Z">` in node coordinates, no transform (folder)
 };
 

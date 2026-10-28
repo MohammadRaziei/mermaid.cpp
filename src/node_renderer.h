@@ -26,7 +26,15 @@ public:
                const flowchart::Style& style) const;
 
 private:
-    void write_outline(SvgWriter& out, flowchart::Shape shape, const Size& size, const Size& label, const flowchart::Style& style) const;
+    // userNodeOverrides (rendering-util/rendering-elements/shapes/handDrawnShapeStyles.ts): what rough.js is given.
+    struct rough_options {
+        std::string fill, stroke, stroke_width, dash;
+    };
+    rough_options user_overrides(const flowchart::Style& style, const std::string& fill_default, const std::string& stroke_default) const;
+    static void write_pair(SvgWriter& out, const rough_drawing& drawing, const rough_options& options, const std::string& inline_style);
+    // `own_style` is what the node's `style` statements say (Mermaid's cssStyles); `style` also holds its classes' styles.
+    void write_outline(SvgWriter& out, flowchart::Shape shape, const Size& size, const Size& label, const flowchart::Style& style,
+                       const flowchart::Style& own_style) const;
     void write_label(SvgWriter& out, const std::string& text, const Size& label, const flowchart::Style& style,
                      const Point& shift, bool markdown, bool table, bool wrapped, bool tight = false) const;
     void write_fork(SvgWriter& out, const Rect& box, const flowchart::Style& style, const std::string& inline_style) const;
@@ -37,7 +45,7 @@ private:
     void write_merged_path(SvgWriter& out, const rough_drawing& drawing, const flowchart::Style& style,
                            const std::string& inline_style) const;
     void write_rough_layers(SvgWriter& out, const polygon_outline& outline, const flowchart::Style& style,
-                            const std::string& inline_style) const;
+                            const std::string& inline_style, const flowchart::Style& own_style) const;
     void write_rough_polygon(SvgWriter& out, const std::vector<Point>& points, const std::string& transform,
                              const flowchart::Style& style, const std::string& inline_style,
                              const char* group_class = "basic label-container outer-path") const;

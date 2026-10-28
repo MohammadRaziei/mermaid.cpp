@@ -94,11 +94,18 @@ Ordered by what is likely to matter next.
   open and multi-run paths); sizes and outlines derive from the label box, not from the size, so no rounding is lost;
   `lin-rect` and `div-rect` clip edges to the node box (`intersect.rect`), the others to their outline; `cloud` and
   `bang` are the exact bounding box of their arcs and the viewBox follows the drawn path; the node of the braces is the
-  union of all drawings. An unknown name is an error, as in
+  union of all drawings, and the viewBox follows where the invisible box really is (it bulges 1.9 left of a `brace` node;
+  fixtures `s12b_brace_styled`, `s12b_brace_ends`, `s12b_brace_ends_rl` have a brace at each end of the graph).
+  Audited once against Mermaid (not kept as fixtures, 371 throwaway files): each of the 53 shapes first and last in LR and TB (212
+  files, all identical), each with a `style` statement and with a `classDef` (106 files), and each with a long wrapping label in LR (53 files, all identical). The audit found: the state circles
+  (`sm-circ`, `fr-circ`) ignore the node's classes; `f-circ`, `fr-circ`, `cross-circ` take fill, stroke, width and dash from
+  the style map, `fork` only width and dash (its colours are `lineColor`); the empty label of `hourglass` carries the label
+  colour; the group of `lin-rect` carries the raw `style` text. The 14 shapes that differed are fixtures `s12b_style_*` and
+  `s12b_class_*`. An unknown name is an error, as in
   Mermaid: `No such shape: <name>.` (the lookup is exact, `Rect` fails). Every alias of the 53 groups maps to the same
   shape as its short name (unit test `shape_aliases_are_the_same_shape_as_their_short_name`; 20 aliases such as
-  `lean-right`, `manual`, `priority`, `double-circle`, `stateStart` had been boxes before). The fork size uses the graph
-  direction, not that of the subgraph it sits in.
+  `lean-right`, `manual`, `priority`, `double-circle`, `stateStart` had been boxes before). The fork size follows the direction of
+  the nearest subgraph that declares one (`resolveNodeDir`; fixture `s12b_fork_in_lr_subgraph`).
 - [x] **S13** edges to and from subgraph ids. An end at a subgraph id is drawn against the cluster box and the route
   is cut at its border (`toCluster` / `fromCluster`, `cutPathAtIntersect`; `data-points` keeps the route before the cut);
   loops on a closed subgraph (helpers in the parent graph) and on an open cluster (drawn around the compound box); both
@@ -158,12 +165,13 @@ Ordered by what is likely to matter next.
 | s14_edge_styles | dotted, thick, invisible, `--o`, `--x`, `<-->`, long edges, labelled dotted/thick |
 
 ## Unverified (implemented from the Mermaid source, no reference SVG covers it)
-- `h-cyl` and `lin-cyl`: Mermaid adjusts the edge end on their ellipse (`intersect` of tiltedCylinder.ts / linedCylinder.ts, like cylinder.ts); we clip to the node box. The fan-out fixtures `s12b_h-cyl` and `s12b_lin-cyl` agree within the 0.5 tolerance, but an edge that meets a lid far from the centre is not covered (the classic cylinder has the same gap).
+- `h-cyl` and `lin-cyl` clip edges to the node box, where Mermaid has an `intersect` on the ellipse: fan-in and fan-out fixtures in
+  TB and LR (`s12b_hcyl_edges`, `s12b_hcyl_edges_lr`, `s12b_lincyl_edges`) agree, so no adjustment was needed there. The classic
+  cylinder does need it and has it (`border_point`, cylinder.ts `intersect`; fixtures `s12b_cylinder_edges` and `_tb`).
 
 - `folder`, `bucket`, `console`, `browser`, `person`, `datastore`: user `style fill` / `stroke` and the dark, forest and neutral themes (the bucket rim, the console glyph and the browser bar take
   `nodeBorder`, falling back to `lineColor`; only the default theme was compared)
 - `linkStyle` label colours, dotted dash pattern, thick class, every curve other than the default
-- shapes with labels wider than the 120 px label width (wrapping), and shapes with `classDef` / `style` fill and stroke (only box, diamond, cylinder, stadium were checked with styles)
 - the "safe anchor" and `fromCluster` / `toCluster` paths of cluster edges (not implemented)
 - `-t dark|forest|neutral` output
 - a word wider than the label box (the browser does not split it; we do not either), several self-loops on one node, self-loops

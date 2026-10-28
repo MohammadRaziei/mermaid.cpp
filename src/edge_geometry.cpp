@@ -138,7 +138,18 @@ Point edge_geometry::border_point(const NodeLayout& node, const Point& outside) 
                 sx = dx < 0 ? -w : w;
                 sy = dx == 0 ? 0 : sx * dy / dx;
             }
-            return {node.center.x + sx, node.center.y + sy};
+            Point pos{node.center.x + sx, node.center.y + sy};
+            if (node.shape == Shape::Cylinder) {  // cylinder.ts `intersect`: the end slides onto the lid's ellipse
+                const double rx = node.size.width / 2, ry = rx / (2.5 + node.size.width / 50), x = pos.x - node.center.x;
+                if (rx != 0 && (std::fabs(x) < w || (std::fabs(x) == w && std::fabs(pos.y - node.center.y) > h - ry))) {
+                    double y = ry * ry * (1 - x * x / (rx * rx));
+                    if (y > 0) y = std::sqrt(y);
+                    y = ry - y;
+                    if (outside.y - node.center.y > 0) y = -y;
+                    pos.y += y;
+                }
+            }
+            return pos;
         }
     }
 }

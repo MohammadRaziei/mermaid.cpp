@@ -116,9 +116,10 @@ public:
         : model_(model), measurer_(measurer), options_(options), topology_(model) {}
 
     Layout build() {
-        const detail::NodeSizer sizer(measurer_, options_, model_.direction);
-        for (const Node& n : model_.nodes) {
-            sizes_.push_back(sizer.size(n));
+        const detail::NodeSizer sizer(measurer_, options_);
+        for (size_t i = 0; i < model_.nodes.size(); ++i) {
+            const Node& n = model_.nodes[i];
+            sizes_.push_back(sizer.size(n, direction_of(static_cast<int>(i))));
             const detail::NodeSizer::Label label = sizer.label(n);
             labels_.push_back(label.size);
             labels_wrapped_.push_back(label.wrapped);
@@ -166,6 +167,13 @@ private:
         for (s = topology_.sub_parents()[static_cast<size_t>(s)]; s >= 0; s = topology_.sub_parents()[static_cast<size_t>(s)])
             if (s == cluster) return true;
         return false;
+    }
+
+    // resolveNodeDir: the direction of the nearest subgraph around the node that declares one, else the diagram's.
+    Direction direction_of(int node) const {
+        for (int s = parent_of({EndRef::kind::node, node}); s >= 0; s = topology_.sub_parents()[static_cast<size_t>(s)])
+            if (model_.subgraphs[static_cast<size_t>(s)].direction) return *model_.subgraphs[static_cast<size_t>(s)].direction;
+        return model_.direction;
     }
 
     int parent_of(const EndRef& r) const {
@@ -669,6 +677,8 @@ private:
             if (const auto arcs = mermaid::detail::arc_shape_of(n.shape, n.label)) {  // the path is moved by its nominal box, not its bounds
                 include({n.center.x - arcs->nominal.width / 2 + arcs->origin.x, n.center.y - arcs->nominal.height / 2 + arcs->origin.y,
                          arcs->bounds.width, arcs->bounds.height});
+            } else if (const auto outline = mermaid::detail::polygon_outline_of(n.shape, n.size, n.label); outline && outline->drawn) {
+                include({n.center.x + outline->drawn->x, n.center.y + outline->drawn->y, outline->drawn->width, outline->drawn->height});
             } else {
                 const Point shift = mermaid::detail::drawing_shift(n.shape, n.size);  // bucket: drawn off centre
                 include({n.rect().x + shift.x, n.rect().y + shift.y, n.rect().width, n.rect().height});

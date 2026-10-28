@@ -1,0 +1,10 @@
+flowchart TB
+  a[Alpha] --> h@{ shape: h-cyl, label: "Horizontal" }
+  b[Beta] --> h
+  c[Gamma] --> h
+  h --> d[Delta]
+  h --> e[Epsilon]
+  l@{ shape: lin-cyl, label: "Lined" }
+  a --> l
+  b --> l
+  l --> e

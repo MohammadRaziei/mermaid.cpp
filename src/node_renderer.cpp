@@ -36,13 +36,15 @@ double node_renderer::label_shift(Shape shape) {
 void node_renderer::write(SvgWriter& out, const flowchart::Node& node, const flowchart::NodeLayout& layout,
                          const flowchart::Style& style) const {
     std::string classes = "node default";
-    for (const std::string& cls : node.classes) classes += " " + cls;
+    // stateStart.ts and stateEnd.ts write the class themselves: the node's own classes never reach them
+    if (layout.shape != Shape::SmallCircle && layout.shape != Shape::FramedCircle)
+        for (const std::string& cls : node.classes) classes += " " + cls;
 
     out.open("g", {{"class", classes},
                    {"id", svg_id_ + "-flowchart-" + node.id + "-" + std::to_string(node.dom_index)},
                    {"data-look", "neo"},
                    {"transform", translate(layout.center.x, layout.center.y)}});
-    write_outline(out, layout.shape, layout.size, layout.label, style);
+    write_outline(out, layout.shape, layout.size, layout.label, style, node.style);
     Point shift = label_offset(layout.shape, layout.size, layout.label);
     shift.y += label_shift(layout.shape);
     // triangle.ts puts the label near the base, flippedTriangle.ts near the top (padding / 2 = 7.5 from the edge)
@@ -83,60 +85,51 @@ void node_renderer::write_stadium(SvgWriter& out, const Size& size, const flowch
 // forkJoin.ts: rc.rectangle filled solid with the line colour. The fill is the plain outline of the rectangle.
 void node_renderer::write_fork(SvgWriter& out, const Rect& box, const flowchart::Style& style, const std::string& inline_style) const {
     const std::vector<Point> corners{{box.x, box.y}, {box.x + box.width, box.y}, {box.x + box.width, box.y + box.height}, {box.x, box.y + box.height}};
-    const auto lookup = [&](const char* key, const std::string& fallback) {
-        std::string value = fallback;
-        for (const auto& [k, v] : style)
-            if (k == key) value = v;
-        return value;
-    };
     std::string fill_d;
     for (size_t i = 0; i < corners.size(); ++i) fill_d += (i ? " L" : "M") + js(corners[i].x) + " " + js(corners[i].y);
-    const rough_drawing drawing = rough_polygon(corners, seed_);
+    rough_drawing drawing = rough_polygon(corners, seed_);
+    drawing.fill_d = fill_d;
+    // forkJoin.ts: userNodeOverrides(node, {stroke: lineColor, fill: lineColor}): the colours are fixed, width and dash are the user's
+    rough_options o = user_overrides(style, theme_.line_color, theme_.line_color);
+    o.fill = o.stroke = theme_.line_color;
     out.open("g");
-    out.leaf("path", {{"d", fill_d}, {"stroke", "none"}, {"stroke-width", "0"}, {"fill", lookup("fill", theme_.line_color)}, {"style", inline_style}});
-    out.leaf("path", {{"d", drawing.stroke_d},
-                      {"stroke", lookup("stroke", theme_.line_color)},
-                      {"stroke-width", "1.3"},
-                      {"fill", "none"},
-                      {"stroke-dasharray", "0 0"},
-                      {"style", inline_style}});
+    write_pair(out, drawing, o, inline_style);
     out.close();
 }
 
-// The two <path>s of one rough.js drawing: the solid fill and the outline.
-// userNodeOverrides: the style map wins over the theme.
-void node_renderer::write_rough_paths(SvgWriter& out, const rough_drawing& drawing, const flowchart::Style& style,
-                                      const std::string& inline_style, bool polygon_fill, bool stroke_only) const {
+node_renderer::rough_options node_renderer::user_overrides(const flowchart::Style& style, const std::string& fill_default,
+                                                          const std::string& stroke_default) const {
     const auto lookup = [&](const char* key, const std::string& fallback) {
         std::string value = fallback;
         for (const auto& [k, v] : style)
             if (k == key) value = v;
         return value;
     };
-    std::string stroke_width = lookup("stroke-width", "1.3");
-    if (stroke_width.size() > 2 && stroke_width.compare(stroke_width.size() - 2, 2, "px") == 0) stroke_width.resize(stroke_width.size() - 2);
-    std::string dash = "0 0";
-    if (const std::string given = lookup("stroke-dasharray", ""); !given.empty()) {
+    rough_options o{lookup("fill", fill_default), lookup("stroke", stroke_default), lookup("stroke-width", "1.3"), "0 0"};
+    if (o.stroke_width.size() > 2 && o.stroke_width.compare(o.stroke_width.size() - 2, 2, "px") == 0) o.stroke_width.resize(o.stroke_width.size() - 2);
+    if (const std::string given = lookup("stroke-dasharray", ""); !given.empty()) {  // getStrokeDashArray
         std::vector<std::string> parts;
         std::string current;
         for (char c : given + " ") {
             if (c == ' ' || c == ',') { if (!current.empty()) parts.push_back(current); current.clear(); }
             else current += c;
         }
-        if (parts.size() == 1) dash = parts[0] + " " + parts[0];
-        else if (!parts.empty()) { dash.clear(); for (const auto& p : parts) dash += (dash.empty() ? "" : " ") + p; }
+        if (parts.size() == 1) o.dash = parts[0] + " " + parts[0];
+        else if (!parts.empty()) { o.dash.clear(); for (const auto& p : parts) o.dash += (o.dash.empty() ? "" : " ") + p; }
     }
+    return o;
+}
 
-    SvgWriter::Attrs fill{{"d", drawing.fill_d}, {"stroke", "none"}, {"stroke-width", "0"}, {"fill", lookup("fill", theme_.main_bkg)}};
+// The two <path>s of one rough.js drawing: the solid fill and the outline.
+void node_renderer::write_rough_paths(SvgWriter& out, const rough_drawing& drawing, const flowchart::Style& style,
+                                      const std::string& inline_style, bool polygon_fill, bool stroke_only) const {
+    const rough_options o = user_overrides(style, theme_.main_bkg, theme_.node_border);
+    SvgWriter::Attrs fill{{"d", drawing.fill_d}, {"stroke", "none"}, {"stroke-width", "0"}, {"fill", o.fill}};
     if (polygon_fill) fill.emplace_back("fill-rule", "evenodd");
     fill.emplace_back("style", inline_style);
     if (!stroke_only) out.leaf("path", fill);
-    out.leaf("path", {{"d", drawing.stroke_d},
-                      {"stroke", lookup("stroke", theme_.node_border)},
-                      {"stroke-width", stroke_width},
-                      {"fill", "none"},
-                      {"stroke-dasharray", dash},
-                      {"style", inline_style}});
+    out.leaf("path", {{"d", drawing.stroke_d}, {"stroke", o.stroke}, {"stroke-width", o.stroke_width}, {"fill", "none"},
+                      {"stroke-dasharray", o.dash}, {"style", inline_style}});
 }
 
 // A closed polygon drawn by rough.js (`rc.path`): a fill path and a stroke path in a group.
@@ -151,28 +144,35 @@ void node_renderer::write_rough_polygon(SvgWriter& out, const std::vector<Point>
     out.close();
 }
 
-// The fill <path> and the outline <path> of one rough.js drawing with explicit colours.
-static void write_pair(SvgWriter& out, const rough_drawing& drawing, const std::string& fill, const std::string& stroke,
-                       const std::string& stroke_width, const std::string& inline_style) {
-    out.leaf("path", {{"d", drawing.fill_d}, {"stroke", "none"}, {"stroke-width", "0"}, {"fill", fill}, {"style", inline_style}});
-    out.leaf("path", {{"d", drawing.stroke_d}, {"stroke", stroke}, {"stroke-width", stroke_width}, {"fill", "none"},
-                      {"stroke-dasharray", "0 0"}, {"style", inline_style}});
+// The fill <path> and the outline <path> of one rough.js drawing.
+void node_renderer::write_pair(SvgWriter& out, const rough_drawing& drawing, const rough_options& o, const std::string& inline_style) {
+    out.leaf("path", {{"d", drawing.fill_d}, {"stroke", "none"}, {"stroke-width", "0"}, {"fill", o.fill}, {"style", inline_style}});
+    out.leaf("path", {{"d", drawing.stroke_d}, {"stroke", o.stroke}, {"stroke-width", o.stroke_width}, {"fill", "none"},
+                      {"stroke-dasharray", o.dash}, {"style", inline_style}});
 }
 
-// filledCircle.ts, stateEnd.ts, crossedCircle.ts: rc.circle drawings (roughness 0), label-less.
-void node_renderer::write_circle_shape(SvgWriter& out, Shape shape, const flowchart::Style&, const std::string& inline_style) const {
+// filledCircle.ts, stateEnd.ts, crossedCircle.ts: rc.circle drawings (roughness 0), label-less. All three start from
+// userNodeOverrides, so the style map reaches fill, stroke, stroke width and dash; stateEnd then fixes the stroke
+// (lineColor) and its width, and its inner circle everything but the dash.
+void node_renderer::write_circle_shape(SvgWriter& out, Shape shape, const flowchart::Style& style, const std::string& inline_style) const {
+    rough_options o = user_overrides(style, theme_.main_bkg, theme_.node_border);
     if (shape == Shape::FilledCircle) {
         out.open("g");
-        write_pair(out, rough_circle(14), theme_.main_bkg, theme_.node_border, "1.3",
-                   inline_style.empty() ? "fill: " + theme_.node_border + " !important;" : inline_style);
+        write_pair(out, rough_circle(14), o, inline_style.empty() ? "fill: " + theme_.node_border + " !important;" : inline_style);
         out.close();
     } else if (shape == Shape::FramedCircle) {
         SvgWriter::Attrs group{{"class", "outer-path"}};
         if (theme_.node_shadow) group.emplace_back("style", "filter:url(#" + svg_id_ + "-drop-shadow-small)");
         out.open("g", group);
-        write_pair(out, rough_circle(14), theme_.main_bkg, theme_.line_color, "2", inline_style);
+        rough_options outer = o;
+        outer.stroke = theme_.line_color;
+        outer.stroke_width = "2";
+        write_pair(out, rough_circle(14), outer, inline_style);
         out.open("g");
-        write_pair(out, rough_circle(14.0 * 5 / 14), theme_.node_border, theme_.node_border, "2", inline_style);
+        rough_options inner = o;
+        inner.fill = inner.stroke = theme_.node_border;
+        inner.stroke_width = "2";
+        write_pair(out, rough_circle(14.0 * 5 / 14), inner, inline_style);
         out.close();
         out.close();
     } else {
@@ -180,10 +180,10 @@ void node_renderer::write_circle_shape(SvgWriter& out, Shape shape, const flowch
         const double q = radius * 2 / 2 * std::cos(3.14159265358979323846 / 4);  // createLine: half the line length times cos(45 degrees)
         const double q_y = radius * 2 / 2 * std::sin(3.14159265358979323846 / 4);
         out.open("g", {{"class", "outer-path"}});
-        write_pair(out, rough_circle(radius * 2), theme_.main_bkg, theme_.node_border, "1.3", inline_style);
+        write_pair(out, rough_circle(radius * 2), o, inline_style);
         out.open("g");
         const rough_drawing cross = rough_open_subpaths({{{-q, q_y}, {q, -q_y}}, {{q, q_y}, {-q, -q_y}}}, seed_);
-        write_pair(out, cross, theme_.main_bkg, theme_.node_border, "1.3", inline_style);
+        write_pair(out, cross, o, inline_style);
         out.close();
         out.close();
     }
@@ -211,10 +211,14 @@ void node_renderer::write_merged_path(SvgWriter& out, const rough_drawing& drawi
 
 // Document shapes: several drawings, one of them possibly in a <g> inside the group that carries class and transform.
 void node_renderer::write_rough_layers(SvgWriter& out, const polygon_outline& outline, const flowchart::Style& style,
-                                       const std::string& inline_style) const {
+                                       const std::string& inline_style, const flowchart::Style& own_style) const {
     SvgWriter::Attrs group{{"class", outline.group_class}};
     if (outline.has_shift) group.emplace_back("transform", "translate(" + js(outline.shift.x) + outline.separator + js(outline.shift.y) + ")");
-    if (outline.group_style) group.emplace_back("style", "");
+    if (outline.group_style) {  // shadedProcess.ts: the raw cssStyles, as the user wrote them
+        std::string raw;
+        for (const auto& [k, v] : own_style) raw += (raw.empty() ? "" : ",") + k + ":" + v;
+        group.emplace_back("style", raw);
+    }
     out.open("g", group);
     for (const polygon_outline::layer& layer : outline.layers) {
         if (layer.nested) {
@@ -245,7 +249,8 @@ void node_renderer::write_rough_layers(SvgWriter& out, const polygon_outline& ou
     out.close();
 }
 
-void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size, const Size& label, const flowchart::Style& style) const {
+void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size, const Size& label, const flowchart::Style& style,
+                                  const flowchart::Style& own_style) const {
     const std::string inline_style = important_shape_style(style);
     const Rect box{-size.width / 2, -size.height / 2, size.width, size.height};
 
@@ -401,7 +406,7 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
             for (const Point& p : polygon->points) d += (d.empty() ? "M" : " L") + js(p.x) + "," + js(p.y);
             out.leaf("path", {{"d", d + " Z"}, {"class", "basic label-container"}, {"style", inline_style}});
         } else if (!polygon->layers.empty()) {
-            write_rough_layers(out, *polygon, style, inline_style);
+            write_rough_layers(out, *polygon, style, inline_style, own_style);
         } else if (polygon->rough) {
             write_rough_polygon(out, polygon->points, polygon->has_shift ? "translate(" + js(polygon->shift.x) + polygon->separator + js(polygon->shift.y) + ")" : std::string(), style, inline_style,
                                   polygon->group_class);
@@ -424,7 +429,9 @@ void node_renderer::write_empty_label(SvgWriter& out, const flowchart::Style& st
     out.open("foreignObject", {{"width", "0"}, {"height", "0"}});
     out.open("div", {{"xmlns", "http://www.w3.org/1999/xhtml"},
                      {"style", computed_label_color(style) + "display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center;"}});
-    out.leaf("span", {{"class", markdown ? "nodeLabel markdown-node-label" : "nodeLabel"}});
+    SvgWriter::Attrs span{{"class", markdown ? "nodeLabel markdown-node-label" : "nodeLabel"}};
+    if (const std::string color = important_label_style(style); !color.empty()) span.emplace_back("style", color);
+    out.leaf("span", span);
     out.close();  // div
     out.close();  // foreignObject
     out.close();  // label group

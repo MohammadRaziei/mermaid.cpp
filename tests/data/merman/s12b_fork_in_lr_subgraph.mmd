@@ -1,0 +1,8 @@
+flowchart TB
+  subgraph g[Group]
+    direction LR
+    f@{ shape: fork, label: "Fork" }
+    a --> f --> b
+  end
+  g2@{ shape: fork, label: "Outer" }
+  x --> g2 --> y
