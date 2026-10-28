@@ -25,8 +25,9 @@ groups. In the root graph, cluster boxes are the dagre compound nodes.
 - Fixtures 010, 019 and 032 match Mermaid (zero differences); an edge between two closed clusters runs from box to box.
 - Any cluster without an outside edge now lays out perpendicular to its parent even without `direction`; this is
   real Mermaid behaviour.
-- Not ported: the "safe anchor" re-anchoring in `adjustClustersAndEdges`, and cutting an edge at the border of a
-  cluster that stays open (`fromCluster` / `toCluster`). No fixture needs them yet.
+- Ported later (S13): `findNonClusterChild` with the common-edges rule, the safe anchor (`findSafeAnchorNode`), the
+  order of edges after `adjustClustersAndEdges` (edges at a cluster move behind the rest), and the self-loop test on
+  the edge as written. Not ported: `click`/links on clusters.
 - `Layout::nodes` no longer lists every node of the diagram; nodes inside a root live in `roots[i].layout`.
 
 ## Alternatives considered

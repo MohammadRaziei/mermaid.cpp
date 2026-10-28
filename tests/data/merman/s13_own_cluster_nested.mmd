@@ -1,0 +1,10 @@
+flowchart TB
+  subgraph outer[Outer]
+    subgraph inner[Inner]
+      a --> b
+    end
+    b --> c
+  end
+  inner --> a
+  outer --> c
+  q --> inner

@@ -62,6 +62,10 @@ const char* shape_name(Shape shape) noexcept {
         case Shape::CurvedTrapezoid: return "curvedTrapezoid";
         case Shape::Folder: return "folder";
         case Shape::Bucket: return "bucket";
+        case Shape::Console: return "consoleWindow";
+        case Shape::Person: return "person";
+        case Shape::DataStore: return "datastore";
+        case Shape::Browser: return "browser";
         case Shape::NotchedRectangle: return "card";
         case Shape::LinedRectangle: return "shadedProcess";
         case Shape::DividedRectangle: return "dividedRectangle";

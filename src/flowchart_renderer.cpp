@@ -159,7 +159,7 @@ private:
                                                      : "display: table-cell; white-space: nowrap; line-height: 1.5;"}});
         out_.open("span", {{"class", "nodeLabel"}});
         if (c.markdown_title) out_.raw(detail::markdown_label(c.title).html());
-        else out_.element("p", {}, c.title);
+        else out_.paragraph(c.title);
         out_.close();  // span
         out_.close();  // div
         out_.close();  // foreignObject

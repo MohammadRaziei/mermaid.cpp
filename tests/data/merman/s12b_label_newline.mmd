@@ -1,0 +1,9 @@
+flowchart LR
+  A@{ shape: rect, label: "Two\nlines" }
+  B["Plain\nbracket"]
+  C@{ shape: bucket, label: "Two\nlines" }
+  A -->|"edge\nlabel"| B --> C
+  subgraph S["Group\ntitle"]
+    D["`mark\ndown`"]
+  end
+  C --> D

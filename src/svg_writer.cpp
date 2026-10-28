@@ -76,6 +76,18 @@ SvgWriter& SvgWriter::raw(std::string_view markup) {
     return *this;
 }
 
+SvgWriter& SvgWriter::paragraph(std::string_view lines) {
+    open("p");
+    for (size_t start = 0;;) {
+        const size_t end = lines.find('\n', start);
+        text(lines.substr(start, end == std::string_view::npos ? end : end - start));
+        if (end == std::string_view::npos) break;
+        raw("<br />");
+        start = end + 1;
+    }
+    return close();
+}
+
 SvgWriter& SvgWriter::element(std::string_view tag, const Attrs& attrs, std::string_view characters) {
     open(tag, attrs);
     text(characters);

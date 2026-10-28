@@ -540,7 +540,6 @@ UTEST(flowchart_parser, shape_aliases_are_the_same_shape_as_their_short_name) {
         {"odd", "rect_left_inv_arrow"},
         {"lin-doc", "lined-document"},
     };
-    static const std::set<std::string> not_drawn_yet = {"console", "browser", "person", "data-store", "datastore"};
     std::string problems;
     for (const auto& group : groups) {
         const auto shape_of = [](const std::string& name) {
@@ -549,7 +548,7 @@ UTEST(flowchart_parser, shape_aliases_are_the_same_shape_as_their_short_name) {
         const Shape expected = shape_of(group.front());
         for (const std::string& name : group)
             if (expected != shape_of(name)) problems += " " + name + " (is not " + group.front() + ")";
-        if (group.front() != "rect" && not_drawn_yet.count(group.front()) == 0 &&
+        if (group.front() != "rect" &&
             (expected == Shape::Square || expected == Shape::Default))
             problems += " " + group.front() + " (drawn as a box)";
     }

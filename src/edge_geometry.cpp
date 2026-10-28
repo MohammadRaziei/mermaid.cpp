@@ -274,6 +274,10 @@ std::vector<Point> edge_geometry::cut_path_at_intersect(const std::vector<Point>
 std::vector<Point> edge_geometry::shorten_ends(const std::vector<Point>& points, double start, double end) {
     std::vector<Point> out = points;
     const size_t n = points.size();
+    if (n == 1) {  // getLineFunctionsWithOffset: no neighbour gives angle 0 and deltaX 0, which counts as positive
+        out[0].x += start != 0 ? start : end;
+        return out;
+    }
     if (n < 2) return out;
     if (start != 0) {
         const double angle = std::atan2(points[1].y - points[0].y, points[1].x - points[0].x);
@@ -547,6 +551,7 @@ std::string xy(const Point& p) { return SvgWriter::num(round3(p.x)) + "," + SvgW
 std::string edge_geometry::curve_path(const std::string& curve, const std::vector<Point>& points) {
     if (points.empty()) return {};
     std::string d = "M" + xy(points.front());
+    if (points.size() == 1) return d + "Z";  // d3 closes a line of one point
     for (const curve_piece& piece : curve_pieces(curve, points))
         d += piece.cubic ? "C" + xy(piece.c1) + "," + xy(piece.c2) + "," + xy(piece.to) : "L" + xy(piece.to);
     return d;

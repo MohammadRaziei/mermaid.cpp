@@ -61,6 +61,10 @@ enum class Shape {
     FramedCircle,      // `fr-circ` (stateEnd): a label-less ring with a dot inside
     CrossedCircle,     // `cross-circ` (crossedCircle): a label-less circle of 60 px with a cross
     CurvedTrapezoid,   // `curv-trap` (curvedTrapezoid): a pointed left end and a round right end
+    Person,            // `person`: a round head above a rounded body
+    DataStore,         // `datastore`, `data-store`: a rectangle with only its top and bottom edges stroked
+    Console,           // `console`: a rounded box with a `>_` glyph band on top
+    Browser,           // `browser`: a rounded box with a title bar (line, three dots, address bar)
     Bucket,            // `bucket`: a cup with an elliptical rim and a rounded bottom
     Folder,            // `folder`, `directory`: a box with a tab on its top left
 };

@@ -57,12 +57,21 @@ void append_utf8(std::string& out, unsigned long cp) {
     }
 }
 
-// `<br>` -> newline, `#quot;` / `#35;` entities -> characters.
+bool is_markdown_string(const std::string& label) { return label.size() >= 2 && label.front() == '`' && label.back() == '`'; }
+
+// `<br>` and a literal `\n` -> newline, `#quot;` / `#35;` entities -> characters.
 std::string decode_label(const std::string& raw) {
     std::string s = raw;
-    // <br>, <br/>, <br /> (case-insensitive)
+    // <br>, <br/>, <br /> (case-insensitive); a literal backslash and `n` break the line too (createText), except in
+    // a Markdown string, which Mermaid hands to its Markdown parser untouched
+    const bool markdown = is_markdown_string(raw);
     std::string out;
     for (size_t i = 0; i < s.size();) {
+        if (!markdown && s[i] == '\\' && i + 1 < s.size() && s[i + 1] == 'n') {
+            out += '\n';
+            i += 2;
+            continue;
+        }
         if (s[i] == '<' && i + 3 < s.size() + 1 && lower(s.substr(i, 3)) == "<br") {
             size_t j = i + 3;
             while (j < s.size() && is_space(s[j])) ++j;
@@ -112,7 +121,6 @@ std::string clean_label(const std::string& text) {
     return decode_label(t);
 }
 
-bool is_markdown_string(const std::string& label) { return label.size() >= 2 && label.front() == '`' && label.back() == '`'; }
 
 // The text of a Markdown string: no backticks.
 std::string markdown_text(const std::string& label) { return label.substr(1, label.size() - 2); }
@@ -125,8 +133,8 @@ std::optional<Direction> parse_direction(const std::string& word) {
     return std::nullopt;
 }
 
-// Every name of shapesDefs in Mermaid 12.2.0 (shortName, aliases and internal aliases). Names that are valid but have
-// no drawing here yet (checklist S12b) are drawn as a box.
+// Every name of shapesDefs in Mermaid 12.2.0 (shortName, aliases and internal aliases). All 53 handlers are drawn
+// (checklist S12b); a valid name missing from the table below would fall back to a box (a unit test guards the groups).
 bool is_mermaid_shape_name(const std::string& name) {
     static const std::set<std::string> names = {"bang", "bolt", "bow-rect", "bow-tie-rectangle", "brace", "brace-l", "brace-r", "braces", "browser", "bucket", "card", "circ", "circle", "cloud", "collate", "com-link", "comment", "console", "cross-circ", "crossed-circle", "curv-trap", "curved-trapezoid", "cyl", "cylinder", "das", "data-store", "database", "datastore", "db", "dbl-circ", "decision", "delay", "diam", "diamond", "directory", "disk", "display", "div-proc", "div-rect", "divided-process", "divided-rectangle", "doc", "docs", "document", "documents", "double-circle", "doublecircle", "event", "extract", "f-circ", "filled-circle", "flag", "flip-tri", "flipped-triangle", "folder", "fork", "forkJoin", "fr-circ", "fr-rect", "framed-circle", "framed-rectangle", "h-cyl", "half-rounded-rectangle", "hex", "hexagon", "horizontal-cylinder", "hourglass", "in-out", "internal-storage", "inv-trapezoid", "inv_trapezoid", "join", "junction", "lean-l", "lean-left", "lean-r", "lean-right", "lean_left", "lean_right", "lightning-bolt", "lin-cyl", "lin-doc", "lin-proc", "lin-rect", "lined-cylinder", "lined-document", "lined-process", "lined-rectangle", "loop-limit", "manual", "manual-file", "manual-input", "notch-pent", "notch-rect", "notched-pentagon", "notched-rectangle", "odd", "out-in", "paper-tape", "person", "pill", "prepare", "priority", "proc", "process", "processes", "procs", "question", "rect", "rect_left_inv_arrow", "rectangle", "rounded", "roundedRect", "shaded-process", "sl-rect", "sloped-rectangle", "sm-circ", "small-circle", "squareRect", "st-doc", "st-rect", "stacked-document", "stacked-rectangle", "stadium", "start", "stateEnd", "stateStart", "stop", "stored-data", "subproc", "subprocess", "subroutine", "summary", "tag-doc", "tag-proc", "tag-rect", "tagged-document", "tagged-process", "tagged-rectangle", "terminal", "text", "trap-b", "trap-t", "trapezoid", "trapezoid-bottom", "trapezoid-top", "tri", "triangle", "win-pane", "window-pane"};
     return names.count(name) != 0;
@@ -169,7 +177,8 @@ Shape shape_from_data_name(const std::string& name) {
         {"lin-proc", Shape::LinedRectangle}, {"shaded-process", Shape::LinedRectangle},
         {"div-rect", Shape::DividedRectangle}, {"div-proc", Shape::DividedRectangle}, {"divided-rectangle", Shape::DividedRectangle},
         {"divided-process", Shape::DividedRectangle},
-        {"bucket", Shape::Bucket}, {"folder", Shape::Folder}, {"directory", Shape::Folder},
+        {"bucket", Shape::Bucket}, {"console", Shape::Console}, {"person", Shape::Person},
+        {"datastore", Shape::DataStore}, {"data-store", Shape::DataStore}, {"browser", Shape::Browser}, {"folder", Shape::Folder}, {"directory", Shape::Folder},
         {"curv-trap", Shape::CurvedTrapezoid}, {"curved-trapezoid", Shape::CurvedTrapezoid}, {"display", Shape::CurvedTrapezoid},
         {"h-cyl", Shape::TiltedCylinder}, {"das", Shape::TiltedCylinder}, {"horizontal-cylinder", Shape::TiltedCylinder},
         {"lin-cyl", Shape::LinedCylinder}, {"disk", Shape::LinedCylinder}, {"lined-cylinder", Shape::LinedCylinder},

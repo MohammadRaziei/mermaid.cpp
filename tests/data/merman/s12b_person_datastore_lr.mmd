@@ -1,0 +1,5 @@
+flowchart LR
+  A[Before] --> B@{ shape: person, label: "User" }
+  B --> C@{ shape: data-store, label: "Orders" }
+  A --> C
+  C --> B

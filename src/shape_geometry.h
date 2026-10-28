@@ -60,6 +60,12 @@ struct bucket_geometry {
 };
 bucket_geometry bucket_geometry_of(const Size& size);
 
+// person.ts: the head and the body, in node coordinates (padding 15 instead of the shape's own 20).
+struct person_geometry {
+    double w, head_radius, overlap, body_height, body_radius, total, top, body_top;
+};
+person_geometry person_geometry_of(const Size& label);
+
 // How far a shape's drawing is moved from the centre of its node box (bucket only).
 Point drawing_shift(flowchart::Shape shape, const Size& size);
 

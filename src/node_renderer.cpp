@@ -351,6 +351,38 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
         out.leaf("circle", attrs);
     } else if (shape == Shape::Fork) {
         write_fork(out, box, style, inline_style);
+    } else if (shape == Shape::DataStore) {  // datastore.ts: drawRect, then stroke-dasharray = "width height" leaves the sides unstroked
+        out.leaf("rect", {{"class", "basic label-container"}, {"style", inline_style}, {"x", SvgWriter::num(box.x)}, {"y", SvgWriter::num(box.y)},
+                          {"width", SvgWriter::num(box.width)}, {"height", SvgWriter::num(box.height)},
+                          {"stroke-dasharray", SvgWriter::num(box.width) + " " + SvgWriter::num(box.height)}});
+    } else if (shape == Shape::Person) {  // person.ts: the body rect, then the head circle
+        const person_geometry g = person_geometry_of(label);
+        const auto num = [](double v) { return SvgWriter::num(v); };
+        out.open("g", {{"class", "basic label-container"}});
+        out.leaf("rect", {{"x", num(-g.w / 2)}, {"y", num(g.body_top)}, {"width", num(g.w)}, {"height", num(g.body_height)},
+                          {"rx", num(g.body_radius)}, {"ry", num(g.body_radius)}, {"style", inline_style}});
+        out.leaf("circle", {{"cx", "0"}, {"cy", num(g.top + g.head_radius)}, {"r", num(g.head_radius)}, {"style", inline_style}});
+        out.close();
+    } else if (shape == Shape::Console || shape == Shape::Browser) {
+        // consoleWindow.ts / browser.ts: a rounded rect and the decoration, drawn in the accent colour
+        const std::string accent = theme_.node_border.empty() ? theme_.line_color : theme_.node_border;
+        const double w = size.width, top = box.y, bar = shape == Shape::Console ? 20.0 : 18.0;
+        const auto num = [](double v) { return SvgWriter::num(v); };
+        out.open("g", {{"class", "basic label-container"}});
+        out.leaf("rect", {{"x", num(-w / 2)}, {"y", num(top)}, {"width", num(w)}, {"height", num(size.height)}, {"rx", "12"}, {"ry", "12"}, {"style", inline_style}});
+        if (shape == Shape::Console) {
+            out.open("text", {{"x", num(-w / 2 + 12)}, {"y", num(top + 16)}, {"class", "console-glyph"},
+                              {"style", "font-family:monospace;font-weight:bold;font-size:14px;fill:" + accent}});
+            out.text(">_");
+            out.close();
+        } else {
+            out.leaf("line", {{"x1", num(-w / 2)}, {"y1", num(top + bar)}, {"x2", num(w / 2)}, {"y2", num(top + bar)}, {"style", "stroke:" + accent + ";stroke-width:1px"}});
+            for (int i = 0; i < 3; ++i)
+                out.leaf("circle", {{"cx", num(-w / 2 + 12 + i * 9)}, {"cy", num(top + bar / 2)}, {"r", "2.5"}, {"style", "fill:" + accent + ";stroke:none"}});
+            out.leaf("rect", {{"class", "browser-address-bar"}, {"x", num(-w / 2 + 44)}, {"y", num(top + 4)}, {"width", num(MERMAID_MAX(w - 56, 10.0))},
+                              {"height", num(bar - 8)}, {"rx", "3"}, {"ry", "3"}, {"style", "fill:none;stroke:" + accent + ";stroke-width:1px;opacity:0.6"}});
+        }
+        out.close();
     } else if (shape == Shape::Bucket) {
         // bucket.ts: a group with the cup (two arcs) and the rim ellipse, drawn round the node's origin
         const bucket_geometry g = bucket_geometry_of(size);
@@ -420,16 +452,7 @@ void node_renderer::write_label(SvgWriter& out, const std::string& text, const S
     if (markdown) {
         out.raw(markdown_label(text).html());  // <p> with <strong> / <em>
     } else {
-        out.open("p");
-        size_t start = 0;
-        while (true) {
-            const size_t end = text.find('\n', start);
-            out.text(text.substr(start, end == std::string::npos ? end : end - start));
-            if (end == std::string::npos) break;
-            out.raw("<br />");
-            start = end + 1;
-        }
-        out.close();  // p
+        out.paragraph(text);
     }
     out.close();  // span
     out.close();  // div

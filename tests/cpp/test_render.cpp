@@ -87,6 +87,21 @@ UTEST(render, all_fixtures_render_well_formed) {
     }
 }
 
+UTEST(render, a_literal_backslash_n_and_br_break_node_edge_and_subgraph_labels_into_lines) {
+    const std::string svg = render_svg(
+        "flowchart LR\n  A[\"one\\ntwo\"] -->|\"e1\\ne2\"| B[\"x<br>y\"]\n  subgraph S[\"g1\\ng2\"]\n    C\n  end");
+    ASSERT_TRUE(has(svg, "<p>one<br />two</p>"));
+    ASSERT_TRUE(has(svg, "<p>e1<br />e2</p>"));
+    ASSERT_TRUE(has(svg, "<p>x<br />y</p>"));
+    ASSERT_TRUE(has(svg, "<p>g1<br />g2</p>"));
+}
+
+UTEST(render, a_backslash_n_inside_a_markdown_string_stays_text) {
+    const std::string svg = render_svg("flowchart LR\n  A[\"`one\\ntwo`\"]");
+    ASSERT_TRUE(has(svg, "one\\ntwo"));
+    ASSERT_FALSE(has(svg, "one<br />two"));
+}
+
 UTEST(render, escapes_xml_in_labels) {
     std::string svg = render_svg("flowchart TD\nA[\"a<b & \\\"c\\\" > d\"]");
     ASSERT_TRUE(well_formed(svg));

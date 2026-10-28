@@ -268,16 +268,7 @@ void EdgeRenderer::write_label(SvgWriter& out, const flowchart::Edge& edge, cons
     if (labelled && edge.markdown_label) {
         out.raw(markdown_label(edge.label).html());
     } else if (labelled) {
-        out.open("p");
-        size_t start = 0;
-        while (true) {
-            const size_t end = edge.label.find('\n', start);
-            out.text(edge.label.substr(start, end == std::string::npos ? end : end - start));
-            if (end == std::string::npos) break;
-            out.raw("<br />");
-            start = end + 1;
-        }
-        out.close();  // p
+        out.paragraph(edge.label);
     }
     out.close();  // span
     out.close();  // div

@@ -147,6 +147,15 @@ Size NodeSizer::size(const Node& node) const {
             const double w = MERMAID_MAX(MERMAID_MAX(20.0, text_w + 2 * 16 + side * 2), (text_w + 2 * 16) * 1.25);
             return {w, h};
         }
+        case Shape::DataStore:  // datastore.ts: drawRect with labelPaddingX = 2 * padding, so 4 * padding wide
+            return {text_w + 4 * p, text_h + 2 * p};
+        case Shape::Person: {
+            const auto g = mermaid::detail::person_geometry_of({text_w, text_h});
+            return {g.w, g.total};
+        }
+        case Shape::Console:  // consoleWindow.ts: a 20 band for the glyph above the body
+        case Shape::Browser:  // browser.ts: an 18 title bar above the body
+            return {MERMAID_MAX(text_w + 2 * p, 90.0), text_h + 2 * p + (node.shape == Shape::Console ? 20.0 : 18.0)};
         case Shape::Bucket: {  // bucket.ts: the rim ellipse sticks out above and the bottom arc below, so the box is rimRy higher
             const double w = MERMAID_MAX(text_w + 2 * p, 80.0), rim = MERMAID_MAX(MERMAID_MIN(w * 0.08, 12.0), 5.0);
             return {w, text_h + 2 * p + 2 * rim};

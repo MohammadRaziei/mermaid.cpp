@@ -172,6 +172,14 @@ bucket_geometry bucket_geometry_of(const Size& size) {
     return {w, w * 0.72, rim, -total / 2 + rim, total / 2};
 }
 
+person_geometry person_geometry_of(const Size& label) {
+    const double w = MERMAID_MAX(label.width + 2 * kNodePadding, 100.0);
+    const double head = MERMAID_MIN(MERMAID_MAX(w * 0.23, 16.0), 56.0), overlap = head * 0.27;
+    const double body_height = label.height + 2 * kNodePadding;
+    const double total = body_height + 2 * head - overlap, top = -total / 2;
+    return {w, head, overlap, body_height, MERMAID_MIN(w * 0.177, body_height * 0.45), total, top, top + 2 * head - overlap};
+}
+
 Point drawing_shift(Shape shape, const Size& size) {
     return shape == Shape::Bucket ? Point{0, bucket_geometry_of(size).rim_ry / 2} : Point{0, 0};
 }
@@ -179,6 +187,25 @@ Point drawing_shift(Shape shape, const Size& size) {
 std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size, const Size& label) {
     polygon_outline out;
     switch (shape) {
+        case Shape::Person: {  // person.ts: generateCirclePoints negates both coordinates; the head arc stops where the body starts
+            constexpr double pi = 3.14159265358979323846;
+            const person_geometry g = person_geometry_of(label);
+            const auto circle = [&](double cx, double cy, double r, int n, double from, double to) {
+                std::vector<Point> pts;
+                const double a0 = from * pi / 180, step = (to * pi / 180 - a0) / (n - 1);
+                for (int i = 0; i < n; ++i) pts.push_back({-(cx + r * std::cos(a0 + i * step)), -(cy + r * std::sin(a0 + i * step))});
+                return pts;
+            };
+            const double head_cy = g.top + g.head_radius, w = g.w, br = g.body_radius;
+            const double phi = std::asin(MERMAID_MIN(1.0, (g.body_top - head_cy) / g.head_radius)) * 180 / pi;
+            const auto add = [&](std::vector<Point> pts) { out.points.insert(out.points.end(), pts.begin(), pts.end()); };
+            add(circle(0, -head_cy, g.head_radius, 24, 180 + phi, -phi));
+            add(circle(-(-w / 2 + br), -(g.body_top + br), br, 12, 90, 0));
+            add(circle(-(-w / 2 + br), -(g.total / 2 - br), br, 12, 360, 270));
+            add(circle(-(w / 2 - br), -(g.total / 2 - br), br, 12, 270, 180));
+            add(circle(-(w / 2 - br), -(g.body_top + br), br, 12, 180, 90));
+            return out;
+        }
         case Shape::Bucket: {  // the outline edges are clipped to: two half ellipses of 13 points, 12 segments each
             constexpr double pi = 3.14159265358979323846;
             const bucket_geometry g = bucket_geometry_of(size);
@@ -571,6 +598,12 @@ Point label_offset(Shape shape, const Size& size, const Size& label) {
         return {r - 9, -6 + kNodePadding / 2};
     }
     if (shape == Shape::BraceRight || shape == Shape::Braces) return {-18 + kNodePadding / 2, -12 + kNodePadding / 2};
+    if (shape == Shape::Person) {  // the label sits in the middle of the body
+        const person_geometry g = person_geometry_of(label);
+        return {0, g.body_top + g.body_height / 2};
+    }
+    if (shape == Shape::Console) return {0, 10};  // the label sits in the body, below the 20 glyph band
+    if (shape == Shape::Browser) return {0, 9};   // ... below the 18 title bar
     if (shape == Shape::Bucket) {  // the label sits in the middle of the body, between the rim and the bottom
         const bucket_geometry g = bucket_geometry_of(size);
         return {0, g.top_y + (g.bottom_y - g.top_y) / 2};

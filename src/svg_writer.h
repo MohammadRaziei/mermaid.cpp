@@ -18,6 +18,7 @@ public:
     SvgWriter& text(std::string_view characters);          // escaped
     SvgWriter& raw(std::string_view markup);               // written as is (CSS)
     SvgWriter& element(std::string_view tag, const Attrs& attrs, std::string_view characters);
+    SvgWriter& paragraph(std::string_view lines);          // <p> with <br /> between the lines of the text (createText)
 
     // Throws std::logic_error when a tag is still open.
     std::string str() const;

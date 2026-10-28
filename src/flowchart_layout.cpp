@@ -49,16 +49,6 @@ public:
         return it == node_index_.end() ? -1 : it->second;
     }
 
-    // A node, or the first node found inside the subgraph with this id.
-    int leaf_of(const std::string& id, int guard = 0) const {
-        if (const int n = node(id); n >= 0) return n;
-        const auto it = sub_index_.find(id);
-        if (it == sub_index_.end() || guard > 32) return -1;
-        for (const std::string& member : model_.subgraphs[static_cast<size_t>(it->second)].members)
-            if (const int n = leaf_of(member, guard + 1); n >= 0) return n;
-        return -1;
-    }
-
     std::vector<int> path_of(int node) const {  // outermost first
         std::vector<int> path;
         for (int s = node_parent_[static_cast<size_t>(node)]; s >= 0; s = sub_parent_[static_cast<size_t>(s)])
@@ -186,6 +176,53 @@ private:
         return topology_.sub_parents()[static_cast<size_t>(r.index)];
     }
 
+    // mermaid-graphlib.js `findCommonEdges`: does an edge of `id` repeat one of the edges of `cluster` once the cluster
+    // is read as `id`? (Mermaid compares `{v, w}` pairs; the odd `w` rule is kept as written.)
+    bool shares_edges(const std::string& cluster, const std::string& id) const {
+        for (const Edge& e1 : model_.edges) {
+            if (e1.from != cluster && e1.to != cluster) continue;
+            const std::string v = e1.from == cluster ? id : e1.from, w = e1.to == cluster ? cluster : e1.to;
+            for (const Edge& e2 : model_.edges)
+                if ((e2.from == id || e2.to == id) && v == e2.from && w == e2.to) return true;
+        }
+        return false;
+    }
+
+    // mermaid-graphlib.js `findNonClusterChild`: the first leaf below `id` that shares no edge with the cluster, or the
+    // last one that does when all of them do. An empty subgraph gives no leaf here (it is never `used_`).
+    std::optional<int> find_non_cluster_child(const std::string& id, const std::string& cluster) const {
+        if (const int n = topology_.node(id); n >= 0) return n;
+        const int s = topology_.sub(id);
+        if (s < 0) return std::nullopt;
+        std::optional<int> reserve;
+        for (const std::string& member : model_.subgraphs[static_cast<size_t>(s)].members) {
+            const std::optional<int> leaf = find_non_cluster_child(member, cluster);
+            if (!leaf) continue;
+            if (shares_edges(cluster, model_.nodes[static_cast<size_t>(*leaf)].id)) reserve = leaf;
+            else return leaf;
+        }
+        return reserve;
+    }
+
+    // mermaid-graphlib.js `isNodeInExtractableCluster`: some cluster between the node and `root` (exclusive) has no edge
+    // leaving it.
+    bool in_closed_cluster(int node, int root) const {
+        for (int s = parent_of({EndRef::kind::node, node}); s >= 0 && s != root; s = topology_.sub_parents()[static_cast<size_t>(s)])
+            if (used_[static_cast<size_t>(s)] && !external_[static_cast<size_t>(s)]) return true;
+        return false;
+    }
+
+    // `findSafeAnchorNode`: the first leaf of a child of `cluster` (not the excluded cluster nor anything in it) that is in
+    // no closed nested cluster.
+    std::optional<int> find_safe_anchor_node(int cluster, int excluded) const {
+        for (const std::string& child : model_.subgraphs[static_cast<size_t>(cluster)].members) {
+            if (excluded >= 0 && (topology_.sub(child) == excluded || below(child, excluded))) continue;
+            const std::optional<int> candidate = find_non_cluster_child(child, model_.subgraphs[static_cast<size_t>(cluster)].id);
+            if (candidate && !in_closed_cluster(*candidate, cluster)) return candidate;
+        }
+        return std::nullopt;
+    }
+
     void resolve_edges() {
         // An edge with exactly one end below a cluster leaves it.
         external_.assign(count(), false);
@@ -200,13 +237,19 @@ private:
         anchor_.assign(count(), EndRef{});
         for (size_t c = 0; c < count(); ++c) {
             if (!used_[c]) continue;
-            const int leaf = topology_.leaf_of(model_.subgraphs[c].id);
-            if (leaf < 0) continue;
-            EndRef anchor{EndRef::kind::node, leaf};
+            const std::optional<int> leaf = find_non_cluster_child(model_.subgraphs[c].id, model_.subgraphs[c].id);
+            if (!leaf) continue;
+            EndRef anchor{EndRef::kind::node, *leaf};
             const int parent = parent_of(anchor);
             if (parent >= 0 && parent != static_cast<int>(c) && used_[static_cast<size_t>(parent)] &&
                 !external_[static_cast<size_t>(parent)])
                 anchor = {EndRef::kind::sub, parent};
+            // The safe anchor: a cluster with an edge leaving it and an edge starting at it must not be anchored on a leaf
+            // that sits in a closed nested cluster (that one is laid out apart), so another child is looked for.
+            const std::string& id = model_.subgraphs[c].id;
+            const bool starts_an_edge = std::any_of(model_.edges.begin(), model_.edges.end(), [&](const Edge& e) { return e.from == id; });
+            if (external_[c] && starts_an_edge && in_closed_cluster(*leaf, static_cast<int>(c)))
+                if (const std::optional<int> safe = find_safe_anchor_node(static_cast<int>(c), parent)) anchor = {EndRef::kind::node, *safe};
             anchor_[c] = anchor;
         }
 
@@ -238,6 +281,17 @@ private:
         closed_.assign(count(), false);
         for (size_t c = 0; c < count(); ++c) closed_[c] = used_[c] && !external_[c];
         for (EdgeInfo& e : edges_) e.scope = edge_scope(e);
+
+        // adjustClustersAndEdges removes and sets again every edge with a cluster at an end, which moves it behind the
+        // others (graphlib keeps insertion order); the drawing and dagre both follow that order.
+        const auto cluster_end = [&](const std::string& id) {
+            const int sub = topology_.sub(id);
+            return sub >= 0 && used_[static_cast<size_t>(sub)];
+        };
+        edge_order_.clear();
+        for (int pass = 0; pass < 2; ++pass)
+            for (size_t i = 0; i < model_.edges.size(); ++i)
+                if ((cluster_end(model_.edges[i].from) || cluster_end(model_.edges[i].to)) == (pass == 1)) edge_order_.push_back(i);
     }
 
     // The closed subgraphs a position lies in, outermost first. A subgraph end is not inside itself.
@@ -356,7 +410,7 @@ private:
         }
         if (scope.owner >= 0) in.nodes.push_back({sub_id(scope.owner), 0, 0, std::string()});
 
-        for (size_t i = 0; i < edges_.size(); ++i) {
+        for (const size_t i : edge_order_) {
             if (!edges_[i].placed() || edges_[i].scope != scope.owner) continue;
             if (is_self_loop(i)) {  // ... and three edges: node -> helper 1 -> helper 2 -> node; the label is on the middle one
                 // The keys repeat for a second loop on the node: it replaces the first one's data in the first one's place.
@@ -399,8 +453,10 @@ private:
 
     bool is_self_loop(size_t i) const {
         const EdgeInfo& e = edges_[i];
-        // a loop on a node, or on a closed subgraph (which is one node of the parent graph)
-        return e.placed() && e.from.type == e.to.type && e.from.index == e.to.index;
+        // a loop on a node, or on a closed subgraph (which is one node of the parent graph). Mermaid asks `start === end` of
+        // the edge as written, before the ends of a cluster are moved to their anchors: `g --> b` with `b` in `g` ends up
+        // as `b --> b` and is then a plain edge, whose self-edge dagre handles itself.
+        return e.placed() && model_.edges[i].from == model_.edges[i].to && e.from.type == e.to.type && e.from.index == e.to.index;
     }
 
     // Loops on the same node in the same scope share their helper nodes and edge keys (see make_input).
@@ -504,7 +560,7 @@ private:
             layout.nodes.push_back({node.id, node.shape, {r->x, r->y}, sizes_[static_cast<size_t>(i)],
                                     labels_[static_cast<size_t>(i)], static_cast<bool>(labels_wrapped_[static_cast<size_t>(i)])});
         }
-        for (size_t i = 0; i < edges_.size(); ++i) {
+        for (const size_t i : edge_order_) {
             if (edges_[i].scope != scope.owner) continue;
             EdgeLayout out;
             out.id = model_.edges[i].id;
@@ -647,6 +703,7 @@ private:
     std::vector<char> labels_wrapped_;
     std::vector<EdgeInfo> edges_;
     std::vector<bool> used_, external_, closed_;
+    std::vector<size_t> edge_order_;  // indices of edges_ in graphlib order
     std::vector<EndRef> anchor_;
     std::vector<int> color_index_;
 };

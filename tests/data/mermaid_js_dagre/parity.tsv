@@ -46,7 +46,7 @@ s13_sub_to_sub	pass
 s13_sub_to_sub_label	pass
 s13_nested_edge	pass
 s13_loop_open_cluster	pass
-s13_node_into_own_cluster	todo
+s13_node_into_own_cluster	pass
 s14_markdown_mixed	pass
 s14_markdown_subgraph_edge	pass
 s12b_hourglass	pass
@@ -89,3 +89,14 @@ s12b_folder	pass
 s12b_folder_lr	pass
 s12b_bucket	pass
 s12b_bucket_lr	pass
+s12b_console	pass
+s12b_browser	pass
+s12b_console_browser_lr	pass
+s12b_person	pass
+s12b_datastore	pass
+s12b_person_datastore_lr	pass
+s12b_label_newline	pass
+s13_own_cluster_lr	pass
+s13_own_cluster_nested	pass
+s13_safe_anchor	pass
+s13_edge_order	pass
