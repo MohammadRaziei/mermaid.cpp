@@ -22,9 +22,8 @@ text. `classDef`, `linkStyle` and init theme variables flow through the same pat
 - Mermaid inserts the `classDef` rules into a browser `CSSStyleSheet`, so their values come back as Chromium
   serialises them; `browser_value` reproduces what was seen: hex colours as `rgb()`, `stroke-dasharray` as a comma list
   (`5 5` -> `5,5`), multi-word font names quoted. Other properties are written as given, which is unverified.
-- Since S11 every theme (`default`, `dark`, `forest`, `neutral`, `base`) uses this path; the classic themes are
-  `theme_variables::dark()` etc., generated from Mermaid's theme code the same way as `redux_color()`. Overrides of
-  `themeVariables` beyond three keys are not applied (they need khroma's colour derivations).
+- Since S11 every theme (`default`, `dark`, `forest`, `neutral`, `base`) uses this path. The variables were stored
+  tables at first; ADR-0016 replaced them by Mermaid's own derivations (khroma ported), so `themeVariables` overrides work.
 
 ## Alternatives considered
 

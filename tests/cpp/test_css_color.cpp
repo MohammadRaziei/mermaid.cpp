@@ -12,10 +12,14 @@ UTEST(css_color, hex_rgb_and_hsl_are_parsed) {
     ASSERT_EQ(255, c->b);
     ASSERT_EQ(255, parse_css_color("#fff")->g);
     ASSERT_EQ(51, parse_css_color("rgb(51, 0, 0)")->r);
-    ASSERT_EQ(204, parse_css_color("hsl(-120, 0%, 80%)")->b);  // Mermaid's edge label background
-    ASSERT_EQ(255, parse_css_color("hsl(0, 100%, 50%)")->r);
-    ASSERT_EQ(0, parse_css_color("hsl(0, 100%, 50%)")->g);
-    ASSERT_EQ(255, parse_css_color("hsl(240, 100%, 50%)")->b);
+    // the colour text goes through variables: utest prints the asserted expression as a printf format, and `%` breaks that
+    const auto edge_label_background = parse_css_color("hsl(-120, 0%, 80%)");  // Mermaid's edge label background
+    const auto red = parse_css_color("hsl(0, 100%, 50%)");
+    const auto blue = parse_css_color("hsl(240, 100%, 50%)");
+    ASSERT_EQ(204, edge_label_background->b);
+    ASSERT_EQ(255, red->r);
+    ASSERT_EQ(0, red->g);
+    ASSERT_EQ(255, blue->b);
     ASSERT_EQ(255, parse_css_color("red")->r);  // keywords parse like khroma's
     ASSERT_FALSE(parse_css_color("#12").has_value());
 }

@@ -51,7 +51,7 @@ Workflow per step: failing test first -> implement -> green -> commit -> clean r
   - [x] S7j clusters in neo markup: box = dagre compound node, svg-prefixed ids, `data-look`, `data-color-id`
     (declaration order, depth first, modulo palette size), `foreignObject` label, box widened to label + padding
   - [x] S7k `%%{init}%%` (`init` / `initialize`, multi-line, later wins, invalid JSON ignored; own JSON reader;
-    ADR-0011): `themeVariables.fontFamily|clusterBkg|clusterBorder`, `flowchart.nodeSpacing|rankSpacing`
+    ADR-0011): every `themeVariables` entry (ADR-0016), `fontFamily`, `flowchart.nodeSpacing|rankSpacing`
   - [x] S7l `A@{ label: "..." }`: `markdown-node-label` class (labelType defaults to markdown unless `text` /
     `string`), each `@{}` block advances the vertex counter once more (ids jump by 2)
 - [x] **S6b** clusters stay in their own x-range: the dagre compound boxes hold exactly their members. Closed by
@@ -75,11 +75,11 @@ Workflow per step: failing test first -> implement -> green -> commit -> clean r
 Ordered by what is likely to matter next.
 
 - [x] **S11** themes `dark`, `forest`, `neutral`, `base` in the neo look: variables come from Mermaid's own theme code
-  (`theme_variables::dark()` etc., generated with esbuild + khroma like `redux_color()`), the stylesheet is the same
+  (computed with a port of khroma, ADR-0016), the stylesheet is the same
   ported path, the classic themes have 16px text (24px lines), no colour slots, a gradient (`insertLookDefs`) and a white
   drop-shadow flood for dark. 10 fixtures (basic + rich, five themes) pass. The init `theme` key and `-t` give the same
-  picture. Not done: `themeVariables` other than `fontFamily`, `clusterBkg`, `clusterBorder` (they feed khroma
-  derivations in Mermaid, e.g. `primaryColor` of `base`), which would need the colour arithmetic ported
+  picture. `themeVariables` overrides derive other colours like Mermaid (`calculate` + `updateColors`, khroma ported;
+  19 fixtures `t_*`, incl. the sanitiser: unknown keys such as `contrast` are dropped, odd values emptied)
 - [x] **S12b** the `@{ shape: ... }` family (150 names, 53 handlers in Mermaid 12.2.0). All 53 handlers are
   drawn, verified against the real SVG (46 fixtures `s12b_*`, all `pass`, each with a short label and a label that
   wraps where the shape has one): the 14 classic shapes, the paper shapes (`doc`, `docs`, `lin-doc`, `tag-doc`, `flag`),
@@ -131,7 +131,7 @@ Ordered by what is likely to matter next.
   `class` on an edge id, `linkStyle` on more shapes than the one fixture.
 - [ ] **S10** CI is a 3-OS build and test (`.github/workflows/cmake.yml`). Open: Doxygen docs (like liburlparser),
   benchmarks, coverage dashboard (`mermaid_coverage` target exists, needs `lcov`)
-- [ ] Init keys not read yet: other `themeVariables`, `look`, `layout`, `htmlLabels` (`theme`, `flowchart.curve` are read)
+- [ ] Init keys not read yet: `look`, `layout`, `htmlLabels` (`theme`, `themeVariables`, `fontFamily`, `flowchart.curve|nodeSpacing|rankSpacing` are read)
 - [ ] `animate`
 - [ ] Markdown inside labels (`**bold**`, `*italic*`, line breaks); only plain text matches
 - [ ] `click`, links, tooltips; icons/images; accessibility tags beyond the basic ones

@@ -21,3 +21,4 @@ Copy `0000-template.md` for a new record and add it to the table.
 | [0013](0013-cli-svg-only-own-argument-parser.md) | `mermaid_cli`: SVG only, own parser, logic in a public header | Accepted |
 | [0014](0014-shape-geometry-derived-from-node-size.md) | One module derives each shape's outline from the node size | Accepted |
 | [0015](0015-self-loops-and-dagre-coordinates.md) | Self-loops via helper nodes; dagre coordinates kept; viewBox from drawn bounds | Accepted |
+| [0016](0016-themes-computed-like-mermaid.md) | Themes computed like Mermaid, khroma's colour arithmetic ported | Accepted |

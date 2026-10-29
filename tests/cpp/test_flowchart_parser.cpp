@@ -372,14 +372,44 @@ UTEST(flowchart_parser, a_class_given_twice_stays_twice_like_in_flowdb) {
 
 // ---- %%{init}%% directives (the parts the flowchart renderer reads)
 
+UTEST(flowchart_init, theme_variables_keep_strings_numbers_and_booleans) {
+    const Model m = Parser().parse(
+        "%%{init: {\"themeVariables\": {\"primaryColor\": \"#336699\", \"strokeWidth\": 2.5, \"darkMode\": true, \"useGradient\": false}} }%%\nflowchart TD\nA-->B\n");
+    ASSERT_STREQ("#336699", m.config.theme_variables.at("primaryColor").c_str());
+    ASSERT_STREQ("2.5", m.config.theme_variables.at("strokeWidth").c_str());
+    ASSERT_STREQ("true", m.config.theme_variables.at("darkMode").c_str());
+    ASSERT_STREQ("", m.config.theme_variables.at("useGradient").c_str());
+}
+
+UTEST(flowchart_init, the_directive_sanitiser_drops_unknown_keys_and_blanks_odd_values) {
+    // `contrast` and `nodeTextColor` are not keys of Mermaid's default config; a value with a `-` is emptied; `<` removes the key
+    const Model m = Parser().parse(
+        "%%{init: {\"themeVariables\": {\"contrast\": \"#111111\", \"nodeTextColor\": \"#222222\", \"lineColor\": \"a-b\","
+        " \"mainBkg\": \"<b>\", \"textColor\": \"#333333\"}} }%%\nflowchart TD\nA-->B\n");
+    ASSERT_EQ(0u, m.config.theme_variables.count("contrast"));
+    ASSERT_EQ(0u, m.config.theme_variables.count("nodeTextColor"));
+    ASSERT_EQ(0u, m.config.theme_variables.count("mainBkg"));
+    ASSERT_STREQ("", m.config.theme_variables.at("lineColor").c_str());
+    ASSERT_STREQ("#333333", m.config.theme_variables.at("textColor").c_str());
+}
+
+UTEST(flowchart_init, later_directives_win_key_by_key_and_a_plain_font_family_reaches_the_theme_variables) {
+    const Model m = Parser().parse(
+        "%%{init: {\"fontFamily\": \"verdana\", \"themeVariables\": {\"lineColor\": \"#111111\", \"textColor\": \"#222222\"}} }%%\n"
+        "%%{init: {\"themeVariables\": {\"lineColor\": \"#999999\"}} }%%\nflowchart TD\nA-->B\n");
+    ASSERT_STREQ("#999999", m.config.theme_variables.at("lineColor").c_str());
+    ASSERT_STREQ("#222222", m.config.theme_variables.at("textColor").c_str());
+    ASSERT_STREQ("verdana", m.config.theme_variables.at("fontFamily").c_str());
+    ASSERT_STREQ("verdana", m.config.font_family->c_str());
+}
+
 UTEST(flowchart_init, theme_variables_and_flowchart_spacing) {
     const Model m = Parser().parse(
         "%%{init: {\"themeVariables\": {\"fontFamily\": \"arial\", \"clusterBkg\": \"#f8f8f8\", \"clusterBorder\": \"#999999\"},"
         " \"flowchart\": {\"nodeSpacing\": 70, \"rankSpacing\": 60}} }%%\nflowchart TD\nA-->B\n");
-    ASSERT_TRUE(m.config.font_family.has_value());
-    ASSERT_STREQ("arial", m.config.font_family->c_str());
-    ASSERT_STREQ("#f8f8f8", m.config.cluster_bkg->c_str());
-    ASSERT_STREQ("#999999", m.config.cluster_border->c_str());
+    ASSERT_STREQ("arial", m.config.theme_variables.at("fontFamily").c_str());
+    ASSERT_STREQ("#f8f8f8", m.config.theme_variables.at("clusterBkg").c_str());
+    ASSERT_STREQ("#999999", m.config.theme_variables.at("clusterBorder").c_str());
     ASSERT_EQ(70.0, *m.config.node_spacing);
     ASSERT_EQ(60.0, *m.config.rank_spacing);
 }
@@ -394,7 +424,7 @@ UTEST(flowchart_init, multi_line_directive_and_later_directive_wins) {
 
 UTEST(flowchart_init, absent_unknown_or_broken_directives_leave_defaults) {
     const Model none = Parser().parse("flowchart TD\nA-->B\n");
-    ASSERT_FALSE(none.config.font_family.has_value());
+    ASSERT_TRUE(none.config.theme_variables.empty());
     ASSERT_FALSE(none.config.node_spacing.has_value());
     const Model odd = Parser().parse("%%{init: {\"theme\": \"forest\", \"flowchart\": {\"curve\": \"basis\"}}}%%\nflowchart TD\nA-->B\n");
     ASSERT_FALSE(odd.config.node_spacing.has_value());

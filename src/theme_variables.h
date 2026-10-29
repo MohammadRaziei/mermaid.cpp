@@ -4,6 +4,7 @@
 // with node); the colour arithmetic of khroma is not repeated here.
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -40,16 +41,12 @@ struct theme_variables {
     std::string look = "neo";
     std::string font_family_config;  // `fontFamily` of the diagram config (the :root rule)
 
-    // Mermaid 12.2 default: theme `redux-color`, look `neo`.
-    static theme_variables redux_color();
-    // The classic themes in the neo look (what Mermaid 12.2 draws for `theme: dark` and so on).
-    static theme_variables dark();
-    static theme_variables forest();
-    static theme_variables neutral();
-    static theme_variables base();
-    // Variables of a theme by name (`default`, `dark`, `forest`, `neutral`, `base`); throws std::invalid_argument.
+    // Variables of a theme by name (`default` is Mermaid 12.2's `redux-color`, then `dark`, `forest`, `neutral`, `base`), as
+    // the theme classes of Mermaid compute them; throws std::invalid_argument.
     static theme_variables named(const std::string& name);
-    // `named(init theme, or `fallback` without one)` with the themeVariables of the init directive on top.
+    // The same with the user's `themeVariables` given to the theme's `calculate()`, which derives the other colours from them.
+    static theme_variables resolved_theme(const std::string& name, const std::map<std::string, std::string>& overrides);
+    // `resolved_theme(init theme, or `fallback` without one, init theme variables)`.
     static theme_variables resolved(const flowchart::InitConfig& init, const std::string& fallback);
     // font_size as a number of pixels ("16px" -> 16)
     double font_px() const;

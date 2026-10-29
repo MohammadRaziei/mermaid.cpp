@@ -1,0 +1,10 @@
+%%{init: {"themeVariables":{"background":"#202020","darkMode":true}}}%%
+flowchart TD
+  A[Start] --> B{Check}
+  B -->|yes| C[Done]
+  B -->|no| D[Retry]
+  subgraph S[Group]
+    C
+  end
+  classDef hot fill:#fdd
+  class D hot

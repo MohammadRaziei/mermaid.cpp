@@ -45,7 +45,7 @@ struct polygon_outline {
         bool stroke_only = false;   // rc.path with fill "none": no fill <path>
         bool open = false;          // the path text had its `Z` removed
         bool hidden = false;        // the <g> of the drawing has stroke-opacity 0
-        std::vector<std::vector<Point>> more;  // further open runs of the same path (their outline only), after `points`
+        std::vector<std::vector<Point>> more = {};  // further open runs of the same path (their outline only), after `points`
     };
     std::vector<layer> layers;
     bool hit_as_rect = false;  // edges are clipped to the node box (intersect.rect), not to the outline

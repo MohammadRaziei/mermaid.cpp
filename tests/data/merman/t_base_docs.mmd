@@ -1,0 +1,8 @@
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#BB2528", "primaryTextColor": "#fff", "primaryBorderColor": "#7C0000", "lineColor": "#F8B229", "secondaryColor": "#006100", "tertiaryColor": "#fff"}}}%%
+flowchart TD
+  A[Start] --> B{Check}
+  B -->|yes| C[Done]
+  B -->|no| D[Retry]
+  subgraph S[Group]
+    C
+  end

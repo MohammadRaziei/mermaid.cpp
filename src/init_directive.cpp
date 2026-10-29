@@ -1,4 +1,5 @@
 #include "init_directive.h"
+#include "rough_path.h"
 
 #include <cctype>
 #include <cstdlib>
@@ -119,7 +120,12 @@ private:
             v.type = json_value::kind::string;
             return read_string(v.string);
         }
-        if (read_literal("true") || read_literal("false")) {
+        if (read_literal("true")) {
+            v.type = json_value::kind::boolean;
+            v.number = 1;
+            return true;
+        }
+        if (read_literal("false")) {
             v.type = json_value::kind::boolean;
             return true;
         }
@@ -156,6 +162,29 @@ std::optional<double> number_at(const json_value& obj, const std::string& group,
     const json_value* v = g && g->type == json_value::kind::object ? g->find(key) : nullptr;
     if (v && v->type == json_value::kind::number) return v->number;
     return std::nullopt;
+}
+
+// config.ts sanitizeDirective / sanitize, as far as `themeVariables` goes. A directive key must be one Mermaid's default config
+// knows (`configKeys`); the five variables below are read by our themes but absent from it, so the directive cannot set them
+// (found by asking Mermaid 12.2.0). A string value may only hold digits, space, quotes, `#%(),.;` and letters, else it is
+// emptied; `<`, `>` and `url(data:` remove the key.
+bool theme_variable_allowed(const std::string& key, const json_value& v) {
+    static const char* const unknown[] = {"mainContrastColor", "contrast", "text", "nodeTextColor", "nodeShadow"};
+    for (const char* name : unknown)
+        if (key == name) return false;
+    if (key.rfind("__", 0) == 0 || key.find("proto") != std::string::npos || key.find("constr") != std::string::npos) return false;
+    if (v.type == json_value::kind::string &&
+        (v.string.find('<') != std::string::npos || v.string.find('>') != std::string::npos || v.string.find("url(data:") != std::string::npos))
+        return false;
+    return true;
+}
+
+std::string sanitized_theme_value(const std::string& value) {
+    if (value.empty()) return value;
+    for (const char c : value)
+        if (!(std::isalnum(static_cast<unsigned char>(c)) || c == ' ' || c == '"' || c == '#' || c == '%' || c == '(' || c == ')' || c == ',' || c == '.' || c == ';'))
+            return std::string();
+    return value;
 }
 
 template <typename T>
@@ -197,9 +226,19 @@ flowchart::InitConfig parse_init_directives(std::string_view source) {
         if (!value) continue;
 
         override_with(config.theme, top_string(*value, "theme"));
-        override_with(config.font_family, string_at(*value, "themeVariables", "fontFamily"));
-        override_with(config.cluster_bkg, string_at(*value, "themeVariables", "clusterBkg"));
-        override_with(config.cluster_border, string_at(*value, "themeVariables", "clusterBorder"));
+        std::map<std::string, std::string> variables_here;
+        if (const json_value* variables = value->find("themeVariables"); variables && variables->type == json_value::kind::object)
+            for (const auto& [key, v] : variables->members) {
+                if (!theme_variable_allowed(key, v)) continue;
+                if (v.type == json_value::kind::string) variables_here[key] = sanitized_theme_value(v.string);
+                else if (v.type == json_value::kind::number) variables_here[key] = js_number(v.number);
+                else if (v.type == json_value::kind::boolean) variables_here[key] = v.number != 0 ? "true" : "";
+            }
+        // addDirective: a plain `fontFamily` becomes themeVariables.fontFamily unless the directive sets that itself
+        if (const auto font = top_string(*value, "fontFamily"); font && variables_here[std::string("fontFamily")].empty())
+            variables_here["fontFamily"] = *font;
+        override_with(config.font_family, top_string(*value, "fontFamily"));
+        for (const auto& [key, v] : variables_here) config.theme_variables[key] = v;  // assignWithDepth: a later directive wins key by key
         override_with(config.node_spacing, number_at(*value, "flowchart", "nodeSpacing"));
         override_with(config.rank_spacing, number_at(*value, "flowchart", "rankSpacing"));
         override_with(config.curve, string_at(*value, "flowchart", "curve"));

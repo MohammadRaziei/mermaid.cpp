@@ -116,9 +116,10 @@ struct ClassDef {
 // The `%%{init: ...}%%` settings the flowchart renderer reads (later directives override earlier ones).
 struct InitConfig {
     std::optional<std::string> theme;           // theme: default, dark, forest, neutral, base
-    std::optional<std::string> font_family;     // themeVariables.fontFamily
-    std::optional<std::string> cluster_bkg;     // themeVariables.clusterBkg
-    std::optional<std::string> cluster_border;  // themeVariables.clusterBorder
+    std::optional<std::string> font_family;  // fontFamily of the config (the `--mermaid-font-family` of :root)
+    // themeVariables, every string, number (written as JavaScript would) and boolean (`true`, or empty for false) of them;
+    // the theme turns them into the variables the stylesheet reads, deriving the others (colour arithmetic of khroma).
+    std::map<std::string, std::string> theme_variables;
     std::optional<double> node_spacing;         // flowchart.nodeSpacing
     std::optional<double> rank_spacing;         // flowchart.rankSpacing
     std::optional<std::string> curve;           // flowchart.curve: default curve of edges without their own
