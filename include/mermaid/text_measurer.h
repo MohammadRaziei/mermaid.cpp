@@ -4,6 +4,7 @@
 // needs text size depends on this interface, never on a concrete font engine.
 #pragma once
 
+#include <string>
 #include <string_view>
 
 #include <mermaid/geometry.h>
@@ -19,6 +20,12 @@ struct TextStyle {
 
 // The four faces text of a Markdown label comes in.
 enum class FontFace { Regular = 0, Bold = 1, Italic = 2, BoldItalic = 3 };
+
+// A word of a label and the face it is set in (the words of a row become the <tspan>s of an SVG label).
+struct TextWord {
+    std::string text;
+    FontFace face = FontFace::Regular;
+};
 
 class TextMeasurer {
 public:

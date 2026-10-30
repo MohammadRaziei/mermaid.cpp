@@ -17,6 +17,8 @@ public:
     struct Label {
         Size size;
         bool wrapped = false;  // the text had to break to fit the label width
+        std::vector<std::vector<TextWord>> rows;  // htmlLabels: false: the words of every row
+        double top = 0;                              // htmlLabels: false: bbox.y of the text
     };
 
     // `direction` is the one resolveNodeDir finds for the node: that of the nearest subgraph around it that has its own

@@ -1,4 +1,5 @@
 #include "edge_renderer.h"
+#include "svg_label.h"
 
 #include <algorithm>
 
@@ -245,6 +246,33 @@ void EdgeRenderer::write_label(SvgWriter& out, const flowchart::Edge& edge, cons
     if (const auto shift = label_shifts_.find(edge.id); labelled && shift != label_shifts_.end()) {
         box.x += shift->second.x;
         box.y += shift->second.y;
+    }
+
+    if (!html_labels_) {  // insertEdgeLabel with an SVG <text>: the label group is the text and a 2px background around it
+        SvgWriter::Attrs svg_group{{"class", "edgeLabel"}};
+        if (labelled) svg_group.emplace_back("transform", translate(box.center().x, box.center().y));
+        out.open("g", svg_group);
+        const double text_w = box.width - 4, text_h = box.height - 4, top = layout.label_top;
+        const double left = layout.label_left;
+        const std::string label_transform = labelled ? translate(-(left + text_w / 2), -(top + text_h / 2)) : "translate(0, 0)";
+        out.open("g", {{"class", "label"}, {"data-id", edge.id}, {"transform", label_transform}});
+        if (labelled) {
+            out.open("g");
+            out.leaf("rect", {{"class", "background"}, {"style", ""}, {"x", SvgWriter::num(left - 2)},
+                              {"y", SvgWriter::num(top - 2)}, {"width", SvgWriter::num(text_w + 4)}, {"height", SvgWriter::num(text_h + 4)}});
+            svg_label::write_text(out, layout.label_rows, true, true);
+            out.close();
+        } else {  // createText of an empty label hands back the bare <text>; its background group is left behind
+            svg_label::write_text(out, {{}}, true, false);
+        }
+        out.close();  // label
+        out.close();  // edgeLabel
+        if (!labelled) {
+            out.open("g");
+            out.leaf("rect", {{"class", "background"}, {"style", "stroke: none"}});
+            out.close();
+        }
+        return;
     }
 
     // edges.js insertEdgeLabel: a group at the label centre, the HTML label centred inside it.

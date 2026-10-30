@@ -7,6 +7,7 @@
 #include "flowchart_css.h"
 #include "markdown_label.h"
 #include "node_renderer.h"
+#include "svg_label.h"
 #include "rough_path.h"
 #include "style_css.h"
 #include "svg_writer.h"
@@ -27,7 +28,7 @@ public:
           options_(options),
           vars_(detail::theme_variables::resolved(model.config, options.theme)),
           line_height_(vars_.font_px() * 1.5),
-          edges_(options.svg_id, line_height_) {}
+          edges_(options.svg_id, line_height_, model.config.html_labels ? *model.config.html_labels : model.config.flowchart_html_labels.value_or(true)) {}
 
     std::string render() {
         open_svg();
@@ -151,6 +152,14 @@ private:
         out_.open("g", {{"class", "cluster-label"},
                         {"transform", "translate(" + detail::js_number(c.rect.center().x - c.label.width / 2) + ", " +
                                           detail::js_number(c.rect.y) + ")"}});
+        if (!c.label_rows.empty()) {  // htmlLabels: false: createText with an SVG <text>
+            out_.open("g");
+            out_.leaf("rect", {{"class", "background"}, {"style", "stroke: none"}});
+            detail::svg_label::write_text(out_, c.label_rows, false, true);
+            out_.close();
+            out_.close();  // cluster-label
+            return;
+        }
         out_.open("foreignObject", {{"width", detail::js_number(c.label.width)}, {"height", detail::js_number(c.label.height)}});
         // a Markdown title goes through createText with the width of the cluster: that adds max-width and centring
         out_.open("div", {{"xmlns", "http://www.w3.org/1999/xhtml"},

@@ -144,5 +144,13 @@ t_fontsize	pass
 t_two_directives	pass
 init_look_classic	todo
 init_layout_dagre	pass
-init_html_labels_false	todo
-init_flowchart_html_labels_false	todo
+init_html_labels_false	pass
+init_flowchart_html_labels_false	pass
+init_html_labels_false_wrap	pass
+init_html_labels_false_edge_labels	pass
+init_html_labels_false_shapes_markdown	pass
+init_html_labels_false_lines	pass
+init_html_labels_false_all_shapes	pass
+init_html_labels_false_subgraph	pass
+init_html_labels_false_markdown	pass
+init_flowchart_html_labels_false_subgraph	pass

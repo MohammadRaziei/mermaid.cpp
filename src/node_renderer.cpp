@@ -1,4 +1,5 @@
 #include "node_renderer.h"
+#include "svg_label.h"
 
 #include <cmath>
 
@@ -56,6 +57,19 @@ void node_renderer::write(SvgWriter& out, const flowchart::Node& node, const flo
                layout.shape == Shape::FilledCircle || layout.shape == Shape::FramedCircle || layout.shape == Shape::CrossedCircle) {
         // these shapes make no label at all
     } else {
+        if (!layout.label_rows.empty()) {  // htmlLabels: false: labelHelper with an SVG <text>
+            // cylinder.ts and rectLeftInvArrow.ts place the label themselves, minus `bbox.y`, which is not 0 for a <text>
+            // (the other shapes were checked against Mermaid in the all_shapes fixture)
+            if (layout.shape == Shape::Cylinder || layout.shape == Shape::Odd) shift.y -= layout.label_top;
+            out.open("g", {{"class", "label"}, {"style", important_label_style(style)},
+                           {"transform", translate(shift.x, -layout.label.height / 2 + shift.y)}});
+            out.leaf("rect");
+            out.open("g");
+            out.leaf("rect", {{"class", "background"}, {"style", "stroke: none"}});
+            svg_label::write_text(out, layout.label_rows, false, true);
+            out.close();
+            out.close();
+        } else
         write_label(out, node.label, layout.label, style, shift, node.markdown_label,
                     !ignores_min_label_width(layout.shape) || layout.label_wrapped, layout.label_wrapped,
                     writes_tight_label_transform(layout.shape));  // these shapes write their own transform: no space

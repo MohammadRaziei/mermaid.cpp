@@ -242,6 +242,11 @@ flowchart::InitConfig parse_init_directives(std::string_view source) {
         override_with(config.node_spacing, number_at(*value, "flowchart", "nodeSpacing"));
         override_with(config.rank_spacing, number_at(*value, "flowchart", "rankSpacing"));
         override_with(config.curve, string_at(*value, "flowchart", "curve"));
+        if (const json_value* html = value->find("htmlLabels"); html && html->type == json_value::kind::boolean)
+            config.html_labels = html->number != 0;
+        if (const json_value* flowchart = value->find("flowchart"); flowchart && flowchart->type == json_value::kind::object)
+            if (const json_value* nested = flowchart->find("htmlLabels"); nested && nested->type == json_value::kind::boolean)
+                config.flowchart_html_labels = nested->number != 0;
     }
     return config;
 }

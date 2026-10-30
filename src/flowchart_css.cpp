@@ -385,8 +385,12 @@ std::string user_styles(const theme_variables& t, const flowchart::Model& model,
             all.push_back(key + ": " + browser_value(key, value));
             if (key == "color") text.push_back("fill: " + browser_value(key, value));
         }
-        out += important_rule(name, "> *", all);
-        out += important_rule(name, "span", all);
+        if ((model.config.html_labels ? model.config.html_labels : model.config.flowchart_html_labels).value_or(true)) {
+            out += important_rule(name, "> *", all);
+            out += important_rule(name, "span", all);
+        } else {  // createCssStyles with SVG labels: the shapes themselves
+            for (const char* element : {"rect", "polygon", "ellipse", "circle", "path"}) out += important_rule(name, element, all);
+        }
         if (!text.empty()) out += important_rule(name, "tspan", text);
     }
     return out + extra_css;

@@ -10,6 +10,7 @@
 
 #include "markdown_label.h"
 #include "node_sizer.h"
+#include "svg_label.h"
 #include "shape_geometry.h"
 #include <mermaid/macros.h>
 
@@ -86,6 +87,9 @@ struct EdgeInfo {
     int scope = -1;  // the closed subgraph whose graph holds this edge, -1 for the root graph
     Size label;
     bool label_wrapped = false;
+    std::vector<std::vector<TextWord>> label_rows;
+    double label_top = 0;
+    double label_left = 0;
     bool placed() const { return from.type != EndRef::kind::none && to.type != EndRef::kind::none; }
 };
 
@@ -123,6 +127,8 @@ public:
             const detail::NodeSizer::Label label = sizer.label(n);
             labels_.push_back(label.size);
             labels_wrapped_.push_back(label.wrapped);
+            label_rows_.push_back(label.rows);
+            label_tops_.push_back(label.top);
         }
         compute_used();
         resolve_edges();
@@ -276,7 +282,16 @@ private:
             EdgeInfo info;
             info.from = resolve(e.from);
             info.to = resolve(e.to);
-            if (!e.label.empty()) {
+            if (!e.label.empty() && !options_.edge_html_labels) {
+                // insertEdgeLabel: the label group is the <text> with a 2px background around it
+                const mermaid::detail::svg_label text =
+                    e.markdown_label ? mermaid::detail::svg_label::layout_words(measurer_, mermaid::detail::markdown_label(e.label).words(), options_.edge_label_max_width)
+                                     : mermaid::detail::svg_label::layout(measurer_, e.label, options_.edge_label_max_width);
+                info.label = {text.size.width + 4, text.size.height + 4};
+                info.label_rows = text.lines;
+                info.label_top = text.top;
+                info.label_left = text.left;
+            } else if (!e.label.empty()) {
                 const TextMeasurer::Wrapped label =
                     e.markdown_label ? mermaid::detail::markdown_label(e.label).measure(measurer_, options_.edge_label_max_width)
                                      : measurer_.measure_wrapped(e.label, options_.edge_label_max_width);
@@ -496,6 +511,9 @@ private:
     EdgeLayout merged_self_loop(size_t i, const Scope& scope, const Result& result, EdgeLayout out) const {
         out.self_loop = true;
         out.label_wrapped = edges_[i].label_wrapped;
+        out.label_rows = edges_[i].label_rows;
+        out.label_top = edges_[i].label_top;
+        out.label_left = edges_[i].label_left;
         // The loop is drawn around what the edge names: for an open cluster that is its compound box, although the
         // layout graph holds the loop on the node standing in for the cluster.
         const dagre::NodeResult* cluster = topology_.sub(model_.edges[i].from) >= 0 ? result.find_node(model_.edges[i].from) : nullptr;
@@ -566,7 +584,8 @@ private:
             const Node& node = model_.nodes[static_cast<size_t>(i)];
             const dagre::NodeResult* r = result.find_node(node.id);
             layout.nodes.push_back({node.id, node.shape, {r->x, r->y}, sizes_[static_cast<size_t>(i)],
-                                    labels_[static_cast<size_t>(i)], static_cast<bool>(labels_wrapped_[static_cast<size_t>(i)])});
+                                    labels_[static_cast<size_t>(i)], static_cast<bool>(labels_wrapped_[static_cast<size_t>(i)]),
+                                    label_rows_[static_cast<size_t>(i)], label_tops_[static_cast<size_t>(i)]});
         }
         for (const size_t i : edge_order_) {
             if (edges_[i].scope != scope.owner) continue;
@@ -574,6 +593,9 @@ private:
             out.id = model_.edges[i].id;
             out.model_index = i;
             out.label_wrapped = edges_[i].label_wrapped;
+            out.label_rows = edges_[i].label_rows;
+            out.label_top = edges_[i].label_top;
+            out.label_left = edges_[i].label_left;
             if (is_self_loop(i)) {
                 if (last_loop(i) != i) continue;  // replaced by a later loop on the same node
                 layout.edges.push_back(merged_self_loop(i, scope, result, std::move(out)));
@@ -634,7 +656,13 @@ private:
         c.title = s.title;
         c.color_index = color_index_[static_cast<size_t>(sub)];
         c.markdown_title = s.markdown_title;
-        if (!s.title.empty())
+        if (!s.title.empty() && !options_.cluster_html_labels) {
+            const mermaid::detail::svg_label text =
+                s.markdown_title ? mermaid::detail::svg_label::layout_words(measurer_, mermaid::detail::markdown_label(s.title).words(), 1e9)
+                                 : mermaid::detail::svg_label::layout(measurer_, s.title, 1e9);
+            c.label = text.size;
+            c.label_rows = text.lines;
+        } else if (!s.title.empty())
             c.label = s.markdown_title ? mermaid::detail::markdown_label(s.title).measure(measurer_, 1e9).size : measurer_.measure(s.title);
         // clusters.js: the box grows to the label width plus the cluster padding.
         const double width = MERMAID_MAX(r->width, c.label.width + options_.cluster_pad);
@@ -711,6 +739,8 @@ private:
     std::vector<Size> sizes_;
     std::vector<Size> labels_;
     std::vector<char> labels_wrapped_;
+    std::vector<std::vector<std::vector<TextWord>>> label_rows_;
+    std::vector<double> label_tops_;
     std::vector<EdgeInfo> edges_;
     std::vector<bool> used_, external_, closed_;
     std::vector<size_t> edge_order_;  // indices of edges_ in graphlib order
@@ -737,6 +767,11 @@ Layout LayoutEngine::layout(const Model& model) const {
     LayoutOptions options = options_;
     if (model.config.node_spacing) options.node_sep = *model.config.node_spacing;
     if (model.config.rank_spacing) options.rank_sep = *model.config.rank_spacing;
+    if (model.config.html_labels) options.html_labels = *model.config.html_labels;
+    // getEffectiveHtmlLabels: htmlLabels, else flowchart.htmlLabels; node labels read htmlLabels alone
+    const std::optional<bool> effective = model.config.html_labels ? model.config.html_labels : model.config.flowchart_html_labels;
+    options.edge_html_labels = effective.value_or(true);
+    options.cluster_html_labels = effective.value_or(true);
     return LayoutBuilder(drawn, measurer_, options).build();
 }
 

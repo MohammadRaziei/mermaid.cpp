@@ -14,8 +14,8 @@ namespace mermaid::detail {
 
 class EdgeRenderer {
 public:
-    EdgeRenderer(std::string svg_id, double line_height)
-        : svg_id_(std::move(svg_id)), line_height_(line_height) {}
+    EdgeRenderer(std::string svg_id, double line_height, bool html_labels = true)
+        : svg_id_(std::move(svg_id)), line_height_(line_height), html_labels_(html_labels) {}
 
     // The 12 <marker> elements; goes inside the marker group, before <g class="root">.
     void write_markers(SvgWriter& out) const;
@@ -52,6 +52,7 @@ private:
 
     std::string svg_id_;
     double line_height_;
+    bool html_labels_ = true;
     std::vector<colored_marker> colored_;
     // positionEdgeLabel: how far the drawn path moved the middle of the route, by edge id (set by write_path)
     std::map<std::string, Point> label_shifts_;

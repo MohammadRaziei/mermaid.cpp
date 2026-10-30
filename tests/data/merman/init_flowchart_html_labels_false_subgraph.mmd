@@ -1,0 +1,8 @@
+%%{init: {"flowchart":{"htmlLabels":false}}}%%
+flowchart TD
+  subgraph one[First group]
+    a[Alpha] --> b[Beta]
+  end
+  b -->|link| c[Gamma]
+  classDef hot fill:#f96
+  class a hot

@@ -27,6 +27,9 @@ public:
     // its own face.
     TextMeasurer::Wrapped measure(const TextMeasurer& measurer, double max_width) const;
 
+    // The words of every line, each in its face (markdownToLines): what an SVG label turns into <tspan>s.
+    std::vector<std::vector<TextWord>> words() const;
+
 private:
     using line = std::vector<markdown_label_run>;
 

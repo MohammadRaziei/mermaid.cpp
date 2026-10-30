@@ -123,6 +123,8 @@ struct InitConfig {
     std::optional<double> node_spacing;         // flowchart.nodeSpacing
     std::optional<double> rank_spacing;         // flowchart.rankSpacing
     std::optional<std::string> curve;           // flowchart.curve: default curve of edges without their own
+    std::optional<bool> html_labels;            // htmlLabels: false makes labels SVG <text> instead of <foreignObject>
+    std::optional<bool> flowchart_html_labels;  // flowchart.htmlLabels: the older key; edge labels follow it, node labels do not
 };
 
 struct Model {

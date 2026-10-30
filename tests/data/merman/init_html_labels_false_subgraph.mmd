@@ -1,0 +1,12 @@
+%%{init: {"htmlLabels":false}}%%
+flowchart TD
+  subgraph one[First group]
+    a[Alpha] --> b[Beta]
+  end
+  subgraph two[Second]
+    c[Gamma]
+  end
+  b -->|link| c
+  one --> d[Delta]
+  classDef hot fill:#f96,stroke:#333
+  class a hot

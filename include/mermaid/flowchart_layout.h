@@ -28,6 +28,9 @@ struct LayoutOptions {
     // Extra room around an edge label in the label rank. Real Mermaid (dagre) reserves none; the
     // merman/ELK goldens needed 20.
     double edge_label_pad = 0;
+    bool html_labels = true;      // false: node labels are SVG <text> (htmlLabels: false)
+    bool edge_html_labels = true; // false: so are edge labels (htmlLabels, or the older flowchart.htmlLabels)
+    bool cluster_html_labels = true;
 };
 
 struct NodeLayout {
@@ -37,6 +40,8 @@ struct NodeLayout {
     Size size;
     Size label;  // the label box inside the outline (text, at least `min_label_width` wide)
     bool label_wrapped = false;  // the text broke into lines to fit the label width
+    std::vector<std::vector<TextWord>> label_rows;  // htmlLabels: false: the words of every row of the text
+    double label_top = 0;        // htmlLabels: false: bbox.y of the text
     Rect rect() const { return Rect::from_center(center, size); }
 };
 
@@ -47,6 +52,9 @@ struct EdgeLayout {
     std::vector<Point> points;  // source border -> ... -> target border
     bool has_label = false;
     bool label_wrapped = false;  // the label text broke into lines at `edge_label_max_width`
+    std::vector<std::vector<TextWord>> label_rows;  // htmlLabels: false: the words of every row of the label
+    double label_top = 0;        // htmlLabels: false: bbox.y of the text
+    double label_left = 0;       // htmlLabels: false: bbox.x of the text
     Rect label;                 // valid when has_label
 };
 
@@ -56,6 +64,7 @@ struct ClusterLayout {
     bool markdown_title = false;
     Rect rect;            // the dagre compound box
     Size label;           // measured title, zero without a title
+    std::vector<std::vector<TextWord>> label_rows;  // htmlLabels: false: the words of every row of the title
     int color_index = 0;  // declaration order, depth first (Mermaid's `colorIndex`)
 };
 

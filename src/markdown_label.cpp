@@ -159,6 +159,16 @@ std::vector<word> split_words(const std::vector<run_t>& runs) {
 
 }  // namespace
 
+std::vector<std::vector<TextWord>> markdown_label::words() const {
+    std::vector<std::vector<TextWord>> out;
+    for (const line& l : lines_) {
+        out.emplace_back();
+        for (const word& w : split_words(l))
+            for (const run_t& r : w.runs) out.back().push_back({r.text, r.face});
+    }
+    return out;
+}
+
 TextMeasurer::Wrapped markdown_label::measure(const TextMeasurer& measurer, double max_width) const {
     TextMeasurer::Wrapped out;
     double widest = 0, table_width = max_width;

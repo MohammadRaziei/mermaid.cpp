@@ -136,9 +136,11 @@ Ordered by what is likely to matter next.
   nodes (viewBox 196x410 vs 187x404), `data-look="classic"` in the stylesheet, edges without the dash animation
   (`stroke-dasharray` absent), `marker-end` without the `-margin` suffix, edge routes shifted by the node size. The
   classic shapes (no rough.js) have not been read from the Mermaid source yet
-- [ ] Init key `htmlLabels: false` (fixtures `init_html_labels_false` 27 differences, `init_flowchart_html_labels_false` 10,
-  both `todo`): labels become SVG `<text>` instead of `<foreignObject>`, node sizes shrink (viewBox 182x388 vs 187x404),
-  edge labels get a different group layout. Needs a `createText` port for the SVG path (chunk-VTNK77LY.mjs)
+- [x] Init keys `htmlLabels: false` and `flowchart.htmlLabels: false` (svg_label.h/.cpp, ADR not needed: a port of createFormattedText):
+  node, edge and cluster labels as `<text>`/`<tspan>` incl. wrap, `<br/>`, Markdown; node labels read `htmlLabels` alone, edge and
+  cluster labels and the classDef rules also `flowchart.htmlLabels`. 12 fixtures `init_*html_labels_false*` are `pass`
+  (the text box's right edge comes from a per-glyph overhang table measured in Chromium, Liberation Sans 14px; shapes other
+  than the classic ones, empty node labels and fontSize other than 14 are unchecked)
 - [x] Read already: `theme`, `themeVariables`, `fontFamily`, `flowchart.curve|nodeSpacing|rankSpacing`
 - [ ] `animate`
 - [ ] Markdown inside labels (`**bold**`, `*italic*`, line breaks); only plain text matches

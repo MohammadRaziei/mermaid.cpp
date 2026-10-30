@@ -1,6 +1,7 @@
 #include "node_sizer.h"
 
 #include "markdown_label.h"
+#include "svg_label.h"
 
 #include <algorithm>
 #include <cmath>
@@ -21,6 +22,13 @@ NodeSizer::Label NodeSizer::label(const Node& node) const {
         node.shape == Shape::LightningBolt || node.shape == Shape::FilledCircle || node.shape == Shape::FramedCircle ||
         node.shape == Shape::CrossedCircle)
         return {{0, 0}, false};  // these shapes have no label (hourglass.ts empties it; the others never make one)
+    if (!options_.html_labels && !node.label.empty()) {  // createFormattedText + getBBox of the <text>
+        const mermaid::detail::svg_label text =
+            node.markdown_label ? mermaid::detail::svg_label::layout_words(measurer_, mermaid::detail::markdown_label(node.label).words(), options_.min_label_width)
+                                : mermaid::detail::svg_label::layout(measurer_, node.label, options_.min_label_width);
+        const double width = mermaid::detail::ignores_min_label_width(node.shape) ? text.size.width : MERMAID_MAX(text.size.width, options_.min_label_width);
+        return {{width, text.size.height}, false, text.lines, text.top};
+    }
     const TextMeasurer::Wrapped text = node.markdown_label
                                            ? mermaid::detail::markdown_label(node.label).measure(measurer_, options_.min_label_width)
                                            : measurer_.measure_wrapped(node.label, options_.min_label_width);
