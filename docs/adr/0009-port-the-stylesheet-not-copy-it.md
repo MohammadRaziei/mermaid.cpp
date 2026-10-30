@@ -10,8 +10,8 @@ and `%%{init}%%` overrides, then compiled by stylis (namespace prefix, nesting, 
 
 ## Decision
 
-Do not paste the CSS text. `theme_variables` holds the values (dumped from Mermaid by
-`tools/dump_theme_variables.mjs`), `flowchart_css` builds the rules as Mermaid's `getStyles` does, and the public
+Do not paste the CSS text. `theme_variables` derives the values as Mermaid's theme classes do (ADR-0016;
+`tools/dump_theme_variables.mjs` dumps Mermaid's own for comparison), `flowchart_css` builds the rules as Mermaid's `getStyles` does, and the public
 `css_compiler` (stylis-like) and `css_color` (hex/rgb/hsl, `fade`, the browser's `rgb()` form) produce the same
 text. `classDef`, `linkStyle` and init theme variables flow through the same path.
 

@@ -131,7 +131,15 @@ Ordered by what is likely to matter next.
   `class` on an edge id, `linkStyle` on more shapes than the one fixture.
 - [ ] **S10** CI is a 3-OS build and test (`.github/workflows/cmake.yml`). Open: Doxygen docs (like liburlparser),
   benchmarks, coverage dashboard (`mermaid_coverage` target exists, needs `lcov`)
-- [ ] Init keys not read yet: `look`, `layout`, `htmlLabels` (`theme`, `themeVariables`, `fontFamily`, `flowchart.curve|nodeSpacing|rankSpacing` are read)
+- [x] Init key `layout: dagre` needs no code: `init_layout_dagre` is a `pass` fixture (0 differences; other `layout` values are not ported)
+- [ ] Init key `look: classic` (fixture `init_look_classic`, `todo`, 24 differences): a whole second look, not a switch. Measured: wider
+  nodes (viewBox 196x410 vs 187x404), `data-look="classic"` in the stylesheet, edges without the dash animation
+  (`stroke-dasharray` absent), `marker-end` without the `-margin` suffix, edge routes shifted by the node size. The
+  classic shapes (no rough.js) have not been read from the Mermaid source yet
+- [ ] Init key `htmlLabels: false` (fixtures `init_html_labels_false` 27 differences, `init_flowchart_html_labels_false` 10,
+  both `todo`): labels become SVG `<text>` instead of `<foreignObject>`, node sizes shrink (viewBox 182x388 vs 187x404),
+  edge labels get a different group layout. Needs a `createText` port for the SVG path (chunk-VTNK77LY.mjs)
+- [x] Read already: `theme`, `themeVariables`, `fontFamily`, `flowchart.curve|nodeSpacing|rankSpacing`
 - [ ] `animate`
 - [ ] Markdown inside labels (`**bold**`, `*italic*`, line breaks); only plain text matches
 - [ ] `click`, links, tooltips; icons/images; accessibility tags beyond the basic ones

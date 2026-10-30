@@ -142,3 +142,7 @@ t_fontfamily_top	pass
 t_fontfamily_tv	pass
 t_fontsize	pass
 t_two_directives	pass
+init_look_classic	todo
+init_layout_dagre	pass
+init_html_labels_false	todo
+init_flowchart_html_labels_false	todo
