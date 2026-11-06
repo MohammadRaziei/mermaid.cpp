@@ -67,6 +67,27 @@ void update_generic(theme_state& s, const char* primary_text) {
     s.otherwise("errorTextColor", [&] { return s.get("tertiaryTextColor"); });
 }
 
+// The sequence variables, in the order each theme's updateColors() derives them. theme-base.js and theme-redux-color.js use
+// `this.x = this.x || ...` (a user value stays), the others assign (the user's value goes back in afterwards).
+void sequence_generic(theme_state& s) {
+    const bool dark = s.dark_mode();
+    s.otherwise("noteBorderColor", [&] { return mk_border(s.get("noteBkgColor"), dark); });
+    s.otherwise("noteBkgColor", [] { return std::string("#fff5ad"); });
+    s.otherwise("actorBorder", [&] { return s.get("primaryBorderColor"); });
+    s.otherwise("actorBkg", [&] { return s.get("mainBkg"); });
+    s.otherwise("actorTextColor", [&] { return s.get("primaryTextColor"); });
+    s.otherwise("actorLineColor", [&] { return s.get("actorBorder"); });
+    s.otherwise("labelBoxBkgColor", [&] { return s.get("actorBkg"); });
+    s.otherwise("signalColor", [&] { return s.get("textColor"); });
+    s.otherwise("signalTextColor", [&] { return s.get("textColor"); });
+    s.otherwise("labelBoxBorderColor", [&] { return s.get("actorBorder"); });
+    s.otherwise("labelTextColor", [&] { return s.get("actorTextColor"); });
+    s.otherwise("loopTextColor", [&] { return s.get("actorTextColor"); });
+    s.otherwise("activationBorderColor", [&] { return darken(s.get("secondaryColor"), 10); });
+    s.otherwise("activationBkgColor", [&] { return s.get("secondaryColor"); });
+    s.otherwise("sequenceNumberColor", [&] { return invert(s.get("lineColor")); });
+}
+
 // theme-redux-color.js: the default theme of Mermaid 12.2 (theme `default` with look `neo`).
 theme_state redux_color_state(const std::map<std::string, std::string>& overrides) {
     theme_state s;
@@ -85,7 +106,15 @@ theme_state redux_color_state(const std::map<std::string, std::string>& override
     s.set("tertiaryColor", "#ffffff");
     s.set("clusterBkg", "#F9F9FB");
     s.set("clusterBorder", "#BDBCCC");
-    calculate(s, overrides, [](theme_state& t) { update_generic(t, "#28253D"); });
+    s.set("noteBkgColor", "#fff5ad");
+    s.set("noteTextColor", "#28253D");
+    s.set("actorBorder", "#28253D");
+    s.set("noteBorderColor", "#FACC15");
+    calculate(s, overrides, [](theme_state& t) {
+        update_generic(t, "#28253D");
+        t.otherwise("noteTextColor", [] { return std::string("#28253D"); });
+        sequence_generic(t);
+    });
     return s;
 }
 
@@ -100,8 +129,12 @@ theme_state base_state(const std::map<std::string, std::string>& overrides) {
     s.set("fontSize", "16px");
     s.set("useGradient", "true");
     s.set("dropShadow", "drop-shadow( 1px 2px 2px rgba(185,185,185,1))");
+    s.set("noteBkgColor", "#fff5ad");
+    s.set("noteTextColor", "#333");
     calculate(s, overrides, [](theme_state& t) {
         update_generic(t, "#333");
+        t.otherwise("noteTextColor", [] { return std::string("#333"); });
+        sequence_generic(t);
         t.set("gradientStart", t.get("primaryBorderColor"));
         t.set("gradientStop", t.get("secondaryBorderColor"));
     });
@@ -141,8 +174,25 @@ theme_state dark_state(const std::map<std::string, std::string>& overrides) {
     s.set("gradientStart", s.get("primaryBorderColor"));
     s.set("gradientStop", s.get("secondaryBorderColor"));
     s.set("dropShadow", "drop-shadow( 1px 2px 2px rgba(185,185,185,1))");
+    s.set("noteBkgColor", "#fff5ad");
+    s.set("sequenceNumberColor", "black");
     calculate(s, overrides, [](theme_state& t) {
         t.set("secondBkg", lighten(t.get("mainBkg"), 16));
+        t.set("actorBorder", t.get("border1"));
+        t.set("actorBkg", t.get("mainBkg"));
+        t.set("actorTextColor", t.get("mainContrastColor"));
+        t.set("actorLineColor", t.get("actorBorder"));
+        t.set("signalColor", t.get("mainContrastColor"));
+        t.set("signalTextColor", t.get("mainContrastColor"));
+        t.set("labelBoxBkgColor", t.get("actorBkg"));
+        t.set("labelBoxBorderColor", t.get("actorBorder"));
+        t.set("labelTextColor", t.get("mainContrastColor"));
+        t.set("loopTextColor", t.get("mainContrastColor"));
+        t.set("noteBorderColor", t.get("secondaryBorderColor"));
+        t.set("noteBkgColor", t.get("secondBkg"));
+        t.set("noteTextColor", t.get("secondaryTextColor"));
+        t.set("activationBorderColor", t.get("border1"));
+        t.set("activationBkgColor", t.get("secondBkg"));
         t.set("lineColor", t.get("mainContrastColor"));
         t.set("arrowheadColor", t.get("mainContrastColor"));
         t.set("nodeBkg", t.get("mainBkg"));
@@ -190,7 +240,23 @@ theme_state forest_state(const std::map<std::string, std::string>& overrides) {
     s.set("gradientStart", s.get("primaryBorderColor"));
     s.set("gradientStop", s.get("secondaryBorderColor"));
     s.set("dropShadow", "drop-shadow( 1px 2px 2px rgba(185,185,185,0.5))");
+    s.set("actorTextColor", "black");
+    s.set("signalColor", "#333");
+    s.set("signalTextColor", "#333");
+    s.set("labelBoxBorderColor", "#326932");
+    s.set("noteBkgColor", "#fff5ad");
+    s.set("activationBorderColor", "#666");
+    s.set("activationBkgColor", "#f4f4f4");
+    s.set("sequenceNumberColor", "white");
     calculate(s, overrides, [](theme_state& t) {
+        t.set("actorBorder", darken(t.get("mainBkg"), 20));
+        t.set("actorBkg", t.get("mainBkg"));
+        t.set("labelBoxBkgColor", t.get("actorBkg"));
+        t.set("labelTextColor", t.get("actorTextColor"));
+        t.set("loopTextColor", t.get("actorTextColor"));
+        t.set("noteBorderColor", t.get("border2"));
+        t.set("noteTextColor", t.get("actorTextColor"));
+        t.set("actorLineColor", t.get("actorBorder"));
         t.set("nodeBkg", t.get("mainBkg"));
         t.set("nodeBorder", t.get("border1"));
         t.set("clusterBkg", t.get("secondBkg"));
@@ -232,8 +298,24 @@ theme_state neutral_state(const std::map<std::string, std::string>& overrides) {
     s.set("gradientStart", s.get("primaryBorderColor"));
     s.set("gradientStop", s.get("secondaryBorderColor"));
     s.set("dropShadow", "drop-shadow( 1px 2px 2px rgba(185,185,185,1))");
+    s.set("activationBorderColor", "#666");
+    s.set("activationBkgColor", "#f4f4f4");
+    s.set("sequenceNumberColor", "white");
     calculate(s, overrides, [](theme_state& t) {
         t.set("secondBkg", lighten(t.get("contrast"), 55));
+        t.set("actorBorder", lighten(t.get("border1"), 23));
+        t.set("actorBkg", t.get("mainBkg"));
+        t.set("actorTextColor", t.get("text"));
+        t.set("actorLineColor", t.get("actorBorder"));
+        t.set("signalColor", t.get("text"));
+        t.set("signalTextColor", t.get("text"));
+        t.set("labelBoxBkgColor", t.get("actorBkg"));
+        t.set("labelBoxBorderColor", t.get("actorBorder"));
+        t.set("labelTextColor", t.get("text"));
+        t.set("loopTextColor", t.get("text"));
+        t.set("noteBorderColor", "#999");
+        t.set("noteBkgColor", "#666");
+        t.set("noteTextColor", "#fff");
         t.set("border2", t.get("contrast"));
         t.set("nodeBkg", t.get("mainBkg"));
         t.set("nodeBorder", t.get("border1"));
@@ -272,6 +354,10 @@ theme_variables read_variables(const theme_state& s, bool redux) {
     t.gradient_stop = s.get("gradientStop");
     t.theme_color_limit = std::atoi(s.get("THEME_COLOR_LIMIT").c_str());
     t.node_shadow = !s.get("nodeShadow").empty() && s.get("nodeShadow") != "false";
+    for (const char* key : {"actorBorder", "actorBkg", "actorTextColor", "actorLineColor", "signalColor", "signalTextColor",
+                            "labelBoxBkgColor", "labelBoxBorderColor", "labelTextColor", "loopTextColor", "noteBorderColor",
+                            "noteBkgColor", "noteTextColor", "activationBorderColor", "activationBkgColor", "sequenceNumberColor"})
+        t.sequence[key] = s.get(key);
     t.font_family_config = "\"trebuchet ms\", verdana, arial, sans-serif";
     if (redux) {
         t.border_color_array = {"#E879F9", "#2DD4BF", "#FB923C", "#22D3EE", "#4ADE80", "#A78BFA",

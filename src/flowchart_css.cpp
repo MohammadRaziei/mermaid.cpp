@@ -428,6 +428,21 @@ std::string flowchart_stylesheet(const theme_variables& t, const std::string& sv
                                                            {"tertiaryColor", t.tertiary_color},
                                                            {"border2", t.border2},
                                                            {"textColor", t.text_color}});
+    return assemble_stylesheet(t, svg_id, flowchart, user_styles(t, model, extra_css));
+}
+
+std::string assemble_stylesheet(const theme_variables& t, const std::string& svg_id, const std::string& diagram_css,
+                                const std::string& user_css) {
+    const std::string ns = "#" + svg_id;
+    const std::string stroke_width = number_text(t.stroke_width);
+    const std::string node_stroke = t.use_gradient ? "url(" + ns + "-gradient)" : t.node_border;
+    std::string drop_shadow = "none";
+    if (!t.drop_shadow.empty()) {
+        drop_shadow = t.drop_shadow;
+        const std::string from = "url(#drop-shadow)";
+        const size_t at = drop_shadow.find(from);
+        if (at != std::string::npos) drop_shadow.replace(at, from.size(), "url(" + ns + "-drop-shadow)");
+    }
     const std::string all = substitute(k_common, {{"fontFamily", t.font_family},
                                                   {"fontSize", t.font_size},
                                                   {"textColor", t.text_color},
@@ -438,8 +453,8 @@ std::string flowchart_stylesheet(const theme_variables& t, const std::string& sv
                                                   {"nodeBorder", t.node_border},
                                                   {"nodeStroke", node_stroke},
                                                   {"dropShadow", drop_shadow},
-                                                  {"DIAGRAM", flowchart},
-                                                  {"USER", user_styles(t, model, extra_css)}});
+                                                  {"DIAGRAM", diagram_css},
+                                                  {"USER", user_css}});
     return css_compiler::compile(ns, all);
 }
 

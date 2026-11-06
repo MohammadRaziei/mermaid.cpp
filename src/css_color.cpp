@@ -237,17 +237,26 @@ std::optional<rgb_color> parse_css_color(std::string_view input) {
     double a[3];
     if (arguments(text, "rgb", a)) return rgb_color{static_cast<int>(std::lround(a[0])), static_cast<int>(std::lround(a[1])), static_cast<int>(std::lround(a[2]))};
     if (arguments(text, "hsl", a)) {
-        double h = std::fmod(a[0], 360);
+        // the browser converts in single precision: 221.5 can come out as 221.49998 (hue 40.5882352941, saturation 60%, lightness 83.33%)
+        float h = static_cast<float>(std::fmod(a[0], 360));
         if (h < 0) h += 360;
         h /= 360;
-        const double s = a[1] / 100, l = a[2] / 100;
-        double r = l, g = l, b = l;
+        const float s = static_cast<float>(a[1] / 100), l = static_cast<float>(a[2] / 100);
+        float r = l, g = l, b = l;
         if (s != 0) {
-            const double q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-            const double p = 2 * l - q;
-            r = hue_channel(p, q, h + 1.0 / 3);
-            g = hue_channel(p, q, h);
-            b = hue_channel(p, q, h - 1.0 / 3);
+            const float q = l < 0.5f ? l * (1 + s) : l + s - l * s;
+            const float p = 2 * l - q;
+            const auto channel = [&](float t) {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1.0f / 6) return p + (q - p) * 6 * t;
+                if (t < 0.5f) return q;
+                if (t < 2.0f / 3) return p + (q - p) * (2.0f / 3 - t) * 6;
+                return p;
+            };
+            r = channel(h + 1.0f / 3);
+            g = channel(h);
+            b = channel(h - 1.0f / 3);
         }
         return rgb_color{static_cast<int>(std::lround(r * 255)), static_cast<int>(std::lround(g * 255)), static_cast<int>(std::lround(b * 255))};
     }

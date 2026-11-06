@@ -39,6 +39,8 @@ struct theme_variables {
     std::string gradient_start;  // themeVariables.gradientStart (stop of the node border gradient)
     std::string gradient_stop;
     std::string look = "neo";
+    // the sequence diagram's variables (actorBkg, signalColor, noteBkgColor, ...), as the theme derives them
+    std::map<std::string, std::string> sequence;
     std::string font_family_config;  // `fontFamily` of the diagram config (the :root rule)
 
     // Variables of a theme by name (`default` is Mermaid 12.2's `redux-color`, then `dark`, `forest`, `neutral`, `base`), as
