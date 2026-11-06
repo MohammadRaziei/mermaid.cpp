@@ -19,12 +19,16 @@ const fontCss = ['arial', 'trebuchet ms', 'verdana', 'Recursive Variable', 'sans
   faces.map(([file, weight, style]) =>
     `@font-face{font-family:"${family}";font-weight:${weight};font-style:${style};src:url(data:font/ttf;base64,` +
     `${fs.readFileSync(path.join(fontDir, `LiberationSans-${file}.ttf`)).toString('base64')});}`)).join('');
+// Text that names no family (Mermaid's sequence diagrams measure with an empty font-family, utils.calculateTextDimensions)
+// gets the browser default, "Times New Roman": pinned to Liberation Serif so these widths do not depend on the machine either.
+const serifCss = `@font-face{font-family:"Times New Roman";src:url(data:font/ttf;base64,` +
+  `${fs.readFileSync(path.join(fontDir, 'LiberationSerif-Regular.ttf')).toString('base64')});}`;
 const browser = await puppeteer.launch({args: chromium.args, executablePath: await chromium.executablePath(), headless: 'shell'});
 for (const f of fs.readdirSync(dir).filter(f=>f.endsWith('.mmd'))) {
   const id = f.replace(/\.mmd$/,'');
   const page = await browser.newPage();
   try {
-    await page.setContent('<html><head><style>' + fontCss + '</style></head><body></body></html>');
+    await page.setContent('<html><head><style>' + fontCss + serifCss + '</style></head><body></body></html>');
     await page.evaluate(async () => { await Promise.all([...document.fonts].map(f => f.load())); await document.fonts.ready; });  // measure only once the pinned font is in
     await page.addScriptTag({path: 'node_modules/mermaid/dist/mermaid.min.js'});
     const svg = await page.evaluate(async (src, layout, id) => {
