@@ -218,7 +218,7 @@ UTEST(render, cluster_colour_slots_follow_declaration_order_depth_first) {
 
 UTEST(render, unsupported_and_invalid_input) {
     bool unsupported = false;
-    try { render_svg("sequenceDiagram\nA->>B: hi"); } catch (const UnsupportedDiagram&) { unsupported = true; }
+    try { render_svg("classDiagram\nclass A"); } catch (const UnsupportedDiagram&) { unsupported = true; }
     ASSERT_TRUE(unsupported);
     bool parse_error = false;
     try { render_svg("not a diagram at all"); } catch (const ParseError&) { parse_error = true; }
@@ -408,4 +408,38 @@ UTEST(render, markdown_labels_are_html_with_strong_and_em) {
     const std::string svg = render_svg("flowchart LR\nA[\"`**bold** and *it*`\"] -->|\"`**e** x`\"| B");
     ASSERT_TRUE(has(svg, "<span class=\"nodeLabel markdown-node-label\"><p><strong>bold</strong> and <em>it</em></p></span>"));
     ASSERT_TRUE(has(svg, "<span class=\"edgeLabel\"><p><strong>e</strong> x</p></span>"));
+}
+
+UTEST(render, sequence_config_keys_that_are_not_drawn_yet_are_unsupported_and_the_others_are_read) {
+    bool unsupported = false;
+    try { render_svg("%%{init: {\"sequence\": {\"messageFontSize\": 12}}}%%\nsequenceDiagram\nA->>B: x"); } catch (const UnsupportedDiagram&) { unsupported = true; }
+    ASSERT_TRUE(unsupported);
+    // a later directive wins key by key
+    const std::string wide = render_svg("%%{init: {\"sequence\": {\"width\": 100}}}%%\n%%{init: {\"sequence\": {\"width\": 200}}}%%\nsequenceDiagram\nA->>B: x");
+    ASSERT_TRUE(wide.find("width=\"200\"") != std::string::npos);
+}
+
+UTEST(render, sequence_glyph_participant_types_in_the_classic_look_are_unsupported_not_misread) {
+    bool unsupported = false;
+    try { render_svg("%%{init: {\"look\": \"classic\"}}%%\nsequenceDiagram\nparticipant A@{ \"type\": \"boundary\" }\nA->>A: x"); } catch (const UnsupportedDiagram&) { unsupported = true; }
+    ASSERT_TRUE(unsupported);
+    // the metadata is not part of the id: one participant, drawn as a stick figure
+    const std::string svg = render_svg("sequenceDiagram\nparticipant A@{ \"type\": \"actor\" }\nA->>A: x");
+    ASSERT_TRUE(svg.find("actor-man") != std::string::npos);
+    ASSERT_TRUE(svg.find("@{") == std::string::npos);
+}
+
+UTEST(render, sequence_looks_other_than_neo_and_classic_are_unsupported) {
+    bool unsupported = false;
+    try { render_svg("%%{init: {\"look\": \"handDrawn\"}}%%\nsequenceDiagram\nA->>B: x"); } catch (const UnsupportedDiagram&) { unsupported = true; }
+    ASSERT_TRUE(unsupported);
+}
+
+UTEST(render, sequence_menu_on_a_stick_figure_and_an_icon_property_are_unsupported) {
+    bool unsupported = false;
+    try { render_svg("sequenceDiagram\nactor A\nlink A: x @ https://e.com\nA->>A: x"); } catch (const UnsupportedDiagram&) { unsupported = true; }
+    ASSERT_TRUE(unsupported);
+    unsupported = false;
+    try { render_svg("sequenceDiagram\nparticipant A\nproperties A: {\"icon\": \"@computer\"}\nA->>A: x"); } catch (const UnsupportedDiagram&) { unsupported = true; }
+    ASSERT_TRUE(unsupported);
 }

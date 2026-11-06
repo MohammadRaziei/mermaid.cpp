@@ -1,4 +1,6 @@
 #include <mermaid/render.h>
+#include <mermaid/sequence_parser.h>
+#include <mermaid/sequence_renderer.h>
 
 #include <array>
 #include <cctype>
@@ -43,6 +45,7 @@ std::string render_svg(std::string_view source, const RenderOptions& options) {
     if (statements.empty()) throw ParseError("empty diagram", 1);
 
     const std::string word = first_word(statements.front().text);
+    if (word == "sequenceDiagram") return sequence::render_svg(sequence::Parser().parse(source), options);
     if (!is_flowchart(word)) {
         if (is_known_other(word)) throw UnsupportedDiagram(word + " diagrams are not supported yet");
         throw ParseError("unknown diagram type '" + word + "'", statements.front().line);

@@ -166,7 +166,7 @@ UTEST(cli_run, errors_give_exit_code_1_and_a_message) {
     ASSERT_EQ(1, missing.code);
     ASSERT_TRUE(has(missing.err, "here.mmd"));
 
-    const run_result unsupported = run_cli({"-i", "-", "-o", "-"}, "sequenceDiagram\nA->>B: hi\n");
+    const run_result unsupported = run_cli({"-i", "-", "-o", "-"}, "classDiagram\nclass A\n");
     ASSERT_EQ(1, unsupported.code);
     ASSERT_FALSE(unsupported.err.empty());
 
