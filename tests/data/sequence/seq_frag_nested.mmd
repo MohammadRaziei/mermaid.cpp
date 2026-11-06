@@ -1,0 +1,17 @@
+sequenceDiagram
+  participant A
+  participant B
+  participant C
+  loop outer
+    A->>B: one
+    alt inner a
+      B->>C: two
+    else inner b
+      C-->>B: three
+      Note over B,C: a note
+    end
+    opt optional
+      A->>A: self
+    end
+  end
+  A->>C: after

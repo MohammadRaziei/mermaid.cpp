@@ -1,0 +1,6 @@
+%%{init: {"look": "classic"}}%%
+sequenceDiagram
+  participant A
+  participant Q@{ "type": "queue" }
+  A->>Q: enqueue
+  Q-->>A: ack

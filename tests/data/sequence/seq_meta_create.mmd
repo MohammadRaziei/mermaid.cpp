@@ -1,0 +1,7 @@
+sequenceDiagram
+  participant A
+  A->>A: start
+  create participant B@{ "type": "actor", "alias": "Newcomer" }
+  A->>B: Hello
+  destroy B
+  B-->>A: Done

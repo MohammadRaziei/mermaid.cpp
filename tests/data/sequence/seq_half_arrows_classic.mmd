@@ -1,0 +1,13 @@
+%%{init: {"look": "classic", "theme": "forest"}}%%
+sequenceDiagram
+  participant A
+  participant B
+  participant C
+  A-|\B: one
+  B/|-C: two
+  C\\-A: three
+  A-//+C: four
+  C--|/-A: five
+  activate B
+  B\|--C: six
+  deactivate B

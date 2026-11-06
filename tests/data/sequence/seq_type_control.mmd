@@ -1,0 +1,7 @@
+sequenceDiagram
+  participant A
+  participant C@{ "type": "control" }
+  participant D@{ "type": "control", "alias": "Controller of things" }
+  A->>C: start
+  C->>D: delegate
+  D-->>A: done

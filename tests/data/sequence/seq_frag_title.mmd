@@ -1,0 +1,11 @@
+sequenceDiagram
+  participant A
+  participant B
+  loop
+    A->>B: no title
+  end
+  alt a very long condition title that has to wrap over several lines inside the frame
+    A->>B: yes
+  else another quite long section title that also needs to wrap over lines
+    B->>A: no
+  end

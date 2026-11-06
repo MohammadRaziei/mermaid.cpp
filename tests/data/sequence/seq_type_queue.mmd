@@ -1,0 +1,7 @@
+sequenceDiagram
+  participant A
+  participant Q@{ "type": "queue" }
+  participant R@{ "type": "queue", "alias": "Work queue with a long name" }
+  A->>Q: enqueue
+  Q->>R: forward
+  R-->>A: ack

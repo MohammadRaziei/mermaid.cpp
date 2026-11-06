@@ -1,0 +1,7 @@
+sequenceDiagram
+  participant A
+  participant DB@{ "type": "database" }
+  participant S@{ "type": "database", "alias": "Shared store" }
+  A->>DB: select
+  DB->>S: replicate
+  S-->>A: ok

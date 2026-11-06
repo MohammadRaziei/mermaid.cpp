@@ -1,0 +1,7 @@
+sequenceDiagram
+  participant A
+  participant C@{ "type": "collections" }
+  participant D@{ "type": "collections", "alias": "Data shards" }
+  A->>C: query
+  C->>D: fan out
+  D-->>A: result

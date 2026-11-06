@@ -1,0 +1,17 @@
+sequenceDiagram
+  participant P@{ "type": "participant" }
+  actor M
+  participant B@{ "type": "boundary" }
+  participant C@{ "type": "control" }
+  participant E@{ "type": "entity" }
+  participant D@{ "type": "database" }
+  participant Q@{ "type": "queue" }
+  participant L@{ "type": "collections" }
+  P->>M: 1
+  M->>B: 2
+  B->>C: 3
+  C->>E: 4
+  E->>D: 5
+  D->>Q: 6
+  Q->>L: 7
+  Note over P,L: all types

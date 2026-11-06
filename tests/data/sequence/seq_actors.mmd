@@ -1,0 +1,7 @@
+sequenceDiagram
+  actor U as User
+  participant S as Server
+  actor Admin
+  U->>S: request
+  S-->>Admin: notify
+  Admin->>U: reply

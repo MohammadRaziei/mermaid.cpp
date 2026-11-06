@@ -1,0 +1,8 @@
+sequenceDiagram
+  participant A@{ "type": "actor" }
+  participant B@{ "type": "participant", "alias": "Bob the builder" }
+  actor C@{ "alias": "Carol" }
+  participant D@{ "type": "actor" } as Dave
+  A->>B: Hello
+  B->>C: Hi
+  C-->>D: Bye

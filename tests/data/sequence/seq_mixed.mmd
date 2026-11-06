@@ -1,0 +1,11 @@
+sequenceDiagram
+  actor U as User
+  participant S as Server
+  participant D as Database
+  U->>+S: request
+  Note right of U: the user waits
+  S->>+D: query
+  D-->>-S: rows
+  S->>S: transform<br/>rows
+  S-->>-U: response
+  Note over U,S: done

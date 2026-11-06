@@ -1,0 +1,7 @@
+sequenceDiagram
+  participant A
+  participant E@{ "type": "entity" }
+  participant F@{ "type": "entity", "alias": "Customer record" }
+  A->>E: load
+  E->>F: join
+  F-->>A: row

@@ -1,0 +1,7 @@
+sequenceDiagram
+  participant A
+  participant B@{ "type": "boundary" }
+  participant G@{ "type": "boundary", "alias": "Gateway at the edge" }
+  A->>B: request
+  B->>G: pass
+  G-->>A: reply

@@ -1,0 +1,10 @@
+sequenceDiagram
+  participant A
+  participant B
+  rect rgb(200, 220, 255)
+    A->>B: inside
+    rect rgb(255, 230, 200)
+      B->>A: nested
+    end
+  end
+  A->>B: outside

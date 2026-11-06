@@ -1,0 +1,9 @@
+sequenceDiagram
+  participant A
+  participant B
+  A->>+B: start
+  loop retry
+    B->>B: work
+    B-->>A: status
+  end
+  B-->>-A: done
