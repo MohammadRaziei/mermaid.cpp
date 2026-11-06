@@ -132,15 +132,19 @@ Ordered by what is likely to matter next.
 - [ ] **S10** CI is a 3-OS build and test (`.github/workflows/cmake.yml`). Open: Doxygen docs (like liburlparser),
   benchmarks, coverage dashboard (`mermaid_coverage` target exists, needs `lcov`)
 - [x] Init key `layout: dagre` needs no code: `init_layout_dagre` is a `pass` fixture (0 differences; other `layout` values are not ported)
-- [ ] Init key `look: classic` (fixture `init_look_classic`, `todo`, 24 differences): a whole second look, not a switch. Measured: wider
-  nodes (viewBox 196x410 vs 187x404), `data-look="classic"` in the stylesheet, edges without the dash animation
-  (`stroke-dasharray` absent), `marker-end` without the `-margin` suffix, edge routes shifted by the node size. The
-  classic shapes (no rough.js) have not been read from the Mermaid source yet
+- [x] Init key `look: classic` for all 53 shapes (sizes, outlines, label offsets), edges (plain markers, no dash animation),
+  clusters, classDef, stylesheet: fixtures `init_look_classic*` (`_all_shapes`, `_new_shapes`, `_subgraph`,
+  `_html_labels_false`, `_html_labels_false_new_shapes`) are `pass`; `look` other than classic/neo is not supported
+  (handDrawn exists as a separate path). `flowchart.padding` (init key, any value) is read and threaded through sizer, outlines
+  and label offsets: fixtures `init_padding_*` (neo, classic, SVG text, all 53 shapes at padding 25) are `pass`; `fontSize` 20 is
+  `pass` in both label modes (`init_font20*`). Also read and `pass`: `flowchart.wrappingWidth` (node labels wrap there, the 120 minimum stays;
+  edge labels keep 200), `diagramPadding`, `useMaxWidth: false`, `nodeSpacing`/`rankSpacing`, `curve`, `markdownAutoWrap`.
+  Known gap: a label whose text is within ~0.1 px of the wrapping width (Mermaid reports it as exactly the width and wraps)
 - [x] Init keys `htmlLabels: false` and `flowchart.htmlLabels: false` (svg_label.h/.cpp, ADR not needed: a port of createFormattedText):
   node, edge and cluster labels as `<text>`/`<tspan>` incl. wrap, `<br/>`, Markdown; node labels read `htmlLabels` alone, edge and
   cluster labels and the classDef rules also `flowchart.htmlLabels`. 12 fixtures `init_*html_labels_false*` are `pass`
-  (the text box's right edge comes from a per-glyph overhang table measured in Chromium, Liberation Sans 14px; shapes other
-  than the classic ones, empty node labels and fontSize other than 14 are unchecked)
+  (the text box's right edge comes from a per-glyph overhang table measured in Chromium, Liberation Sans 14px; all 53 shapes
+  checked in `init_html_labels_false_new_shapes`; fontSize other than 14 is unchecked)
 - [x] Read already: `theme`, `themeVariables`, `fontFamily`, `flowchart.curve|nodeSpacing|rankSpacing`
 - [ ] `animate`
 - [ ] Markdown inside labels (`**bold**`, `*italic*`, line breaks); only plain text matches
@@ -216,3 +220,93 @@ Ordered by what is likely to matter next.
   use `MERMAID_MIN` / `MERMAID_MAX` (ADR-0007).
 - **History.** Older notes (merman golden tables, the ELK investigation, early look differences) are in git history
   before the commit that rewrote this file.
+- [ ] `look: handDrawn` (fixture `init_look_hand_drawn`, `todo`, 55 differences): a third pipeline, not a parameter of the
+  other two. Measured against Mermaid 12.2: nodes are `rough-node` groups (`data-look="handDrawn"`) drawn with rough.js
+  (seeded), edges become rough paths with class `transition` (no `stroke`/`fill`/dash attributes, no `-margin` marker),
+  and the viewBox starts at the rough outline's extent (0.27 / 0.19) instead of 0 / 0. Needs the draw-call order of
+  rough.js per element (seed per element) to match the jitter exactly; the neo shapes already use `rough_path`
+
+## Sequence diagrams (ADR-0017)
+
+- [x] Model (`sequence.h`) and parser (`sequence_parser`): participants/actors with `as`, `box`, `create`/`destroy`, ten arrow
+  types incl. `+`/`-` activation, `activate`/`deactivate`, notes, `loop`/`opt`/`alt`/`par`/`critical`/`break`/`rect`,
+  `autonumber [start [step]]|off`, `title`, `accTitle`, `accDescr`; 9 fixtures + 3 behaviour tests match Mermaid's db
+- [ ] Parser gaps: `link`/`links`/`properties`/`details`, `participant X@{...}`, half-arrows (`-|\`...), entity codes, `par_over`
+  fixture, implicit actors in notes, box colour names, wrap flags on actors
+- [x] Renderer, first slice (`sequence_renderer`): participants and `actor` figures, lifelines, mirrored actors, the ten arrow types,
+  messages to oneself, plain one-line message texts, neo look, default theme only; fixtures `seq_basic`, `seq_arrows`,
+  `seq_three`, `seq_wide`, `seq_empty_text`, `seq_actors`, `seq_self`, `seq_self_edge`, `seq_implicit_actors` are `pass` (tests/data/sequence/parity.tsv, references generated like the flowchart's)
+- [x] Text widths: `utils.calculateTextDimensions` measures with an empty font family in the neo look, i.e. the browser default
+  serif face, and keeps it unless Liberation Sans is bigger in width and height (`svg_text_metrics`, table from
+  `tools/dump_svg_text_metrics.mjs`); `tests/fonts` pins "Times New Roman" to Liberation Serif for the reference renderer
+- [x] Renderer, second slice: `<br/>` rows in messages, notes and actor-less self messages, notes (left of / right of / over, widening
+  the gaps), activations (`+`/`-`, `activate`/`deactivate`, nested bars; `bounds.updateBounds` pulls open bars up), JavaScript's
+  `Math.round` for positions; fixtures `seq_notes`, `seq_notes_wide`, `seq_multiline`, `seq_activation`, `seq_act_*`, `seq_mixed` are `pass`
+- [x] Renderer, fragments: `loop`, `opt`, `alt`/`else`, `par`/`and`, `critical`/`option`, `break` (frame, dashed section lines, label box,
+  `[title]` wrapped to the width the frame needs with `utils.wrapLabel`, section titles; `bounds.updateBounds` grows every open
+  frame by `n` boxMargins) and `rect` backgrounds (lowered to the front, nested); fixtures `seq_fragments`, `seq_frag_nested`,
+  `seq_frag_title` (wrapped titles, empty title = zero-width space), `seq_frag_activation`, `seq_frag_rect` are `pass`.
+  `calculateTextDimensions` now keeps the sans measurement only when it is strictly bigger in width, height *and* line height
+  (the tallest row). Not yet: a word wider than its frame (`breakString`), `par_over` oddities, `rect` without a colour
+- [x] Renderer, `autonumber [start [step]]|off`: the index (`start || index`, step rounded to 1/100 after every arrow-type message) is a
+  `sequencenumber` marker circle plus a `sequenceNumber` text at the arrow's start (font 12/9/7px by digit count); the line starts
+  6px later (12px bidirectional), a bidirectional self loop starts 10px right; no layout effect; fixtures `seq_autonumber`,
+  `seq_autonumber_mix` are `pass`. Mermaid's grammar takes whole numbers only (a step of `0.5` is read as 0, i.e. unchanged)
+- [x] Renderer, `title` and `accTitle`/`accDescr`: the title is a bare `<text x y=-25>` appended last (x = half the bounds - 2 x
+  diagramMarginX), the viewBox gains 40px on top; `<title>`/`<desc>` and `aria-labelledby`/`aria-describedby` on the svg; a bare
+  `&` in the title is written `&amp;` (DOMPurify); fixtures `seq_title_acc`, `seq_title_multi` are `pass`
+- [x] Renderer, `box` (group of actors): room for its actors and title (`calculateActorMargins`: margin = 5 + half of what the title
+  needs beyond actors + 80 - 10), box positions in `addActorRenderingData`, a rect (stroke `rgb(0,0,0, 0.5)`) plus centred title lowered
+  to the front, the last box first; a title shifts the actors down; colours via CSS (`rgba`/`hsla` too), no colour = `transparent`
+  fill with the whole line as title (parser fixed); fixtures `seq_box`, `seq_box_color`, `seq_box_plain`, `seq_box_mixed` are `pass`.
+  Found on the way: the sans overhang of the last glyph at 16px is its own table (`kSansOverhang`), a lone `Q` is 17px high
+- [x] Renderer, `create`/`destroy`: a created actor leaves half its width extra (not when the `create` is before the first message:
+  Mermaid tests the index for truth), the message stops 21px (stick figure) or half width + 3 short of its box, the box is centred on the
+  message line (`starty`/`stopy`), the lifeline starts or stops there, the mirror box of a destroyed actor sits at its `stopy`; fixtures
+  `seq_create_destroy`, `seq_create_destroy_mixed` (inside a loop, with activation and a self message) are `pass`
+- [x] Renderer, `wrap:`/`nowrap:`: messages (wrapped to max(bounded + 20, 150), no longer widening the gap by their text), notes (per
+  placement), participant labels (width 150), `utils.breakString` (a word wider than the line is cut with hyphens, also in fragment
+  titles); multi-line participant labels (`<br/>`): one `<text>` per row at the centre, tspan dy = i*16 - (n-1)*8; the parser reads
+  `wrap:` after the trimmed colon; fixtures `seq_wrap`, `seq_wrap_notes`, `seq_actor_labels` are `pass`
+- [x] Renderer, `box` titles that wrap (`wrap:`, to total - 20) or break (`<br/>`, written `<br>` by DOMPurify, one `<text>` per row),
+  `rect` without a colour (fill `hsl(0, 0%, 96%)`, the default theme's); fixtures `seq_box_wrap`, `seq_rect_plain` are `pass`
+- [ ] Renderer, the rest: themes other than the default, `look: classic`
+- [x] Sequence init keys: `%%{init}%%` `sequence.{width, height, actorMargin, boxMargin, boxTextMargin, noteMargin, wrapPadding, activationWidth,
+  labelBoxWidth, labelBoxHeight, diagramMarginX, diagramMarginY, bottomMarginAdj, mirrorActors, wrap, showSequenceNumbers, useMaxWidth}`
+  and the top-level `wrap`, later directives win (`sequence::Config`, `Drawing::conf`); `messageMargin` is read by nothing in Mermaid 12.2's
+  sequence renderer, so it is ignored; fonts, `messageAlign`, `rightAngles`, `hideUnusedParticipants` throw `UnsupportedDiagram`;
+  `mirrorActors: false` has no mirror boxes, lifelines keep 2000 (a destroyed actor's ends at its box middle), no `bottomMarginAdj`;
+  `useMaxWidth: false` is `width`/`height` instead of `style`; fixtures `seq_init_*` (6) are `pass`
+- [x] Sequence themes (default `redux-color`, `dark`, `forest`, `neutral`, `base`, and `themeVariables`): the sequence variables derive in
+  `theme_variables.cpp` as each theme's updateColors() does (`theme_variables::sequence`); no `style` on boxes of non-redux themes, a
+  figure gets `stroke: rgb(actorBorder)`; the drop shadow's flood colour is `#000000` for redux, `#FFFFFF` else; `parse_css_color` converts
+  hsl in single precision like the browser (221.5 -> 221). `look: classic`: actor height 65 (or the wrapped text's), rx 3, no
+  `data-look`/filter/drop shadow defs, no 3px arrow offset, no +30 viewBox, classic figure (glyph from the box top, lifeline at +80, label at
+  +35), label box height 20; other looks throw. Fixtures `seq_theme_*` (6) and `seq_look_classic*` (2) are `pass`
+- [x] Sequence parser gaps closed: entity codes (`#35;` -> `ﬂ°°35¶ß` in the model like Mermaid, decoded where drawn; widths are measured on
+  the encoded text, so the metrics know `ﬂ`; a table of common names, others stay `&name;`), `par_over`, `link`/`links`/`properties`
+  (`details` is a no-op in Mermaid 12.2; `link` cuts at the first `@` and drops the character before it; JSON keys keep their order,
+  `json_value::order`); drawn: the `class` property (replaces `actor`, fill `#EDF2AE`) and the popup menu `actorN_popup` under an actor with
+  links (widens the viewBox, script-like URLs lose the href); a menu on a stick figure and the `icon` property throw. Fixtures
+  `seq_entities`, `seq_par_over`, `seq_links`, `seq_links_wide`, `seq_links_classic` are `pass`; parser-only `seq_links_more`
+- [x] `participant X@{ "type": .., "alias": .. }` (also `actor`, `create`; JSON or `key: value` pairs; alias stands in for a missing `as`):
+  `actor`/`participant` types draw, any other type (boundary, control, entity, database, collections, queue) throws `UnsupportedDiagram`
+  (before, the metadata was read as part of the id); fixtures `seq_meta_type`, `seq_meta_create` are `pass`
+- [x] Sequence actor types `collections` (box + copy 6px lower left, shadow on the group; neo and classic), `queue` (sideways cylinder, neo and
+  classic), `control`, `entity`, `database`, `boundary` (glyph in the 44px band, neo look: `neo_bands`, `write_glyph`); every type also with
+  themes, `mirrorActors: false`; fixtures `seq_type_*` (13) are `pass`. Path `d` strings are written without the template's leading/trailing blanks
+  (the reference serialisation trims them)
+- [ ] Sequence: `control`/`entity`/`database`/`boundary` in the classic look (the height comes from getBBox there), `create`/`destroy` of those types,
+  a link menu on a glyph type (all throw `UnsupportedDiagram`)
+- [x] Sequence init keys `rightAngles` (self messages are `M H V H` paths, no boxMargin before them), `messageAlign` and `noteAlign`
+  (drawText anchors: left = x + margin / start, right = x + width - margin / end), `hideUnusedParticipants` (actors no statement names are
+  neither placed nor drawn; widths and margins still count them; element ids and palette colours use the visible index; a box with no
+  visible actor is not drawn); fixtures `seq_init_right_angles*`, `seq_init_message_align_*`, `seq_init_note_align`, `seq_init_hide_unused*` are `pass`
+- [ ] Sequence: font keys (`actor|note|messageFontFamily/Size/Weight`), `look: handDrawn`
+
+
+- [x] Sequence half arrows (`-|\`, `-|/`, `-\\`, `-//` and the reverse `/|-`, `\|-`, `//-`, `\\-`, plus the dotted `--` forms; LineType 41..48 / 51..58):
+  parser tokens, line shortening (stick and reverse heads do not shorten, solid reverse heads move the start by 3), markers
+  (reverse = mirror head at the start), autonumber geometry for reverse arrows (x2 before the circle, circle at the other end, self path starts 10
+  right); fixtures `seq_half_arrows*` are `pass`, parser oracle for the plain and dotted ones
+- [ ] Sequence: central connection (`A->>()B`, LineType 59..61)
