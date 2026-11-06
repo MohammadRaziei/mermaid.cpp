@@ -28,7 +28,7 @@ public:
           options_(options),
           vars_(detail::theme_variables::resolved(model.config, options.theme)),
           line_height_(vars_.font_px() * 1.5),
-          edges_(options.svg_id, line_height_, model.config.html_labels ? *model.config.html_labels : model.config.flowchart_html_labels.value_or(true)) {}
+          edges_(options.svg_id, line_height_, vars_.look == "classic", model.config.html_labels ? *model.config.html_labels : model.config.flowchart_html_labels.value_or(true)) {}
 
     std::string render() {
         open_svg();
@@ -58,21 +58,22 @@ private:
     }
 
     void open_svg() {
-        // Mermaid: viewBox = content bounds + `diagramPadding` (8) on every side.
-        constexpr double kDiagramPadding = 8;
+        // Mermaid: viewBox = content bounds + `flowchart.diagramPadding` (8) on every side.
+        const double pad = model_.config.diagram_padding.value_or(8);
         const Rect& b = layout_.bounds;
-        const std::string w = SvgWriter::num(b.width + 2 * kDiagramPadding);
+        const std::string w = SvgWriter::num(b.width + 2 * pad), h = SvgWriter::num(b.height + 2 * pad);
         const std::string id = options_.svg_id;
+        const bool max_width = model_.config.use_max_width.value_or(true);  // useMaxWidth: false pins the size instead
         SvgWriter::Attrs attrs{{"id", id},
-                               {"width", "100%"},
+                               {"width", max_width ? "100%" : w},
                                {"xmlns", "http://www.w3.org/2000/svg"},
                                {"xmlns:xlink", "http://www.w3.org/1999/xlink"},
                                {"class", "flowchart"},
-                               {"style", "max-width: " + w + "px; background-color: " + options_.background + ";"},
-                               {"viewBox", SvgWriter::num(b.x - kDiagramPadding) + " " + SvgWriter::num(b.y - kDiagramPadding) + " " +
-                                               w + " " + SvgWriter::num(b.height + 2 * kDiagramPadding)},
+                               {"viewBox", SvgWriter::num(b.x - pad) + " " + SvgWriter::num(b.y - pad) + " " + w + " " + h},
                                {"role", "graphics-document document"},
                                {"aria-roledescription", "flowchart-v2"}};
+        if (max_width) attrs.emplace_back("style", "max-width: " + w + "px; background-color: " + options_.background + ";");
+        else attrs.emplace_back("height", h);
         if (!model_.acc_title.empty()) attrs.emplace_back("aria-labelledby", "chart-title-" + id);
         if (!model_.acc_descr.empty()) attrs.emplace_back("aria-describedby", "chart-desc-" + id);
         out_.open("svg", attrs);
@@ -134,7 +135,7 @@ private:
             std::string classes = "cluster";
             if (subgraph)
                 for (const std::string& cls : subgraph->classes) classes += " " + cls;
-            SvgWriter::Attrs attrs{{"class", classes}, {"id", options_.svg_id + "-" + it->id}, {"data-look", "neo"}};
+            SvgWriter::Attrs attrs{{"class", classes}, {"id", options_.svg_id + "-" + it->id}, {"data-look", vars_.look}};
             if (slots > 0) attrs.emplace_back("data-color-id", "color-" + std::to_string(static_cast<size_t>(it->color_index) % slots));
             out_.open("g", attrs);
             out_.leaf("rect", {{"style", subgraph ? detail::important_shape_style(resolved_style(*subgraph)) : std::string()},
@@ -277,7 +278,7 @@ private:
                 out_.close();  // helper
             }
         };
-        const detail::node_renderer renderer(options_.svg_id, vars_, options_.hand_drawn_seed);
+        const detail::node_renderer renderer(options_.svg_id, vars_, options_.hand_drawn_seed, model_.config.html_labels.value_or(true), model_.config.padding.value_or(15), model_.config.wrapping_width.value_or(120));
         for (const NodeLayout& nl : layout.nodes) {
             const Node* node = model_.find_node(nl.id);
             if (!node) continue;

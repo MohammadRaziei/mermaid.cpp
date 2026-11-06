@@ -18,8 +18,8 @@ namespace mermaid::detail {
 
 class node_renderer {
 public:
-    node_renderer(std::string svg_id, theme_variables theme, int hand_drawn_seed)
-        : svg_id_(std::move(svg_id)), theme_(std::move(theme)), seed_(hand_drawn_seed) {}
+    node_renderer(std::string svg_id, theme_variables theme, int hand_drawn_seed, bool html_labels = true, double padding = 15, double wrapping_width = 120)
+        : svg_id_(std::move(svg_id)), theme_(std::move(theme)), seed_(hand_drawn_seed), html_labels_(html_labels), padding_(padding), wrapping_width_(wrapping_width) {}
 
     // `style` is the node's resolved style (classDef, then `style` statements).
     void write(SvgWriter& out, const flowchart::Node& node, const flowchart::NodeLayout& layout,
@@ -50,11 +50,14 @@ private:
                              const flowchart::Style& style, const std::string& inline_style,
                              const char* group_class = "basic label-container outer-path") const;
     void write_stadium(SvgWriter& out, const Size& size, const flowchart::Style& style, const std::string& inline_style) const;
-    static double label_shift(flowchart::Shape shape);
+    double label_shift(flowchart::Shape shape) const;
 
     std::string svg_id_;
     theme_variables theme_;
     int seed_;
+    bool html_labels_ = true;  // false: labels are SVG <text>
+    double padding_ = 15;      // flowchart.padding
+    double wrapping_width_ = 120;  // flowchart.wrappingWidth
 };
 
 }  // namespace mermaid::detail

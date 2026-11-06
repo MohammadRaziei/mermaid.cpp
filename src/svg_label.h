@@ -15,6 +15,9 @@
 
 namespace mermaid::detail {
 
+// How far past its advance the last glyph of a <text> reaches in getBBox() (see svg_label.cpp).
+double last_glyph_overhang(char c, double font_size);
+
 struct svg_label {
     using line = std::vector<TextWord>;  // the words of one row of the text
     std::vector<line> lines;

@@ -298,6 +298,7 @@ theme_variables theme_variables::resolved_theme(const std::string& name, const s
 theme_variables theme_variables::resolved(const flowchart::InitConfig& init, const std::string& fallback) {
     theme_variables t = resolved_theme(init.theme ? *init.theme : fallback, init.theme_variables);
     if (init.font_family) t.font_family_config = *init.font_family;
+    if (init.look) t.look = *init.look;
     return t;
 }
 

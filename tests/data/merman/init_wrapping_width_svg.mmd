@@ -1,0 +1,10 @@
+%%{init: {"htmlLabels":false,"flowchart":{"wrappingWidth":80}}}%%
+flowchart TD
+  a[A fairly long label that will need wrapping when the width is small] -->|a long edge label text here for wrapping| b(round)
+  b --> c{decide now}
+  c -->|yes| d[done]
+  c -->|no| e[(store)]
+  subgraph g[Group with a long title to wrap maybe]
+    d --> f((end))
+  end
+  e --> f

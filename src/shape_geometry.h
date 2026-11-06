@@ -22,7 +22,7 @@ struct arc_shape {
     Size nominal;
     Point origin;  // top left of the bounding box, from where the path starts
 };
-std::optional<arc_shape> arc_shape_of(flowchart::Shape shape, const Size& label);
+std::optional<arc_shape> arc_shape_of(flowchart::Shape shape, const Size& label, double padding = 15);
 
 // True for the shapes whose label transform is written by the shape itself, as `translate(x,y)`.
 bool writes_tight_label_transform(flowchart::Shape shape);
@@ -65,17 +65,17 @@ bucket_geometry bucket_geometry_of(const Size& size);
 struct person_geometry {
     double w, head_radius, overlap, body_height, body_radius, total, top, body_top;
 };
-person_geometry person_geometry_of(const Size& label);
+person_geometry person_geometry_of(const Size& label, double padding = 15);
 
 // How far a shape's drawing is moved from the centre of its node box (bucket only).
 Point drawing_shift(flowchart::Shape shape, const Size& size);
 
 // nullopt for the shapes that are not polygons. `size` is the node's size, the bounding box of the outline.
 // `label` is the label box, from which the document shapes derive their outline exactly.
-std::optional<polygon_outline> polygon_outline_of(flowchart::Shape shape, const Size& size, const Size& label = {});
+std::optional<polygon_outline> polygon_outline_of(flowchart::Shape shape, const Size& size, const Size& label = {}, bool classic = false, double padding = 15);
 
 // The label sits at the centre of the node, except that odd moves it with its notch.
-Point label_offset(flowchart::Shape shape, const Size& size, const Size& label = {});
+Point label_offset(flowchart::Shape shape, const Size& size, const Size& label = {}, bool classic = false, double padding = 15);
 
 // intersect-polygon.js: where the line from the node centre to `outside` leaves the outline. nullopt when the shape
 // is not a polygon.

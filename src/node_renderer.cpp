@@ -20,7 +20,6 @@ std::string translate(double x, double y) {
 }
 
 // flowchart.padding of Mermaid 12.2.
-constexpr double kNodePadding = 15;
 constexpr double kRoundRadius = 12;  // themeVariables.radius of redux-color
 constexpr double kDoubleCircleGap = 12;  // doubleCircle.ts (neo)
 constexpr double M_PI_RAD = 3.14159265358979323846;
@@ -30,8 +29,8 @@ std::string js(double v) { return js_number(v); }
 }  // namespace
 
 // shapes/cylinder.ts moves its label down by padding / 1.5; the other ported shapes keep it centred.
-double node_renderer::label_shift(Shape shape) {
-    return shape == Shape::Cylinder ? kNodePadding / 1.5 : 0;
+double node_renderer::label_shift(Shape shape) const {
+    return shape == Shape::Cylinder ? padding_ / 1.5 : 0;
 }
 
 void node_renderer::write(SvgWriter& out, const flowchart::Node& node, const flowchart::NodeLayout& layout,
@@ -43,14 +42,14 @@ void node_renderer::write(SvgWriter& out, const flowchart::Node& node, const flo
 
     out.open("g", {{"class", classes},
                    {"id", svg_id_ + "-flowchart-" + node.id + "-" + std::to_string(node.dom_index)},
-                   {"data-look", "neo"},
+                   {"data-look", theme_.look},
                    {"transform", translate(layout.center.x, layout.center.y)}});
     write_outline(out, layout.shape, layout.size, layout.label, style, node.style);
-    Point shift = label_offset(layout.shape, layout.size, layout.label);
+    Point shift = label_offset(layout.shape, layout.size, layout.label, layout.classic, layout.padding);
     shift.y += label_shift(layout.shape);
     // triangle.ts puts the label near the base, flippedTriangle.ts near the top (padding / 2 = 7.5 from the edge)
-    if (layout.shape == Shape::Triangle) shift.y += layout.size.height / 2 - layout.label.height / 2 - kNodePadding / 2;
-    if (layout.shape == Shape::FlippedTriangle) shift.y += -layout.size.height / 2 + layout.label.height / 2 + kNodePadding / 2;
+    if (layout.shape == Shape::Triangle) shift.y += layout.size.height / 2 - layout.label.height / 2 - padding_ / 2;
+    if (layout.shape == Shape::FlippedTriangle) shift.y += -layout.size.height / 2 + layout.label.height / 2 + padding_ / 2;
     if (layout.shape == Shape::Hourglass) {  // the label is empty: a 0 x 0 box
         write_empty_label(out, style, node.markdown_label);
     } else if (layout.shape == Shape::Fork || layout.shape == Shape::SmallCircle || layout.shape == Shape::LightningBolt ||
@@ -58,11 +57,26 @@ void node_renderer::write(SvgWriter& out, const flowchart::Node& node, const flo
         // these shapes make no label at all
     } else {
         if (!layout.label_rows.empty()) {  // htmlLabels: false: labelHelper with an SVG <text>
-            // cylinder.ts and rectLeftInvArrow.ts place the label themselves, minus `bbox.y`, which is not 0 for a <text>
-            // (the other shapes were checked against Mermaid in the all_shapes fixture)
-            if (layout.shape == Shape::Cylinder || layout.shape == Shape::Odd) shift.y -= layout.label_top;
+            // shapes that place the label themselves subtract `bbox.y`, which is 1 and not 0 for a <text>; the triangles
+            // add it (checked against Mermaid in the *_all_shapes and *_new_shapes fixtures)
+            if (layout.shape == Shape::Cloud || layout.shape == Shape::Bang) shift.x -= layout.label.width / 2;  // cloud.ts, bang.ts centre the box themselves
+            switch (layout.shape) {
+                case Shape::Cylinder: case Shape::Odd: case Shape::Document: case Shape::Documents: case Shape::TaggedDocument:
+                case Shape::LinedDocument: case Shape::SlopedRectangle: case Shape::LinedRectangle: case Shape::DividedRectangle:
+                case Shape::Person: case Shape::Console: case Shape::Browser: case Shape::Bucket: case Shape::Folder:
+                case Shape::TiltedCylinder: case Shape::LinedCylinder: case Shape::StackedRectangle: case Shape::BraceLeft:
+                case Shape::BraceRight: case Shape::Braces: case Shape::WindowPane:
+                    shift.y -= layout.label_top;
+                    break;
+                case Shape::Triangle: case Shape::FlippedTriangle:
+                    shift.y += layout.label_top;
+                    break;
+                default: break;
+            }
             out.open("g", {{"class", "label"}, {"style", important_label_style(style)},
-                           {"transform", translate(shift.x, -layout.label.height / 2 + shift.y)}});
+                           {"transform", writes_tight_label_transform(layout.shape)
+                                             ? "translate(" + js(shift.x) + "," + js(-layout.label.height / 2 + shift.y) + ")"
+                                             : translate(shift.x, -layout.label.height / 2 + shift.y)}});
             out.leaf("rect");
             out.open("g");
             out.leaf("rect", {{"class", "background"}, {"style", "stroke: none"}});
@@ -298,7 +312,7 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
                           {"class", "basic label-container outer-path"},
                           {"style", inline_style},
                           {"transform", translate(-w / 2, -(h / 2 + ry))}});
-    } else if (const auto arcs = arc_shape_of(shape, label)) {
+    } else if (const auto arcs = arc_shape_of(shape, label, padding_)) {
         // cloud.ts, bang.ts: one path, laid out in its nominal box and moved by translate(-w / 2, -h / 2)
         out.leaf("path", {{"class", "basic label-container"},
                           {"style", inline_style},
@@ -317,7 +331,8 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
                           {"transform", translate(-w / 2, -(h / 2 + ry))}});
     } else if (shape == Shape::TiltedCylinder) {
         // tiltedCylinder.ts: drawn from 0,0 and moved by translate(-w / 2, h / 2 ) (sic, the space is Mermaid's).
-        const double h = label.height + 12, ry = h / 2, rx = ry / (2.5 + h / 50), w = label.width + rx + 12;
+        const double pad = theme_.look == "classic" ? padding_ / 2 : 12;
+        const double h = label.height + pad, ry = h / 2, rx = ry / (2.5 + h / 50), w = label.width + rx + pad;
         const std::string arc = "a" + js(rx) + "," + js(ry) + " 0,0,";
         const std::string nl = "\n    ";  // createCylinderPathD3 is a template literal: its line breaks stay in the attribute
         const std::string d = "M0,0" + nl + arc + "1 0," + js(-h) + nl + "l" + js(w) + ",0" + nl + arc + "1 0," + js(h) + nl + "M" + js(w) + "," +
@@ -346,10 +361,10 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
                             {"cy", "0"}});
     } else if (shape == Shape::DoubleCircle) {
         // doubleCircle.ts: an outer and an inner ring, 12 apart
-        const double outer = size.width / 2;
+        const double outer = size.width / 2, gap = theme_.look == "classic" ? 5.0 : kDoubleCircleGap;
         out.open("g", {{"class", "basic label-container"}, {"style", inline_style}});
         out.leaf("circle", {{"class", "outer-circle"}, {"style", inline_style}, {"r", js(outer)}, {"cx", "0"}, {"cy", "0"}});
-        out.leaf("circle", {{"class", "inner-circle"}, {"style", inline_style}, {"r", js(outer - kDoubleCircleGap)}, {"cx", "0"}, {"cy", "0"}});
+        out.leaf("circle", {{"class", "inner-circle"}, {"style", inline_style}, {"r", js(outer - gap)}, {"cx", "0"}, {"cy", "0"}});
         out.close();
     } else if (shape == Shape::Text) {
         // text.ts: a rectangle with the class `text`, no border of its own
@@ -375,7 +390,7 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
                           {"width", SvgWriter::num(box.width)}, {"height", SvgWriter::num(box.height)},
                           {"stroke-dasharray", SvgWriter::num(box.width) + " " + SvgWriter::num(box.height)}});
     } else if (shape == Shape::Person) {  // person.ts: the body rect, then the head circle
-        const person_geometry g = person_geometry_of(label);
+        const person_geometry g = person_geometry_of(label, padding_);
         const auto num = [](double v) { return SvgWriter::num(v); };
         out.open("g", {{"class", "basic label-container"}});
         out.leaf("rect", {{"x", num(-g.w / 2)}, {"y", num(g.body_top)}, {"width", num(g.w)}, {"height", num(g.body_height)},
@@ -414,7 +429,7 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
         out.leaf("ellipse", {{"cx", "0"}, {"cy", js(g.top_y)}, {"rx", js(g.w / 2)}, {"ry", js(g.rim_ry)},
                              {"style", "fill:none;stroke:" + accent + ";stroke-width:1px"}});
         out.close();
-    } else if (const auto polygon = polygon_outline_of(shape, size, label)) {
+    } else if (const auto polygon = polygon_outline_of(shape, size, label, theme_.look == "classic", padding_)) {
         if (polygon->plain_path) {
             std::string d;
             for (const Point& p : polygon->points) d += (d.empty() ? "M" : " L") + js(p.x) + "," + js(p.y);
@@ -440,9 +455,17 @@ void node_renderer::write_outline(SvgWriter& out, Shape shape, const Size& size,
 void node_renderer::write_empty_label(SvgWriter& out, const flowchart::Style& style, bool markdown) const {
     out.open("g", {{"class", "label"}, {"style", important_label_style(style)}, {"transform", "translate(0, 0)"}});
     out.leaf("rect");
+    if (!html_labels_) {  // createText of an empty text: one empty row
+        out.open("g");
+        out.leaf("rect", {{"class", "background"}, {"style", "stroke: none"}});
+        svg_label::write_text(out, {{}}, false, true);
+        out.close();
+        out.close();
+        return;
+    }
     out.open("foreignObject", {{"width", "0"}, {"height", "0"}});
     out.open("div", {{"xmlns", "http://www.w3.org/1999/xhtml"},
-                     {"style", computed_label_color(style) + "display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center;"}});
+                     {"style", computed_label_color(style) + "display: table-cell; white-space: nowrap; line-height: 1.5; max-width: " + js(wrapping_width_) + "px; text-align: center;"}});
     SvgWriter::Attrs span{{"class", markdown ? "nodeLabel markdown-node-label" : "nodeLabel"}};
     if (const std::string color = important_label_style(style); !color.empty()) span.emplace_back("style", color);
     out.leaf("span", span);
@@ -464,9 +487,10 @@ void node_renderer::write_label(SvgWriter& out, const std::string& text, const S
     out.open("div", {{"xmlns", "http://www.w3.org/1999/xhtml"},
                      {"style", computed_label_color(style) +
                                    (table ? std::string("display: table; white-space: ") + (wrapped ? "break-spaces" : "nowrap") +
-                                              "; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;"
-                                              : "display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 120px; "
-                                                "text-align: center;")}});
+                                              "; line-height: 1.5; max-width: " + js(wrapping_width_) + "px; text-align: center; width: " +
+                                              js(wrapped ? wrapping_width_ : 120.0) + "px;"
+                                              : "display: table-cell; white-space: nowrap; line-height: 1.5; max-width: " +
+                                                js(wrapping_width_) + "px; text-align: center;")}});
     SvgWriter::Attrs span{{"class", markdown ? "nodeLabel markdown-node-label" : "nodeLabel"}};
     if (!color.empty()) span.emplace_back("style", color);
     out.open("span", span);

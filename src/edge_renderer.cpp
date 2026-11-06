@@ -123,8 +123,8 @@ std::string color_id(const std::string& color) {
     return out;
 }
 
-std::string marker_name(Head head, bool start) {
-    return std::string(head_name(head)) + (start ? "Start" : "End") + "-margin";
+std::string marker_name(Head head, bool start, bool classic) {
+    return std::string(head_name(head)) + (start ? "Start" : "End") + (classic ? "" : "-margin");
 }
 
 }  // namespace
@@ -165,7 +165,7 @@ void EdgeRenderer::write_colored_markers(SvgWriter& out) const {
 }
 
 std::string EdgeRenderer::marker_url(Head head, bool start, const std::string& style_text) {
-    const std::string name = marker_name(head, start);
+    const std::string name = marker_name(head, start, classic_);
     std::string id = svg_id_ + "_flowchart-v2-" + name;
     const std::string color = stroke_color(style_text);
     if (!color.empty()) {
@@ -211,8 +211,9 @@ void EdgeRenderer::write_path(SvgWriter& out, const flowchart::Edge& edge, const
                                           " edge-thickness-normal edge-pattern-solid flowchart-link";
 
     const std::string style_text = path_style_text(edge);
-    const std::string style = "stroke-dasharray: " + dash_array(length, dash_offset(edge.start), dash_offset(edge.end), dotted) +
-                              "; stroke-dashoffset: 0;" + style_text;
+    const std::string style = classic_ ? style_text
+                                       : "stroke-dasharray: " + dash_array(length, dash_offset(edge.start), dash_offset(edge.end), dotted) +
+                                             "; stroke-dashoffset: 0;" + style_text;
 
     const std::string d = edge_geometry::curve_path(edge.curve, drawn);
     // edges.js resolveEdgeLabelPosition: unless the middle point of the clipped route lies on the drawn path, the
@@ -231,7 +232,7 @@ void EdgeRenderer::write_path(SvgWriter& out, const flowchart::Edge& edge, const
                            {"data-et", "edge"},
                            {"data-id", edge.id},
                            {"data-points", recorded_points},
-                           {"data-look", "neo"}};
+                           {"data-look", classic_ ? "classic" : "neo"}};
     if (edge.start != Head::None) attrs.emplace_back("marker-start", marker_url(edge.start, true, style_text));
     if (edge.end != Head::None) attrs.emplace_back("marker-end", marker_url(edge.end, false, style_text));
     out.leaf("path", attrs);

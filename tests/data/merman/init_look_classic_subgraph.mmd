@@ -1,0 +1,9 @@
+%%{init: {"look":"classic"}}%%
+flowchart TD
+  subgraph one[First group]
+    a[Alpha] --> b[Beta]
+  end
+  b -->|link| c[Gamma]
+  classDef hot fill:#f96,stroke:#333
+  class a hot
+  style c fill:#9cf

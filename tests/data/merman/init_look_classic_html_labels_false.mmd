@@ -1,0 +1,10 @@
+%%{init: {"look":"classic","htmlLabels":false}}%%
+flowchart TD
+  subgraph g[Group title]
+    a[A much longer label that has to wrap over lines] -->|edge text| b(round)
+  end
+  b --> c{decide}
+  c -->|yes| d@{ shape: doc, label: "document" }
+  c -->|no| e@{ shape: cyl, label: "store" }
+  d --> f((end))
+  e --> f

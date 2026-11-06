@@ -585,7 +585,7 @@ private:
             const dagre::NodeResult* r = result.find_node(node.id);
             layout.nodes.push_back({node.id, node.shape, {r->x, r->y}, sizes_[static_cast<size_t>(i)],
                                     labels_[static_cast<size_t>(i)], static_cast<bool>(labels_wrapped_[static_cast<size_t>(i)]),
-                                    label_rows_[static_cast<size_t>(i)], label_tops_[static_cast<size_t>(i)]});
+                                    label_rows_[static_cast<size_t>(i)], label_tops_[static_cast<size_t>(i)], options_.classic, options_.node_padding});
         }
         for (const size_t i : edge_order_) {
             if (edges_[i].scope != scope.owner) continue;
@@ -702,10 +702,10 @@ private:
         std::optional<Rect> bounds;
         auto include = [&](const Rect& r) { bounds = bounds ? bounds->united(r) : r; };
         for (const NodeLayout& n : layout.nodes) {
-            if (const auto arcs = mermaid::detail::arc_shape_of(n.shape, n.label)) {  // the path is moved by its nominal box, not its bounds
+            if (const auto arcs = mermaid::detail::arc_shape_of(n.shape, n.label, n.padding)) {  // the path is moved by its nominal box, not its bounds
                 include({n.center.x - arcs->nominal.width / 2 + arcs->origin.x, n.center.y - arcs->nominal.height / 2 + arcs->origin.y,
                          arcs->bounds.width, arcs->bounds.height});
-            } else if (const auto outline = mermaid::detail::polygon_outline_of(n.shape, n.size, n.label); outline && outline->drawn) {
+            } else if (const auto outline = mermaid::detail::polygon_outline_of(n.shape, n.size, n.label, n.classic, n.padding); outline && outline->drawn) {
                 include({n.center.x + outline->drawn->x, n.center.y + outline->drawn->y, outline->drawn->width, outline->drawn->height});
             } else {
                 const Point shift = mermaid::detail::drawing_shift(n.shape, n.size);  // bucket: drawn off centre
@@ -767,6 +767,9 @@ Layout LayoutEngine::layout(const Model& model) const {
     LayoutOptions options = options_;
     if (model.config.node_spacing) options.node_sep = *model.config.node_spacing;
     if (model.config.rank_spacing) options.rank_sep = *model.config.rank_spacing;
+    if (model.config.wrapping_width) options.wrapping_width = *model.config.wrapping_width;
+    if (model.config.padding) options.node_padding = options.diamond_pad = *model.config.padding;  // question.ts pads by node.padding
+    options.classic = model.config.look.value_or("neo") == "classic";
     if (model.config.html_labels) options.html_labels = *model.config.html_labels;
     // getEffectiveHtmlLabels: htmlLabels, else flowchart.htmlLabels; node labels read htmlLabels alone
     const std::optional<bool> effective = model.config.html_labels ? model.config.html_labels : model.config.flowchart_html_labels;

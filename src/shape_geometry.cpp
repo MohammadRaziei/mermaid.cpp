@@ -14,7 +14,6 @@ using flowchart::Shape;
 namespace {
 
 constexpr double kSubroutineFrame = 8;  // subroutine.ts FRAME_WIDTH
-constexpr double kNodePadding = 15;     // the flowchart padding handed to every shape as node.padding
 
 // intersect-line.js
 std::optional<Point> intersect_line(const Point& p1, const Point& p2, const Point& q1, const Point& q2) {
@@ -133,8 +132,8 @@ std::vector<Point> sine_wave_points(double x1, double y1, double x2, double y2, 
 
 bool ignores_min_label_width(Shape shape) { return shape == Shape::Circle || shape == Shape::DoubleCircle; }
 
-std::optional<arc_shape> arc_shape_of(Shape shape, const Size& label) {
-    const double half_padding = kNodePadding / 2;
+std::optional<arc_shape> arc_shape_of(Shape shape, const Size& label, double padding) {
+    const double half_padding = padding / 2;
     std::vector<std::vector<arc_segment>> groups;
     Size nominal;
     if (shape == Shape::Cloud) {  // cloud.ts
@@ -172,10 +171,10 @@ bucket_geometry bucket_geometry_of(const Size& size) {
     return {w, w * 0.72, rim, -total / 2 + rim, total / 2};
 }
 
-person_geometry person_geometry_of(const Size& label) {
-    const double w = MERMAID_MAX(label.width + 2 * kNodePadding, 100.0);
+person_geometry person_geometry_of(const Size& label, double padding) {
+    const double w = MERMAID_MAX(label.width + 2 * padding, 100.0);
     const double head = MERMAID_MIN(MERMAID_MAX(w * 0.23, 16.0), 56.0), overlap = head * 0.27;
-    const double body_height = label.height + 2 * kNodePadding;
+    const double body_height = label.height + 2 * padding;
     const double total = body_height + 2 * head - overlap, top = -total / 2;
     return {w, head, overlap, body_height, MERMAID_MIN(w * 0.177, body_height * 0.45), total, top, top + 2 * head - overlap};
 }
@@ -184,12 +183,15 @@ Point drawing_shift(Shape shape, const Size& size) {
     return shape == Shape::Bucket ? Point{0, bucket_geometry_of(size).rim_ry / 2} : Point{0, 0};
 }
 
-std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size, const Size& label) {
+std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size, const Size& label, bool classic, double padding) {
+    // look: classic pads every label by the node padding instead of the neo constants (and waves are h / 8, offsets 5)
+    const double px = classic ? padding : 16, py = classic ? padding : 12;
+    const double wave_div = classic ? 8.0 : 4.0;
     polygon_outline out;
     switch (shape) {
         case Shape::Person: {  // person.ts: generateCirclePoints negates both coordinates; the head arc stops where the body starts
             constexpr double pi = 3.14159265358979323846;
-            const person_geometry g = person_geometry_of(label);
+            const person_geometry g = person_geometry_of(label, padding);
             const auto circle = [&](double cx, double cy, double r, int n, double from, double to) {
                 std::vector<Point> pts;
                 const double a0 = from * pi / 180, step = (to * pi / 180 - a0) / (n - 1);
@@ -222,8 +224,8 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             out.points.insert(out.points.end(), bottom.rbegin(), bottom.rend());
             return out;
         }
-        case Shape::Hexagon: {  // hexagon.ts: m = h / 3.5 in the neo look
-            const double w = size.width, h = size.height, m = h / 3.5;
+        case Shape::Hexagon: {  // hexagon.ts: m = h / 3.5 in the neo look, h / 4 in the classic one
+            const double w = size.width, h = size.height, m = h / (classic ? 4.0 : 3.5);
             out.points = {{m, 0}, {w - m, 0}, {w, -h / 2}, {w - m, -h}, {m, -h}, {0, -h / 2}};
             out.anchor = {w, h};
             return out;
@@ -285,7 +287,7 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             return out;
         }
         case Shape::Document: {  // waveEdgedRectangle.ts: the bottom edge is 0.8 of a sine cycle of amplitude h / 4
-            const double w = size.width, amplitude = size.height / 6, final_h = size.height * 5 / 6;
+            const double w = size.width, amplitude = classic ? size.height / 10 : size.height / 6, final_h = classic ? size.height * 0.9 : size.height * 5 / 6;
             out.points = {{-w / 2, final_h / 2}};
             const std::vector<Point> wave = sine_wave_points(-w / 2, final_h / 2, w / 2, final_h / 2, amplitude, 0.8);
             out.points.insert(out.points.end(), wave.begin(), wave.end());
@@ -297,8 +299,8 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
         }
         case Shape::Documents: {  // multiWaveEdgedRectangle.ts (neo)
             constexpr double r = 10;  // rectOffset2
-            const double w = label.width + 2 * 16, h = label.height + 3 * 12;
-            const double amplitude = h / 4, final_h = h + amplitude / 2;
+            const double w = label.width + 2 * px, h = label.height + 3 * py;
+            const double amplitude = h / wave_div, final_h = h + amplitude / 2;
             const double x = -w / 2, y = -final_h / 2;
             const std::vector<Point> wave = sine_wave_points(x - r, y + final_h + r, x + w - r, y + final_h + r, amplitude, 0.8);
             const double last_y = wave.back().y;
@@ -315,7 +317,7 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             return out;
         }
         case Shape::TaggedDocument: {  // taggedWaveEdgedRectangle.ts: uses the node padding, not the neo paddings
-            const double w = label.width + 2 * kNodePadding, h = label.height + 2 * kNodePadding;
+            const double w = label.width + 2 * padding, h = label.height + 2 * padding;
             const double amplitude = h / 8, tag_w = 0.2 * w, tag_h = 0.2 * h, final_h = h + amplitude;
             std::vector<Point> body = {{-w / 2 - w / 2 * 0.1, final_h / 2}};
             const std::vector<Point> wave = sine_wave_points(-w / 2 - w / 2 * 0.1, final_h / 2, w / 2 + w / 2 * 0.1, final_h / 2, amplitude, 0.8);
@@ -332,8 +334,8 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             return out;
         }
         case Shape::LinedDocument: {  // linedWaveEdgedRect.ts (neo)
-            const double w = label.width + 2 * 16, h = label.height + 2 * 12;
-            const double amplitude = h / 4, final_h = h + amplitude, m = w / 2 * 0.1;
+            const double w = label.width + 2 * px, h = label.height + 2 * py;
+            const double amplitude = h / wave_div, final_h = h + amplitude, m = w / 2 * 0.1;
             std::vector<Point> pts = {{-w / 2 - m, -final_h / 2}, {-w / 2 - m, final_h / 2}};
             const std::vector<Point> wave = sine_wave_points(-w / 2 - m, final_h / 2, w / 2 + m, final_h / 2, amplitude, 0.8);
             pts.insert(pts.end(), wave.begin(), wave.end());
@@ -346,7 +348,7 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             return out;
         }
         case Shape::Flag: {  // waveRectangle.ts: one full wave along the bottom and one back along the top
-            const double w = label.width + 2 * 16, h = label.height + 20;
+            const double w = label.width + 2 * px, h = label.height + (classic ? padding : 20);
             const double amplitude = h / 8, final_h = h + amplitude * 2;
             out.points = {{-w / 2, final_h / 2}};
             const std::vector<Point> bottom = sine_wave_points(-w / 2, final_h / 2, w / 2, final_h / 2, amplitude, 1);
@@ -361,9 +363,9 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
         }
         case Shape::Delay: {  // halfRoundedRectangle.ts: generateCirclePoints(-w / 2 + r, 0, r, 50, 90, 270) mirrors both axes
             constexpr double pi = 3.14159265358979323846;
-            const double h = MERMAID_MAX(10.0, label.height) + 2 * 12, r = h / 2;
+            const double h = MERMAID_MAX(10.0, label.height) + 2 * py, r = h / 2;
             const double clearance = r - std::sqrt(MERMAID_MAX(0.0, r * r - (label.height / 2) * (label.height / 2)));
-            const double w = MERMAID_MAX(15.0, label.width) + clearance * 2 + 2 * 16;
+            const double w = MERMAID_MAX(15.0, label.width) + clearance * 2 + 2 * px;
             out.points = {{-w / 2, -h / 2}, {w / 2 - r, -h / 2}};
             const double start = 90 * pi / 180, step = (270 * pi / 180 - start) / 49;
             for (int i = 0; i < 50; ++i) {
@@ -377,14 +379,14 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             return out;
         }
         case Shape::NotchedPentagon: {  // trapezoidalPentagon.ts
-            const double w = label.width + 2 * 16, h = label.height + 2 * 12;
+            const double w = label.width + 2 * px, h = label.height + 2 * py;
             out.points = {{-w / 2 * 0.8, -h / 2}, {w / 2 * 0.8, -h / 2}, {w / 2, -h / 2 * 0.6}, {w / 2, h / 2}, {-w / 2, h / 2}, {-w / 2, -h / 2 * 0.6}};
             out.rough = true;
             out.has_shift = false;
             return out;
         }
         case Shape::SlopedRectangle: {  // slopedRect.ts: drawn in a box of height h, moved down by h / 4
-            const double w = label.width + 2 * 16, h = label.height + 2 * 12;
+            const double w = label.width + 2 * px, h = label.height + 2 * py;
             const double x = -w / 2, y = -h / 2;
             out.points = {{x, y}, {x, y + h}, {x + w, y + h}, {x + w, y - h / 2}};
             out.rough = true;
@@ -394,21 +396,21 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             return out;
         }
         case Shape::Folder: {  // folder.ts: a plain path round the centre; the tab is on the top left
-            const double w = size.width, h = size.height, content = label.height + 2 * kNodePadding;
+            const double w = size.width, h = size.height, content = label.height + 2 * padding;
             const double tab_h = h - content, tab_w = MERMAID_MAX(w * 0.38, 28.0), top = -h / 2;
             out.points = {{-w / 2, top}, {-w / 2 + tab_w, top}, {-w / 2 + tab_w, top + tab_h}, {w / 2, top + tab_h}, {w / 2, h / 2}, {-w / 2, h / 2}};
             out.plain_path = true;
             return out;
         }
         case Shape::NotchedRectangle: {  // card.ts: insertPolygonShape, the notch is 12
-            const double w = label.width + 2 * 28, h = label.height + 2 * 24;
+            const double w = classic ? label.width + padding + 12 : label.width + 2 * 28, h = classic ? label.height + padding : label.height + 2 * 24;
             out.points = {{12, -h}, {w, -h}, {w, 0}, {0, 0}, {0, -h + 12}, {12, -h}};
             out.anchor = {w, h};
             return out;
         }
         case Shape::LinedRectangle: {  // shadedProcess.ts: rc.polygon, edges meet the box
             constexpr double frame = 8;
-            const double total_w = label.width + 2 * 16 + frame, h = label.height + 2 * 12;
+            const double total_w = label.width + 2 * px + (classic ? 2 : 1) * frame, h = label.height + 2 * py;
             const double w = total_w - frame, x = frame - total_w / 2, y = -h / 2;
             const std::vector<Point> pts = {{x, y}, {x + w, y}, {x + w, y + h}, {x - frame, y + h}, {x - frame, y}, {x, y}, {x, y + h}};
             out.points = pts;
@@ -419,7 +421,8 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             return out;
         }
         case Shape::DividedRectangle: {  // dividedRectangle.ts: rc.polygon, edges meet the box
-            const double w = label.width + 16, h = label.height + 16, offset = h * 0.2;
+            const double pad = classic ? padding : 16;
+            const double w = label.width + pad, h = label.height + pad, offset = h * 0.2;
             const double x = -w / 2, y = -h / 2 - offset / 2;
             const std::vector<Point> pts = {{x, y + offset}, {-x, y + offset}, {-x, -y}, {x, -y}, {x, y}, {-x, y}, {-x, y + offset}};
             out.points = pts;
@@ -430,10 +433,10 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
         }
         case Shape::CurvedTrapezoid: {  // curvedTrapezoid.ts: drawn from the top left corner, then moved by (-w / 2, -h / 2)
             constexpr double pi = 3.14159265358979323846;
-            const double h = MERMAID_MAX(5.0, label.height + 2 * 12), r = h / 2;
+            const double h = MERMAID_MAX(5.0, label.height + 2 * py), r = h / 2;
             const double clearance = r - std::sqrt(MERMAID_MAX(0.0, r * r - (label.height / 2) * (label.height / 2)));
             const double side = MERMAID_MAX(h / 4, clearance);
-            const double w = MERMAID_MAX(MERMAID_MAX(20.0, label.width + 2 * 16 + side * 2), (label.width + 2 * 16) * 1.25);
+            const double w = MERMAID_MAX(MERMAID_MAX(20.0, label.width + 2 * px + side * 2), (label.width + 2 * px) * 1.25);
             const double rw = w - r, tw = h / 4;
             out.points = {{rw, 0}, {tw, 0}, {0, h / 2}, {tw, h}, {rw, h}};
             const double start = 270 * pi / 180, step = (90 * pi / 180 - start) / 49;
@@ -447,8 +450,8 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             return out;
         }
         case Shape::StackedRectangle: {  // multiRect.ts: two outlines, each merged into one path
-            constexpr double r = 10;
-            const double w = label.width + 2 * 16, h = label.height + 2 * 12, x = -w / 2, y = -h / 2;
+            const double r = classic ? 5 : 10;
+            const double w = label.width + 2 * px, h = label.height + 2 * py, x = -w / 2, y = -h / 2;
             const std::vector<Point> outer = {{x - r, y + r}, {x - r, y + h + r}, {x + w - r, y + h + r}, {x + w - r, y + h}, {x + w, y + h},
                                               {x + w, y + h - r}, {x + w + r, y + h - r}, {x + w + r, y - r}, {x + r, y - r}, {x + r, y},
                                               {x, y}, {x, y + r}};
@@ -459,8 +462,8 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             return out;
         }
         case Shape::TaggedRectangle: {  // taggedRect.ts: the box nests in the group of the tag
-            const double h = label.height + 2 * 12, tag = 0.2 * h;
-            const double w = label.width + 2 * 16, x = -w / 2, y = -h / 2;
+            const double h = label.height + 2 * py, tag = 0.2 * h;
+            const double w = label.width + 2 * px, x = -w / 2, y = -h / 2;
             const std::vector<Point> rect = {{x - tag / 2, y}, {x + w + tag / 2, y}, {x + w + tag / 2, y + h}, {x - tag / 2, y + h}};
             const std::vector<Point> tag_points = {{x + w - tag / 2, y + h}, {x + w + tag / 2, y + h}, {x + w + tag / 2, y + h - tag}};
             out.points = rect;
@@ -469,7 +472,7 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
             return out;
         }
         case Shape::BowTieRectangle: {  // bowTieRect.ts: two inward arcs, the whole drawing moved right by rx / 2
-            const double w = label.width + 2 * 16, h = label.height + 12;
+            const double w = label.width + 2 * px, h = label.height + py;
             const double ry = h / 2, rx = ry / (2.5 + h / 50);
             out.points = {{w / 2, -h / 2}, {-w / 2, -h / 2}};
             const std::vector<Point> left = arc_points(-w / 2, -h / 2, -w / 2, h / 2, rx, ry, false);
@@ -493,7 +496,7 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
         }
         case Shape::WindowPane: {  // windowPane.ts: one path of three runs, moved by (5, 5)
             constexpr double r = 10;
-            const double w = label.width + 2 * 16, h = label.height + 2 * 12, x = -w / 2, y = -h / 2;
+            const double w = label.width + 2 * px, h = label.height + 2 * py, x = -w / 2, y = -h / 2;
             polygon_outline::layer l;
             l.points = {{x - r, y - r}, {x + w, y - r}, {x + w, y + h}, {x - r, y + h}, {x - r, y - r}};
             l.more = {{{x - r, y}, {x + w, y}}, {{x, y - r}, {x, y + h}}};
@@ -508,7 +511,9 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
         case Shape::BraceRight:
         case Shape::Braces: {  // curlyBraceLeft.ts, curlyBraceRight.ts, curlyBraces.ts: open outlines with no fill, and an invisible box
             const bool left = shape == Shape::BraceLeft;  // the left brace pads by 18 x 12 once, the others twice
-            const double w = label.width + (left ? 18 : 2 * 18), h = label.height + (left ? 12 : 2 * 12);
+            const double bx = classic ? padding : 18, by = classic ? padding : 12;
+            const bool once = left || classic;  // curlyBraceRight.ts and curlyBraces.ts pad twice only in the neo look
+            const double w = label.width + (once ? bx : 2 * bx), h = label.height + (once ? by : 2 * by);
             const double r = MERMAID_MAX(5.0, h * 0.1);
             const double sign = shape == Shape::BraceRight ? 1 : -1;  // curlyBraceRight.ts uses the variant that does not mirror
             const auto gcp = [sign](double cx, double cy, double radius, int n, double from, double to) {  // generateCirclePoints
@@ -585,13 +590,40 @@ std::optional<polygon_outline> polygon_outline_of(Shape shape, const Size& size,
     }
 }
 
-Point label_offset(Shape shape, const Size& size, const Size& label) {
+Point label_offset(Shape shape, const Size& size, const Size& label, bool classic, double padding) {
+    if (classic) {  // the shapes whose label place depends on the paddings: the classic look pads by the node padding
+        const double p = padding;
+        switch (shape) {
+            case Shape::Document: return {0, -size.height / 10};  // waveAmplitude = h / 8
+            case Shape::Documents: return {-5 - 5, 10 - (label.height + 3 * p) / 8};
+            case Shape::LinedDocument: return {(label.width + 2 * p) / 2 * 0.1 / 2, -(label.height + 2 * p) / 8};
+            case Shape::SlopedRectangle: return {0, -(label.height + 2 * p) / 4 + p + label.height / 2};
+            case Shape::TiltedCylinder: {
+                const double h = label.height + p / 2;
+                return {-(h / 2) / (2.5 + h / 50), 0};
+            }
+            case Shape::BraceLeft: {  // translate(-w / 2 + radius, -h / 2 + padding / 2), padded by the padding once
+                const double h = label.height + p, r = MERMAID_MAX(5.0, h * 0.1);
+                return {r - p / 2, 0};
+            }
+            case Shape::BraceRight:
+            case Shape::Braces: return {0, 0};
+            case Shape::LinedCylinder: {  // -bbox.height / 2 + ry
+                const double w = label.width + 2 * p;
+                return {0, (w / 2) / (2.5 + w / 50)};
+            }
+            case Shape::StackedRectangle: return {-5, 5};  // -rectOffset, +rectOffset
+            case Shape::LinedRectangle: return {4.0, 0};   // FRAME_WIDTH / 2
+            case Shape::DividedRectangle: return {0, (label.height + p) * 0.1};
+            default: break;
+        }
+    }
     if (shape == Shape::Odd) return {size.height / 8, 0};  // -notch / 2, notch = -h / 4
     // waveEdgedRectangle.ts: the label starts at -w / 2 + padding (15), above the wave; the box is 1.5 x h high
-    if (shape == Shape::Document) return {-1, 3 - size.height / 6};
+    if (shape == Shape::Document) return {padding - 16, padding - 12 - size.height / 6};
     if (shape == Shape::SlopedRectangle) {  // -w / 2 + padding, -h / 4 + padding: from the centred label
         const double h = label.height + 2 * 12;
-        return {-16 + kNodePadding, -h / 4 + kNodePadding + label.height / 2};
+        return {-16 + padding, -h / 4 + padding + label.height / 2};
     }
     if (shape == Shape::TiltedCylinder) {  // -bbox.width / 2 - rx
         const double h = label.height + 12;
@@ -603,11 +635,11 @@ Point label_offset(Shape shape, const Size& size, const Size& label) {
     }
     if (shape == Shape::BraceLeft) {  // translate(-w / 2 + radius, -h / 2 + padding / 2), padded by 18 x 12 once
         const double h = label.height + 12, r = MERMAID_MAX(5.0, h * 0.1);
-        return {r - 9, -6 + kNodePadding / 2};
+        return {r - 9, -6 + padding / 2};
     }
-    if (shape == Shape::BraceRight || shape == Shape::Braces) return {-18 + kNodePadding / 2, -12 + kNodePadding / 2};
+    if (shape == Shape::BraceRight || shape == Shape::Braces) return {-18 + padding / 2, -12 + padding / 2};
     if (shape == Shape::Person) {  // the label sits in the middle of the body
-        const person_geometry g = person_geometry_of(label);
+        const person_geometry g = person_geometry_of(label, padding);
         return {0, g.body_top + g.body_height / 2};
     }
     if (shape == Shape::Console) return {0, 10};  // the label sits in the body, below the 20 glyph band
@@ -616,22 +648,22 @@ Point label_offset(Shape shape, const Size& size, const Size& label) {
         const bucket_geometry g = bucket_geometry_of(size);
         return {0, g.top_y + (g.bottom_y - g.top_y) / 2};
     }
-    if (shape == Shape::Folder) return {0, (size.height - (label.height + 2 * kNodePadding)) / 2};  // the label sits in the body, below the tab
+    if (shape == Shape::Folder) return {0, (size.height - (label.height + 2 * padding)) / 2};  // the label sits in the body, below the tab
     if (shape == Shape::WindowPane) return {5, 5};  // rectOffset / 2
     if (shape == Shape::StackedRectangle) return {-10, 10};  // -rectOffset, +rectOffset
     if (shape == Shape::LinedRectangle) return {8.0 / 2, 0};  // FRAME_WIDTH / 2 - bbox.width / 2
-    if (shape == Shape::DividedRectangle) return {-0.5, (label.height + 16) * 0.1 - 0.5};  // padding 15 / 2 against the 16 of the box
+    if (shape == Shape::DividedRectangle) return {padding / 2 - 8, (label.height + 16) * 0.1 + padding / 2 - 8};  // padding 15 / 2 against the 16 of the box
     if (shape == Shape::Documents) return {-10, 10 - (label.height + 3 * 12) / 4};  // -bbox.w / 2 - 10, -bbox.h / 2 + 10 - amplitude
-    if (shape == Shape::TaggedDocument) return {0, -(label.height + 2 * kNodePadding) / 16};  // -amplitude / 2, amplitude = h / 8
+    if (shape == Shape::TaggedDocument) return {0, -(label.height + 2 * padding) / 16};  // -amplitude / 2, amplitude = h / 8
     if (shape == Shape::LinedDocument) {
         const double w = label.width + 2 * 16, h = label.height + 2 * 12;
-        return {-16 + kNodePadding + w / 2 * 0.1 / 2, kNodePadding - 12 - h / 4};
+        return {-16 + padding + w / 2 * 0.1 / 2, padding - 12 - h / 4};
     }
     return {0, 0};
 }
 
 std::optional<Point> polygon_border_point(const flowchart::NodeLayout& node, const Point& outside) {
-    const std::optional<polygon_outline> outline = polygon_outline_of(node.shape, node.size, node.label);
+    const std::optional<polygon_outline> outline = polygon_outline_of(node.shape, node.size, node.label, node.classic, node.padding);
     if (!outline || outline->hit_as_rect) return std::nullopt;
 
     double min_x = outline->points.front().x, min_y = outline->points.front().y;

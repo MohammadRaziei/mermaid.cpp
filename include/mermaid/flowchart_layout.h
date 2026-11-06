@@ -24,10 +24,12 @@ struct LayoutOptions {
     // Layout goldens of merman give 152 = 120 + 2*16 for `A[Start]`: labels
     // are never narrower than this. (Source of the 120 not yet understood.)
     double min_label_width = 120;
+    double wrapping_width = 120;  // flowchart.wrappingWidth: node labels wrap here (the minimum above stays)
     double cluster_pad = 8;
     // Extra room around an edge label in the label rank. Real Mermaid (dagre) reserves none; the
     // merman/ELK goldens needed 20.
     double edge_label_pad = 0;
+    bool classic = false;         // look: classic (rect: padding 2 x flowchart.padding across, flowchart.padding down)
     bool html_labels = true;      // false: node labels are SVG <text> (htmlLabels: false)
     bool edge_html_labels = true; // false: so are edge labels (htmlLabels, or the older flowchart.htmlLabels)
     bool cluster_html_labels = true;
@@ -42,6 +44,8 @@ struct NodeLayout {
     bool label_wrapped = false;  // the text broke into lines to fit the label width
     std::vector<std::vector<TextWord>> label_rows;  // htmlLabels: false: the words of every row of the text
     double label_top = 0;        // htmlLabels: false: bbox.y of the text
+    bool classic = false;        // look: classic
+    double padding = 15;         // flowchart.padding
     Rect rect() const { return Rect::from_center(center, size); }
 };
 

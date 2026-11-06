@@ -33,6 +33,8 @@ std::vector<std::string> code_points(const std::string& word) {
     return out;
 }
 
+}  // namespace
+
 // getBBox() of a <text> is wider than its advance by what the last glyph reaches beyond its own advance. Measured in
 // Chromium with Liberation Sans at 14px; it depends on that glyph only (others reach 0). Scaled with the font size.
 double last_glyph_overhang(char c, double font_size) {
@@ -55,8 +57,6 @@ double last_glyph_overhang(char c, double font_size) {
     }
     return px14 * font_size / 14.0;
 }
-
-}  // namespace
 
 std::string svg_label::row_y(size_t index) { return js_number(static_cast<double>(index) * kLineHeightEm - 0.1) + "em"; }
 
