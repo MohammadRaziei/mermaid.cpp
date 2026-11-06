@@ -1,0 +1,290 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "A",
+   "name": "A",
+   "description": "A",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "name": "B",
+   "description": "B",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [],
+ "messages": [
+  {
+   "id": "0",
+   "message": "Daily",
+   "wrap": false,
+   "type": 10,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "1",
+   "from": "A",
+   "to": "B",
+   "message": "tick",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "2",
+   "message": "",
+   "wrap": false,
+   "type": 11,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "3",
+   "message": "maybe",
+   "wrap": false,
+   "type": 15,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "4",
+   "from": "B",
+   "to": "A",
+   "message": "tock",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "5",
+   "message": "",
+   "wrap": false,
+   "type": 16,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "6",
+   "message": "first",
+   "wrap": false,
+   "type": 19,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "7",
+   "from": "A",
+   "to": "B",
+   "message": "x",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "8",
+   "message": "second",
+   "wrap": false,
+   "type": 20,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "9",
+   "from": "B",
+   "to": "A",
+   "message": "y",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "10",
+   "message": "",
+   "wrap": false,
+   "type": 21,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "11",
+   "message": "establish",
+   "wrap": false,
+   "type": 27,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "12",
+   "from": "A",
+   "to": "B",
+   "message": "connect",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "13",
+   "message": "timeout",
+   "wrap": false,
+   "type": 28,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "14",
+   "from": "B",
+   "to": "A",
+   "message": "fail",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "15",
+   "message": "",
+   "wrap": false,
+   "type": 29,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "16",
+   "message": "stop",
+   "wrap": false,
+   "type": 30,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "17",
+   "from": "A",
+   "to": "B",
+   "message": "abort",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "18",
+   "message": "",
+   "wrap": false,
+   "type": 31,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "19",
+   "message": "rgb(240, 240, 255)",
+   "wrap": false,
+   "type": 22,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "20",
+   "from": "A",
+   "to": "B",
+   "message": "tinted",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "21",
+   "message": "",
+   "wrap": false,
+   "type": 23,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "22",
+   "message": "a",
+   "wrap": false,
+   "type": 12,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "23",
+   "from": "A",
+   "to": "B",
+   "message": "1",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "24",
+   "message": "b",
+   "wrap": false,
+   "type": 13,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "25",
+   "from": "A",
+   "to": "B",
+   "message": "2",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "26",
+   "message": "c",
+   "wrap": false,
+   "type": 13,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "27",
+   "from": "A",
+   "to": "B",
+   "message": "3",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "28",
+   "message": "",
+   "wrap": false,
+   "type": 14,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

@@ -1,0 +1,32 @@
+sequenceDiagram
+  participant A
+  participant B
+  loop Daily
+    A->>B: tick
+  end
+  opt maybe
+    B->>A: tock
+  end
+  par first
+    A->>B: x
+  and second
+    B->>A: y
+  end
+  critical establish
+    A->>B: connect
+  option timeout
+    B->>A: fail
+  end
+  break stop
+    A->>B: abort
+  end
+  rect rgb(240, 240, 255)
+    A->>B: tinted
+  end
+  alt a
+    A->>B: 1
+  else b
+    A->>B: 2
+  else c
+    A->>B: 3
+  end

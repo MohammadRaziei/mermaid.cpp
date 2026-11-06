@@ -1,0 +1,8 @@
+%%{init: {"sequence": {"mirrorActors": false}}}%%
+sequenceDiagram
+  participant A
+  participant B
+  links A: {"A very long menu label that is wider than the actor box": "https://example.com/long", "Second": "javascript:alert(1)"}
+  link B: Docs @ https://example.com/docs
+  properties B: {"class": "svc"}
+  A->>B: hi

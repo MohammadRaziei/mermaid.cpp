@@ -1,0 +1,263 @@
+{
+ "title": "Demo",
+ "actors": [
+  {
+   "key": "U",
+   "name": "U",
+   "description": "User",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "actor",
+   "nextActor": "S"
+  },
+  {
+   "key": "S",
+   "name": "S",
+   "description": "Server",
+   "wrap": false,
+   "prevActor": "U",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "D"
+  },
+  {
+   "key": "D",
+   "box": {
+    "name": "Backend",
+    "wrap": false,
+    "fill": "rgb(200,220,255)",
+    "actorKeys": [
+     "D"
+    ]
+   },
+   "name": "D",
+   "description": "DB",
+   "wrap": false,
+   "prevActor": "S",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "X"
+  },
+  {
+   "key": "X",
+   "name": "X",
+   "description": "X",
+   "wrap": false,
+   "prevActor": "D",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [
+  [
+   "X",
+   17
+  ]
+ ],
+ "destroyedActors": [
+  [
+   "X",
+   18
+  ]
+ ],
+ "boxes": [
+  {
+   "name": "Backend",
+   "wrap": false,
+   "fill": "rgb(200,220,255)",
+   "actorKeys": [
+    "D"
+   ]
+  }
+ ],
+ "messages": [
+  {
+   "id": "0",
+   "message": {
+    "visible": true
+   },
+   "wrap": false,
+   "type": 26
+  },
+  {
+   "id": "1",
+   "from": "U",
+   "to": "S",
+   "message": "request",
+   "wrap": false,
+   "type": 0,
+   "activate": true,
+   "centralConnection": 0
+  },
+  {
+   "id": "2",
+   "from": "S",
+   "message": "",
+   "wrap": false,
+   "type": 17,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "3",
+   "from": "S",
+   "to": "D",
+   "message": "query",
+   "wrap": false,
+   "type": 24,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "4",
+   "from": "D",
+   "to": "S",
+   "message": "rows",
+   "wrap": false,
+   "type": 25,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "5",
+   "from": "S",
+   "to": "U",
+   "message": "response",
+   "wrap": false,
+   "type": 1,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "6",
+   "from": "S",
+   "message": "",
+   "wrap": false,
+   "type": 18,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "7",
+   "from": "U",
+   "to": "S",
+   "message": "a note",
+   "wrap": false,
+   "type": 2,
+   "placement": 2
+  },
+  {
+   "id": "8",
+   "from": "D",
+   "to": "D",
+   "message": "side",
+   "wrap": false,
+   "type": 2,
+   "placement": 1
+  },
+  {
+   "id": "9",
+   "message": "every minute",
+   "wrap": false,
+   "type": 10,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "10",
+   "from": "U",
+   "to": "S",
+   "message": "ping",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "11",
+   "message": "",
+   "wrap": false,
+   "type": 11,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "12",
+   "message": "ok",
+   "wrap": false,
+   "type": 12,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "13",
+   "from": "S",
+   "to": "U",
+   "message": "yes",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "14",
+   "message": "fail",
+   "wrap": false,
+   "type": 13,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "15",
+   "from": "S",
+   "to": "U",
+   "message": "no",
+   "wrap": false,
+   "type": 3,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "16",
+   "message": "",
+   "wrap": false,
+   "type": 14,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "17",
+   "from": "S",
+   "to": "X",
+   "message": "make",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "18",
+   "from": "X",
+   "to": "S",
+   "message": "bye",
+   "wrap": false,
+   "type": 1,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

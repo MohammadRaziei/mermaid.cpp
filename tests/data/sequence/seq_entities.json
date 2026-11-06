@@ -1,0 +1,81 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "A",
+   "name": "A",
+   "description": "Alice ﬂ°°35¶ß one",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "name": "B",
+   "description": "B",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [],
+ "messages": [
+  {
+   "id": "0",
+   "from": "A",
+   "to": "B",
+   "message": "a ﬂ°°35¶ß b ﬂ°°9829¶ß c ﬂ°infin¶ß d ﬂ°lt¶ßtagﬂ°gt¶ß",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "1",
+   "from": "A",
+   "to": "B",
+   "message": "note ﬂ°°35¶ß text ﬂ°quot¶ßqﬂ°quot¶ß",
+   "wrap": false,
+   "type": 2,
+   "placement": 2
+  },
+  {
+   "id": "2",
+   "message": "every ﬂ°°35¶ß1 min",
+   "wrap": false,
+   "type": 10,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "3",
+   "from": "B",
+   "to": "A",
+   "message": "ok",
+   "wrap": false,
+   "type": 1,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "4",
+   "message": "",
+   "wrap": false,
+   "type": 11,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

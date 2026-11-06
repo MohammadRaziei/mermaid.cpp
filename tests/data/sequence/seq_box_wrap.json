@@ -1,0 +1,113 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "A",
+   "box": {
+    "name": "A box title that is long enough to be wrapped by Mermaid around its actors",
+    "wrap": true,
+    "fill": "Aqua",
+    "actorKeys": [
+     "A",
+     "B"
+    ]
+   },
+   "name": "A",
+   "description": "A",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "box": {
+    "name": "A box title that is long enough to be wrapped by Mermaid around its actors",
+    "wrap": true,
+    "fill": "Aqua",
+    "actorKeys": [
+     "A",
+     "B"
+    ]
+   },
+   "name": "B",
+   "description": "B",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "C"
+  },
+  {
+   "key": "C",
+   "box": {
+    "name": "Two<br>lines",
+    "wrap": false,
+    "fill": "LightYellow",
+    "actorKeys": [
+     "C"
+    ]
+   },
+   "name": "C",
+   "description": "C",
+   "wrap": false,
+   "prevActor": "B",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [
+  {
+   "name": "A box title that is long enough to be wrapped by Mermaid around its actors",
+   "wrap": true,
+   "fill": "Aqua",
+   "actorKeys": [
+    "A",
+    "B"
+   ]
+  },
+  {
+   "name": "Two<br>lines",
+   "wrap": false,
+   "fill": "LightYellow",
+   "actorKeys": [
+    "C"
+   ]
+  }
+ ],
+ "messages": [
+  {
+   "id": "0",
+   "from": "A",
+   "to": "B",
+   "message": "hi",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "1",
+   "from": "B",
+   "to": "C",
+   "message": "there",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

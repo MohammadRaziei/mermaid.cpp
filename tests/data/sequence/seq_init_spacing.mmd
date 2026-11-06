@@ -1,0 +1,14 @@
+%%{init: {"sequence": {"actorMargin": 80, "width": 180, "height": 80, "boxMargin": 14, "boxTextMargin": 8, "noteMargin": 14, "wrapPadding": 14, "diagramMarginX": 20, "diagramMarginY": 30, "bottomMarginAdj": 5}}}%%
+sequenceDiagram
+  box Aqua Team
+    participant A
+    participant B
+  end
+  participant C
+  A->>B: first message
+  Note over A,B: a note
+  loop retry
+    B->>C: ping
+    C-->>B: pong
+  end
+  Note right of C: end

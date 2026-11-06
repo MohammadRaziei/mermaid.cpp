@@ -1,0 +1,18 @@
+sequenceDiagram
+  title Boxes
+  box rgba(200, 220, 255, 0.5) Frontend
+    actor U as User
+    participant W as Web
+  end
+  box LightGreen
+    participant S as Service
+  end
+  participant Q
+  U->>W: a rather long request text that widens the gap
+  activate W
+  W->>S: call
+  Note over S,Q: both
+  loop retry
+    S-->>Q: ping
+  end
+  deactivate W

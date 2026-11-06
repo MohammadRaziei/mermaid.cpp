@@ -1,0 +1,18 @@
+%%{init: {"theme": "dark"}}%%
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant S as Server
+  box rgb(120,160,200) Backend
+    participant D as Database
+  end
+  U->>+S: request
+  Note over U,S: a note
+  rect rgb(200, 150, 255)
+    S->>D: query
+    D-->>S: rows
+  end
+  loop retry
+    S-xU: oops
+  end
+  S-->>-U: response

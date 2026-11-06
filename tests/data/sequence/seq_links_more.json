@@ -1,0 +1,54 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "A",
+   "name": "A",
+   "description": "A",
+   "wrap": false,
+   "links": {
+    "One": "javascript:alert(1)"
+   },
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "name": "B",
+   "description": "B",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {
+    "Label with space": "https://example.com/x?a=1&b=2",
+    "Secon": "https://example.com/y"
+   },
+   "properties": {
+    "class": "svc",
+    "icon": "@computer"
+   },
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [],
+ "messages": [
+  {
+   "id": "0",
+   "from": "A",
+   "to": "B",
+   "message": "hi",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

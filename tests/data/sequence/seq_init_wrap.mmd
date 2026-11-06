@@ -1,0 +1,7 @@
+%%{init: {"wrap": true}}%%
+sequenceDiagram
+  participant A as A participant label that is long enough to be wrapped
+  participant B
+  A->>B: A rather long message that should be wrapped by Mermaid to fit the space between actors
+  Note over A,B: nowrap: A short note that stays on one line even if it is rather long indeed
+  Note right of B: A note that wraps because the whole diagram wraps by default

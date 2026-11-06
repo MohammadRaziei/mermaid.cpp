@@ -1,0 +1,170 @@
+{
+ "title": "Classic dark",
+ "actors": [
+  {
+   "key": "A",
+   "name": "A",
+   "description": "First line<br/>Second line",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "U"
+  },
+  {
+   "key": "U",
+   "name": "U",
+   "description": "User",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "actor",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "name": "B",
+   "description": "A participant label that is long enough to be wrapped",
+   "wrap": true,
+   "prevActor": "U",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [
+  [
+   "U",
+   0
+  ]
+ ],
+ "destroyedActors": [
+  [
+   "U",
+   5
+  ]
+ ],
+ "boxes": [],
+ "messages": [
+  {
+   "id": "0",
+   "from": "A",
+   "to": "U",
+   "message": "spawn",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "1",
+   "from": "U",
+   "to": "B",
+   "message": "call",
+   "wrap": false,
+   "type": 0,
+   "activate": true,
+   "centralConnection": 0
+  },
+  {
+   "id": "2",
+   "from": "B",
+   "message": "",
+   "wrap": false,
+   "type": 17,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "3",
+   "from": "B",
+   "to": "B",
+   "message": "A long note on the right side that needs several lines to be shown",
+   "wrap": true,
+   "type": 2,
+   "placement": 1
+  },
+  {
+   "id": "4",
+   "from": "B",
+   "to": "B",
+   "message": "self",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "5",
+   "from": "B",
+   "to": "U",
+   "message": "bye",
+   "wrap": false,
+   "type": 3,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "6",
+   "from": "B",
+   "message": "",
+   "wrap": false,
+   "type": 18,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "7",
+   "message": "ok",
+   "wrap": false,
+   "type": 12,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "8",
+   "from": "A",
+   "to": "B",
+   "message": "x",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "9",
+   "message": "fail",
+   "wrap": false,
+   "type": 13,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "10",
+   "from": "B",
+   "to": "A",
+   "message": "y",
+   "wrap": false,
+   "type": 1,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "11",
+   "message": "",
+   "wrap": false,
+   "type": 14,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

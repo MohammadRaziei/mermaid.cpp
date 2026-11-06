@@ -1,0 +1,16 @@
+sequenceDiagram
+  create participant N as New thing
+  A->>N: first
+  participant B
+  A->>+B: call
+  create actor U as User
+  B->>U: spawn
+  loop work
+    U->>U: think
+    destroy U
+    U-->>B: done
+  end
+  B-->>-A: back
+  Note over A,B: end
+  destroy N
+  A-xN: kill

@@ -1,0 +1,111 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "U",
+   "box": {
+    "name": "Purple Team",
+    "wrap": false,
+    "fill": "rgb(33,66,99)",
+    "actorKeys": [
+     "U",
+     "S"
+    ]
+   },
+   "name": "U",
+   "description": "User",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "actor",
+   "nextActor": "S"
+  },
+  {
+   "key": "S",
+   "box": {
+    "name": "Purple Team",
+    "wrap": false,
+    "fill": "rgb(33,66,99)",
+    "actorKeys": [
+     "U",
+     "S"
+    ]
+   },
+   "name": "S",
+   "description": "Server",
+   "wrap": false,
+   "prevActor": "U",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "D"
+  },
+  {
+   "key": "D",
+   "box": {
+    "wrap": false,
+    "fill": "transparent",
+    "actorKeys": [
+     "D"
+    ]
+   },
+   "name": "D",
+   "description": "Database",
+   "wrap": false,
+   "prevActor": "S",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [
+  {
+   "name": "Purple Team",
+   "wrap": false,
+   "fill": "rgb(33,66,99)",
+   "actorKeys": [
+    "U",
+    "S"
+   ]
+  },
+  {
+   "wrap": false,
+   "fill": "transparent",
+   "actorKeys": [
+    "D"
+   ]
+  }
+ ],
+ "messages": [
+  {
+   "id": "0",
+   "from": "U",
+   "to": "S",
+   "message": "request",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "1",
+   "from": "S",
+   "to": "D",
+   "message": "query",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

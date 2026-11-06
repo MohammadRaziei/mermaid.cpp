@@ -1,0 +1,82 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "A",
+   "name": "A",
+   "description": "A",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "name": "B",
+   "description": "B",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [],
+ "messages": [
+  {
+   "id": "0",
+   "from": "A",
+   "to": "A",
+   "message": "A long note on the right side of A that needs several lines to be shown",
+   "wrap": true,
+   "type": 2,
+   "placement": 1
+  },
+  {
+   "id": "1",
+   "from": "B",
+   "to": "B",
+   "message": "A long note on the left of B with enough words to wrap around",
+   "wrap": true,
+   "type": 2,
+   "placement": 0
+  },
+  {
+   "id": "2",
+   "from": "A",
+   "to": "B",
+   "message": "A note over both actors with a good amount of text so that it will wrap too",
+   "wrap": true,
+   "type": 2,
+   "placement": 2
+  },
+  {
+   "id": "3",
+   "from": "A",
+   "to": "A",
+   "message": "A note over a single actor with a good amount of text to wrap",
+   "wrap": true,
+   "type": 2,
+   "placement": 2
+  },
+  {
+   "id": "4",
+   "from": "A",
+   "to": "B",
+   "message": "ok",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

@@ -1,0 +1,102 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "Alice",
+   "name": "Alice",
+   "description": "Alice",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "Bob"
+  },
+  {
+   "key": "Bob",
+   "name": "Bob",
+   "description": "Bob",
+   "wrap": false,
+   "prevActor": "Alice",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "Carl"
+  },
+  {
+   "key": "Carl",
+   "name": "Carl",
+   "description": "Carl",
+   "wrap": false,
+   "prevActor": "Bob",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "actor",
+   "nextActor": "Dee"
+  },
+  {
+   "key": "Dee",
+   "name": "Dee",
+   "description": "D",
+   "wrap": false,
+   "prevActor": "Carl",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [],
+ "messages": [
+  {
+   "id": "0",
+   "from": "Alice",
+   "to": "Bob",
+   "message": "implicit",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "1",
+   "from": "Bob",
+   "to": "Carl",
+   "message": "x",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "2",
+   "from": "Carl",
+   "to": "Dee",
+   "message": "y",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "3",
+   "from": "Alice",
+   "to": "Alice",
+   "message": "self",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

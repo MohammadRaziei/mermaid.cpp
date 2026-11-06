@@ -1,0 +1,91 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "A",
+   "name": "A",
+   "description": "A",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "name": "B",
+   "description": "B",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [],
+ "messages": [
+  {
+   "id": "0",
+   "from": "A",
+   "to": "A",
+   "message": "left",
+   "wrap": false,
+   "type": 2,
+   "placement": 0
+  },
+  {
+   "id": "1",
+   "from": "B",
+   "to": "B",
+   "message": "right",
+   "wrap": false,
+   "type": 2,
+   "placement": 1
+  },
+  {
+   "id": "2",
+   "from": "A",
+   "to": "A",
+   "message": "over one",
+   "wrap": false,
+   "type": 2,
+   "placement": 2
+  },
+  {
+   "id": "3",
+   "from": "A",
+   "to": "B",
+   "message": "over two",
+   "wrap": false,
+   "type": 2,
+   "placement": 2
+  },
+  {
+   "id": "4",
+   "from": "A",
+   "to": "B",
+   "message": "hi<br/>there",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "5",
+   "from": "B",
+   "to": "B",
+   "message": "wrapped:wrap text",
+   "wrap": false,
+   "type": 2,
+   "placement": 2
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

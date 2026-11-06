@@ -1,0 +1,8 @@
+sequenceDiagram
+  participant A
+  participant B
+  link A: Dashboard @ https://example.com/dash
+  links B: {"Wiki": "https://example.com/wiki", "Repo": "https://example.com/repo"}
+  properties A: {"class": "internal", "id": "svc-a"}
+  details B: {"owner": "team"}
+  A->>B: hi

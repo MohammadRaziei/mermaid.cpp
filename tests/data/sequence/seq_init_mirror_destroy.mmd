@@ -1,0 +1,9 @@
+%%{init: {"sequence": {"mirrorActors": false}}}%%
+sequenceDiagram
+  participant A
+  create participant B
+  A->>B: make
+  destroy B
+  B-->>A: gone
+  actor C
+  A->>C: more

@@ -1,0 +1,141 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "A",
+   "box": {
+    "name": "Team",
+    "wrap": false,
+    "fill": "Aqua",
+    "actorKeys": [
+     "A",
+     "B"
+    ]
+   },
+   "name": "A",
+   "description": "A",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "box": {
+    "name": "Team",
+    "wrap": false,
+    "fill": "Aqua",
+    "actorKeys": [
+     "A",
+     "B"
+    ]
+   },
+   "name": "B",
+   "description": "B",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "C"
+  },
+  {
+   "key": "C",
+   "name": "C",
+   "description": "C",
+   "wrap": false,
+   "prevActor": "B",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [
+  {
+   "name": "Team",
+   "wrap": false,
+   "fill": "Aqua",
+   "actorKeys": [
+    "A",
+    "B"
+   ]
+  }
+ ],
+ "messages": [
+  {
+   "id": "0",
+   "from": "A",
+   "to": "B",
+   "message": "first message",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "1",
+   "from": "A",
+   "to": "B",
+   "message": "a note",
+   "wrap": false,
+   "type": 2,
+   "placement": 2
+  },
+  {
+   "id": "2",
+   "message": "retry",
+   "wrap": false,
+   "type": 10,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "3",
+   "from": "B",
+   "to": "C",
+   "message": "ping",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "4",
+   "from": "C",
+   "to": "B",
+   "message": "pong",
+   "wrap": false,
+   "type": 1,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "5",
+   "message": "",
+   "wrap": false,
+   "type": 11,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "6",
+   "from": "C",
+   "to": "C",
+   "message": "end",
+   "wrap": false,
+   "type": 2,
+   "placement": 1
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

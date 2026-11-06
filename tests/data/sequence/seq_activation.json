@@ -1,0 +1,143 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "A",
+   "name": "A",
+   "description": "A",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "name": "B",
+   "description": "B",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "C"
+  },
+  {
+   "key": "C",
+   "name": "C",
+   "description": "C",
+   "wrap": false,
+   "prevActor": "B",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [],
+ "messages": [
+  {
+   "id": "0",
+   "from": "A",
+   "to": "B",
+   "message": "start",
+   "wrap": false,
+   "type": 0,
+   "activate": true,
+   "centralConnection": 0
+  },
+  {
+   "id": "1",
+   "from": "B",
+   "message": "",
+   "wrap": false,
+   "type": 17,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "2",
+   "from": "B",
+   "to": "C",
+   "message": "nested",
+   "wrap": false,
+   "type": 0,
+   "activate": true,
+   "centralConnection": 0
+  },
+  {
+   "id": "3",
+   "from": "C",
+   "message": "",
+   "wrap": false,
+   "type": 17,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "4",
+   "from": "C",
+   "to": "B",
+   "message": "done",
+   "wrap": false,
+   "type": 1,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "5",
+   "from": "C",
+   "message": "",
+   "wrap": false,
+   "type": 18,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "6",
+   "from": "A",
+   "message": "",
+   "wrap": false,
+   "type": 17,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "7",
+   "from": "A",
+   "message": "",
+   "wrap": false,
+   "type": 18,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "8",
+   "from": "B",
+   "to": "A",
+   "message": "end",
+   "wrap": false,
+   "type": 1,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "9",
+   "from": "B",
+   "message": "",
+   "wrap": false,
+   "type": 18,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

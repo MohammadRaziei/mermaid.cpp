@@ -1,0 +1,64 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "A",
+   "name": "A",
+   "description": "A participant label that is long enough to be wrapped",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "name": "B",
+   "description": "B",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [],
+ "messages": [
+  {
+   "id": "0",
+   "from": "A",
+   "to": "B",
+   "message": "A rather long message that should be wrapped by Mermaid to fit the space between actors",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "1",
+   "from": "A",
+   "to": "B",
+   "message": "A short note that stays on one line even if it is rather long indeed",
+   "wrap": false,
+   "type": 2,
+   "placement": 2
+  },
+  {
+   "id": "2",
+   "from": "B",
+   "to": "B",
+   "message": "A note that wraps because the whole diagram wraps by default",
+   "wrap": false,
+   "type": 2,
+   "placement": 1
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

@@ -1,0 +1,9 @@
+sequenceDiagram
+  participant A
+  participant B
+  details A: {"Detail": "https://example.com/d"}
+  link B: Label with space @ https://example.com/x?a=1&b=2
+  link B: Second@https://example.com/y
+  properties B: {"class": "svc", "icon": "@computer"}
+  links A: {"One": "javascript:alert(1)"}
+  A->>B: hi

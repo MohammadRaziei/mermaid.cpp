@@ -1,0 +1,116 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "A",
+   "name": "A",
+   "description": "A",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "name": "B",
+   "description": "B",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [],
+ "messages": [
+  {
+   "id": "0",
+   "from": "A",
+   "to": "B",
+   "message": "solid top",
+   "wrap": false,
+   "type": 51,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "1",
+   "from": "A",
+   "to": "B",
+   "message": "solid bottom",
+   "wrap": false,
+   "type": 52,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "2",
+   "from": "A",
+   "to": "B",
+   "message": "stick top",
+   "wrap": false,
+   "type": 53,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "3",
+   "from": "A",
+   "to": "B",
+   "message": "stick bottom",
+   "wrap": false,
+   "type": 54,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "4",
+   "from": "B",
+   "to": "A",
+   "message": "solid top reverse",
+   "wrap": false,
+   "type": 55,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "5",
+   "from": "B",
+   "to": "A",
+   "message": "solid bottom reverse",
+   "wrap": false,
+   "type": 56,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "6",
+   "from": "B",
+   "to": "A",
+   "message": "stick top reverse",
+   "wrap": false,
+   "type": 57,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "7",
+   "from": "B",
+   "to": "A",
+   "message": "stick bottom reverse",
+   "wrap": false,
+   "type": 58,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

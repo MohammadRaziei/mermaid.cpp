@@ -1,0 +1,7 @@
+sequenceDiagram
+  A->>+B: start
+  B->>+C: nested
+  C-->>-B: done
+  activate A
+  deactivate A
+  B-->>-A: end

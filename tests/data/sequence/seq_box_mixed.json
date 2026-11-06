@@ -1,0 +1,177 @@
+{
+ "title": "Boxes",
+ "actors": [
+  {
+   "key": "U",
+   "box": {
+    "name": "Frontend",
+    "wrap": false,
+    "fill": "rgba(200, 220, 255, 0.5)",
+    "actorKeys": [
+     "U",
+     "W"
+    ]
+   },
+   "name": "U",
+   "description": "User",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "actor",
+   "nextActor": "W"
+  },
+  {
+   "key": "W",
+   "box": {
+    "name": "Frontend",
+    "wrap": false,
+    "fill": "rgba(200, 220, 255, 0.5)",
+    "actorKeys": [
+     "U",
+     "W"
+    ]
+   },
+   "name": "W",
+   "description": "Web",
+   "wrap": false,
+   "prevActor": "U",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "S"
+  },
+  {
+   "key": "S",
+   "box": {
+    "wrap": false,
+    "fill": "LightGreen",
+    "actorKeys": [
+     "S"
+    ]
+   },
+   "name": "S",
+   "description": "Service",
+   "wrap": false,
+   "prevActor": "W",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "Q"
+  },
+  {
+   "key": "Q",
+   "name": "Q",
+   "description": "Q",
+   "wrap": false,
+   "prevActor": "S",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [
+  {
+   "name": "Frontend",
+   "wrap": false,
+   "fill": "rgba(200, 220, 255, 0.5)",
+   "actorKeys": [
+    "U",
+    "W"
+   ]
+  },
+  {
+   "wrap": false,
+   "fill": "LightGreen",
+   "actorKeys": [
+    "S"
+   ]
+  }
+ ],
+ "messages": [
+  {
+   "id": "0",
+   "from": "U",
+   "to": "W",
+   "message": "a rather long request text that widens the gap",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "1",
+   "from": "W",
+   "message": "",
+   "wrap": false,
+   "type": 17,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "2",
+   "from": "W",
+   "to": "S",
+   "message": "call",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "3",
+   "from": "S",
+   "to": "Q",
+   "message": "both",
+   "wrap": false,
+   "type": 2,
+   "placement": 2
+  },
+  {
+   "id": "4",
+   "message": "retry",
+   "wrap": false,
+   "type": 10,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "5",
+   "from": "S",
+   "to": "Q",
+   "message": "ping",
+   "wrap": false,
+   "type": 1,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "6",
+   "message": "",
+   "wrap": false,
+   "type": 11,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "7",
+   "from": "W",
+   "message": "",
+   "wrap": false,
+   "type": 18,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

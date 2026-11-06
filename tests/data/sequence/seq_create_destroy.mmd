@@ -1,0 +1,11 @@
+sequenceDiagram
+  participant A
+  A->>B: hello
+  create participant C
+  B->>C: new
+  create actor D as Dan
+  C->>D: meet
+  destroy C
+  D-xC: bye
+  destroy B
+  A-xB: gone

@@ -1,0 +1,14 @@
+%%{init: {"theme": "forest", "sequence": {"mirrorActors": false, "showSequenceNumbers": true}}}%%
+sequenceDiagram
+  box LightYellow Group
+    actor U
+    participant S
+  end
+  rect rgb(200, 255, 200)
+    U->>S: ask
+    S-->>U: reply
+  end
+  create participant N
+  S->>N: spawn
+  destroy N
+  N-->>S: done

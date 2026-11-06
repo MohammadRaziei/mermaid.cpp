@@ -1,0 +1,26 @@
+sequenceDiagram
+  title Demo
+  autonumber
+  actor U as User
+  participant S as Server
+  box rgb(200,220,255) Backend
+    participant D as DB
+  end
+  U->>+S: request
+  S-)D: query
+  D--)S: rows
+  S-->>-U: response
+  Note over U,S: a note
+  Note right of D: side
+  loop every minute
+    U->>S: ping
+  end
+  alt ok
+    S->>U: yes
+  else fail
+    S-xU: no
+  end
+  create participant X
+  S->>X: make
+  destroy X
+  X-->>S: bye

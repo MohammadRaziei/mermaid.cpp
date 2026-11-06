@@ -1,0 +1,10 @@
+sequenceDiagram
+  box rgb(33,66,99) Purple Team
+    actor U as User
+    participant S as Server
+  end
+  box transparent
+    participant D as Database
+  end
+  U->>S: request
+  S->>D: query

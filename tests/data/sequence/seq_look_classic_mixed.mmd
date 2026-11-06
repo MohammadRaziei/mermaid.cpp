@@ -1,0 +1,18 @@
+%%{init: {"look": "classic", "theme": "dark"}}%%
+sequenceDiagram
+  title Classic dark
+  participant A as First line<br/>Second line
+  create actor U as User
+  A->>U: spawn
+  participant B as wrap: A participant label that is long enough to be wrapped
+  U->>+B: call
+  Note right of B: wrap: A long note on the right side that needs several lines to be shown
+  B->>B: self
+  destroy U
+  B-xU: bye
+  deactivate B
+  alt ok
+    A->>B: x
+  else fail
+    B-->>A: y
+  end

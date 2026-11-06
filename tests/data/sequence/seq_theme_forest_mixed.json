@@ -1,0 +1,143 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "U",
+   "box": {
+    "name": "Group",
+    "wrap": false,
+    "fill": "LightYellow",
+    "actorKeys": [
+     "U",
+     "S"
+    ]
+   },
+   "name": "U",
+   "description": "U",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "actor",
+   "nextActor": "S"
+  },
+  {
+   "key": "S",
+   "box": {
+    "name": "Group",
+    "wrap": false,
+    "fill": "LightYellow",
+    "actorKeys": [
+     "U",
+     "S"
+    ]
+   },
+   "name": "S",
+   "description": "S",
+   "wrap": false,
+   "prevActor": "U",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "N"
+  },
+  {
+   "key": "N",
+   "name": "N",
+   "description": "N",
+   "wrap": false,
+   "prevActor": "S",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [
+  [
+   "N",
+   4
+  ]
+ ],
+ "destroyedActors": [
+  [
+   "N",
+   5
+  ]
+ ],
+ "boxes": [
+  {
+   "name": "Group",
+   "wrap": false,
+   "fill": "LightYellow",
+   "actorKeys": [
+    "U",
+    "S"
+   ]
+  }
+ ],
+ "messages": [
+  {
+   "id": "0",
+   "message": "rgb(200, 255, 200)",
+   "wrap": false,
+   "type": 22,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "1",
+   "from": "U",
+   "to": "S",
+   "message": "ask",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "2",
+   "from": "S",
+   "to": "U",
+   "message": "reply",
+   "wrap": false,
+   "type": 1,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "3",
+   "message": "",
+   "wrap": false,
+   "type": 23,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "4",
+   "from": "S",
+   "to": "N",
+   "message": "spawn",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "5",
+   "from": "N",
+   "to": "S",
+   "message": "done",
+   "wrap": false,
+   "type": 1,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

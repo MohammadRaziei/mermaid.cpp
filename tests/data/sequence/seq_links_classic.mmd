@@ -1,0 +1,8 @@
+%%{init: {"look": "classic", "theme": "forest"}}%%
+sequenceDiagram
+  participant A
+  participant B
+  link A: One @ https://example.com/1
+  links A: {"Two": "https://example.com/2", "Three": "https://example.com/3"}
+  properties A: {"class": "internal"}
+  A->>B: hi

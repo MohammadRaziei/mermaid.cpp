@@ -1,0 +1,9 @@
+sequenceDiagram
+  participant A
+  participant B
+  A->>B: wrap: This is a rather long message that should be wrapped by Mermaid to fit the space between actors
+  B-->>A: nowrap: short
+  A->>A: wrap: A self message that is also wrapped because it is long enough to need it
+  loop supercalifragilisticexpialidocious_and_even_longer_than_that_to_force_hyphens_in_title
+    A->>B: x
+  end

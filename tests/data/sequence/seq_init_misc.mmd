@@ -1,0 +1,12 @@
+%%{init: {"sequence": {"activationWidth": 16, "labelBoxWidth": 70, "labelBoxHeight": 30, "useMaxWidth": false}}}%%
+sequenceDiagram
+  participant A
+  participant B
+  A->>+B: call
+  alt ok
+    B->>+B: nested
+    B-->>-B: done
+  else fail
+    B-->>A: error
+  end
+  B-->>-A: back

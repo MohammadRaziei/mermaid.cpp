@@ -1,0 +1,130 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "A",
+   "name": "A",
+   "description": "A",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "name": "B",
+   "description": "B",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "C"
+  },
+  {
+   "key": "C",
+   "name": "C",
+   "description": "C",
+   "wrap": false,
+   "prevActor": "B",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "D"
+  },
+  {
+   "key": "D",
+   "name": "D",
+   "description": "Dan",
+   "wrap": false,
+   "prevActor": "C",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "actor"
+  }
+ ],
+ "createdActors": [
+  [
+   "C",
+   1
+  ],
+  [
+   "D",
+   2
+  ]
+ ],
+ "destroyedActors": [
+  [
+   "C",
+   3
+  ],
+  [
+   "B",
+   4
+  ]
+ ],
+ "boxes": [],
+ "messages": [
+  {
+   "id": "0",
+   "from": "A",
+   "to": "B",
+   "message": "hello",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "1",
+   "from": "B",
+   "to": "C",
+   "message": "new",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "2",
+   "from": "C",
+   "to": "D",
+   "message": "meet",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "3",
+   "from": "D",
+   "to": "C",
+   "message": "bye",
+   "wrap": false,
+   "type": 3,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "4",
+   "from": "A",
+   "to": "B",
+   "message": "gone",
+   "wrap": false,
+   "type": 3,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}
