@@ -1,0 +1,7 @@
+%%{init: {"look": "neo", "fontSize": 20}}%%
+sequenceDiagram
+  participant A
+  create participant B@{ "type": "database" } as Data<br/>store
+  A->>B: save
+  destroy B
+  A-xB: drop

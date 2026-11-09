@@ -7,7 +7,6 @@
 #include <optional>
 #include <set>
 
-#include <mermaid/browser_text_measurer.h>
 #include <mermaid/css_color.h>
 #include <mermaid/error.h>
 #include <mermaid/macros.h>
@@ -32,6 +31,7 @@ using detail::SvgWriter;
 struct conf {
     double width = 150, height = 65, actor_margin = 50, box_margin = 10, box_text_margin = 5, note_margin = 10, wrap_padding = 10;
     double activation_width = 10, label_box_width = 50, label_box_height = 20;
+    double font_size = 16;  // Mermaid's top-level `fontSize`
     double diagram_margin_x = 50, diagram_margin_y = 10, bottom_margin_adj = 1;
     bool mirror_actors = true, show_sequence_numbers = false, use_max_width = true;
     bool neo = true;  // look: neo (the default) or classic
@@ -44,6 +44,7 @@ struct conf {
         set(box_text_margin, c.box_text_margin); set(note_margin, c.note_margin); set(wrap_padding, c.wrap_padding);
         set(activation_width, c.activation_width); set(label_box_width, c.label_box_width); set(label_box_height, c.label_box_height);
         set(diagram_margin_x, c.diagram_margin_x); set(diagram_margin_y, c.diagram_margin_y); set(bottom_margin_adj, c.bottom_margin_adj);
+        set(font_size, c.font_size);
         mirror_actors = c.mirror_actors.value_or(true);
         show_sequence_numbers = c.show_sequence_numbers.value_or(false);
         use_max_width = c.use_max_width.value_or(true);
@@ -54,7 +55,6 @@ struct conf {
         note_align = c.note_align.value_or("center");
     }
 };
-constexpr double kFontSize = 16;                    // actor and message text in the neo look
 constexpr double kGlyphBand = 44, kGlyphGap = 6, kLifelineGap = 6;  // actorBands.ts
 constexpr double kNeoOffset = 3;                    // arrows stop 3px before the lifeline in the neo look
 constexpr double kExtraHeightForNeoActors = 30;
@@ -109,6 +109,9 @@ bool is_stick_arrow(LineType t) {
     return is_half_arrow(t) && (v == 3 || v == 4 || v == 7 || v == 8);
 }
 
+// `activate X` and the activations a central connection `()` starts
+bool is_activation_start(LineType t) { return t == LineType::ActiveStart || t == LineType::CentralConnection || t == LineType::CentralConnectionReverse; }
+
 bool is_arrow(LineType t) {
     if (is_half_arrow(t)) return true;
     switch (t) {
@@ -136,9 +139,7 @@ public:
         : model_(model),
           conf_(model.config),
           options_(options),
-          theme_(detail::theme_variables::resolved(init_config(model), options.theme)),
-          measurer_(TextStyle{kFontSize, 1.5}),
-          metrics_(measurer_) {}
+          theme_(detail::theme_variables::resolved(init_config(model), options.theme)) {}
 
     std::string render() {
         check_supported();
@@ -173,6 +174,7 @@ private:
         std::string text;       // the text as drawn: wrapped when the message asks for it
         double number = 0;      // the `autonumber` index of the message
         bool numbered = false;  // drawn with the number circle
+        bool autonumbered = false;  // numbered by an `autonumber` statement (msgModel.sequenceVisible), not by the config key
     };
 
     struct note_box {
@@ -208,6 +210,13 @@ private:
     }
 
     // control, entity and database: a glyph in the 44px band above the label (neo look only for now)
+    // a control, entity or boundary of the classic look: drawActorTypeControl/Entity/Boundary measure the glyph with getBBox() and set the actor's
+    // height to it plus the label box height (twice for a control); the top copy is drawn with the height it had, the mirrored copy with the new one
+    bool classic_glyph(const actor_box& a) const {
+        return !conf_.neo && (a.actor->type == "control" || a.actor->type == "entity" || a.actor->type == "boundary");
+    }
+    double classic_glyph_height(const actor_box& a) const { return 44 + (a.actor->type == "control" ? 2 : 1) * conf_.label_box_height; }
+
     static bool is_glyph_type(const std::string& t) { return t == "control" || t == "entity" || t == "database" || t == "boundary"; }
 
     void check_supported() const {
@@ -217,16 +226,18 @@ private:
             for (const auto& [key, value] : a.properties)
                 if (key == "icon") unsupported("an actor `icon` property");
             if (a.type != "actor" && a.type != "participant" && a.type != "collections" && a.type != "queue" && a.type != "control" && a.type != "entity" && a.type != "database" && a.type != "boundary") unsupported("the participant type `" + a.type + "`");
-            if (a.type == "actor" && !a.links.empty()) unsupported("a menu on a stick figure");
-            if (is_glyph_type(a.type) && !conf_.neo) unsupported("the participant type `" + a.type + "` in the classic look");
-            if (is_glyph_type(a.type) && (model_.created_actors.count(a.key) || model_.destroyed_actors.count(a.key)))
-                unsupported("`create` or `destroy` of the participant type `" + a.type + "`");
+            // drawPopup reads the rect of the box, which a figure or glyph never gets: Mermaid itself fails on them
+            if ((a.type == "actor" || a.type == "control" || a.type == "entity" || a.type == "boundary") && !a.links.empty()) unsupported("a menu on a `" + a.type + "` (Mermaid cannot draw it)");
+            // the classic database cylinder is sized from the float32 bounds of its path, which depends on the actor width
+            if (a.type == "database" && !conf_.neo) unsupported("the participant type `database` in the classic look");
         }
         for (const std::string& key : model_.config.unsupported) unsupported("the config key `" + key + "`");
+        // the text model is verified for whole pixel sizes from 6 to 48
+        if (conf_.font_size < 6 || conf_.font_size > 48 || conf_.font_size != std::floor(conf_.font_size)) unsupported("a `fontSize` of " + num(conf_.font_size));
         for (const Message& m : model_.messages) {
             if (!m.from.empty() && !model_.find_actor(m.from))
                 throw ParseError("`" + m.from + "` is not a participant of the diagram", 0);
-            const bool drawn = is_arrow(m.type) || m.type == LineType::Note || m.type == LineType::ActiveStart || m.type == LineType::ActiveEnd;
+            const bool drawn = is_arrow(m.type) || m.type == LineType::Note || is_activation_start(m.type) || m.type == LineType::ActiveEnd;
             const bool fragment = is_fragment_start(m.type) || is_fragment_end(m.type) || m.type == LineType::AltElse || m.type == LineType::ParAnd ||
                                   m.type == LineType::CriticalOption || m.type == LineType::RectStart || m.type == LineType::RectEnd;
             if (!drawn && !fragment && m.type != LineType::Autonumber) unsupported(std::string("a statement of type ") + std::to_string(static_cast<int>(m.type)));
@@ -234,8 +245,10 @@ private:
     }
 
     // utils.calculateTextDimensions (see svg_text_metrics.h): whole pixels, the face Mermaid ends up measuring with.
+    // setConf copies the top-level `fontSize` over actorFontSize, noteFontSize and messageFontSize, so one size draws every text
+    std::string font_style() const { return "font-size: " + num(conf_.font_size) + "px; font-weight: 400;"; }
     text_dims measure(const std::string& text) const {
-        const detail::svg_text_dimensions d = metrics_.calculate(text);
+        const detail::svg_text_dimensions d = detail::svg_text_metrics::calculate(text, conf_.font_size);
         return {d.width, d.height};
     }
 
@@ -282,6 +295,12 @@ private:
         has_bounds_ = true;
     }
 
+    const actor_box* find_actor(const std::string& key) const {
+        for (const actor_box& a : actors_)
+            if (a.actor->key == key) return &a;
+        return nullptr;
+    }
+
     actor_box* find(const std::string& key) {
         for (actor_box& a : actors_)
             if (a.actor->key == key) return &a;
@@ -317,6 +336,10 @@ private:
         const bool bidirectional = m.type == LineType::BidirectionalSolid || m.type == LineType::BidirectionalDotted;
         if (conf_.neo && m.type != LineType::SolidOpen) stopx += to_right_side ? -kNeoOffset : kNeoOffset;
         if (conf_.neo && bidirectional) startx += to_right_side ? kNeoOffset : -kNeoOffset;
+        if (m.central == static_cast<int>(LineType::CentralConnectionReverse) || m.central == static_cast<int>(LineType::CentralConnectionDual)) {
+            startx += 4;  // CENTRAL_CONNECTION_BASE_OFFSET
+            if (bidirectional) startx += to_right_side ? 0 : -6;
+        }
         const auto adjust = [&](double v) { return to_right_side ? -v : v; };
         if (m.from == m.to) {
             stopx = startx;
@@ -563,11 +586,11 @@ private:
                 const double starty = vertical_;
                 const std::vector<std::string> rows = detail::split_breaks(n.text);
                 double text_height = 0;
-                for (const std::string& row : rows) text_height += detail::svg_text_metrics::drawn_height(detail::decode_entity_codes(row));
+                for (const std::string& row : rows) text_height += detail::svg_text_metrics::drawn_height(detail::decode_entity_codes(row), conf_.font_size);
                 bump(text_height + 2 * conf_.note_margin);
                 insert(n.startx, starty, n.startx + n.width, starty + text_height + 2 * conf_.note_margin);
                 write_note(n, starty, text_height, rows);
-            } else if (m.type == LineType::ActiveStart) {
+            } else if (is_activation_start(m.type)) {
                 const actor_box& a = *find(m.from);
                 activation act;
                 act.startx = a.center() + (static_cast<double>(count_of(open_, m.from)) - 1) * conf_.activation_width / 2;
@@ -620,6 +643,7 @@ private:
                 message_box box = *models[i].message;
                 box.number = number_;
                 box.numbered = numbers_on_ || conf_.show_sequence_numbers;
+                box.autonumbered = numbers_on_;
                 number_ = std::floor((number_ + number_step_) * 100 + 0.5) / 100;
                 box.starty = vertical_;
                 bump(10);
@@ -656,7 +680,17 @@ private:
             bump(conf_.box_margin * 2);
             for (actor_box& a : actors_)
                 if (a.stopy == 0) a.stopy = vertical_;  // a destroyed actor was given its own
-            bump(actor_height_ + conf_.box_margin);
+            // drawActors returns the height each mirrored actor ended up with
+            double footer_height = actor_height_;
+            for (const actor_box& a : actors_)
+                if (a.visible && classic_glyph(a)) {
+                    footer_height = 0;
+                    break;
+                }
+            if (footer_height == 0)
+                for (const actor_box& a : actors_)
+                    if (a.visible) footer_height = MERMAID_MAX(footer_height, classic_glyph(a) ? classic_glyph_height(a) : a.height);
+            bump(footer_height + conf_.box_margin);
         }
         // the boxes close at the bottom of the diagram
         for (group_box& g : boxes_) {
@@ -675,10 +709,10 @@ private:
     // adjustCreatedDestroyedData: the message to a created actor (or from or to a destroyed one) stops at its box, and the box
     // is centred on the message line
     void adjust_created_destroyed(const Message& m, message_box& box, size_t index) {
-        constexpr double kActorTypeWidth = 36;  // a stick figure
+        constexpr double kActorTypeWidth = 36;  // a stick figure; Mermaid sizes the arrow to it for a control, entity and database too (not a boundary)
         actor_box* from = find(m.from);
         actor_box* to = find(m.to);
-        const auto is_man = [](const actor_box& a) { return a.actor->type == "actor"; };
+        const auto is_man = [](const actor_box& a) { const std::string& t = a.actor->type; return t == "actor" || t == "control" || t == "entity" || t == "database"; };
         const auto receiver = [&](const actor_box& actor, double adjustment) {
             if (actor.x < from->x) {
                 insert(box.stopx - adjustment, box.starty, box.startx, box.stopy + actor.height / 2 + conf_.note_margin);
@@ -854,14 +888,14 @@ private:
                 attrs.emplace_back("alignment-baseline", "middle");
             }
             attrs.emplace_back("class", css_class);
-            attrs.emplace_back("style", "font-size: 16px; font-weight: 400;");
+            attrs.emplace_back("style", font_style());
             out.open("text", attrs);
             const std::string shown = detail::decode_entity_codes(row);  // measured encoded, drawn as the browser reads it
             const std::string content = shown.empty() ? "\xE2\x80\x8B" : shown;
             if (tspan) out.element("tspan", {{"x", num(x)}}, content);
             else out.text(content);
             out.close();
-            drawn += detail::svg_text_metrics::drawn_height(shown);
+            drawn += detail::svg_text_metrics::drawn_height(shown, conf_.font_size);
         }
     }
 
@@ -889,11 +923,11 @@ private:
             const std::string content = shown.empty() ? "\xE2\x80\x8B" : shown;
             out.open("text", {{"x", num(x)}, {"y", num(row_y)}, {"text-anchor", anchor}, {"dominant-baseline", "middle"},
                               {"alignment-baseline", "middle"}, {"class", css_class}, {"dy", "1em"},
-                              {"style", "font-size: 16px; font-weight: 400;"}});
+                              {"style", font_style()}});
             if (tspan) out.element("tspan", {{"x", num(x)}}, content);
             else out.text(content);
             out.close();
-            drawn += detail::svg_text_metrics::drawn_height(shown);
+            drawn += detail::svg_text_metrics::drawn_height(shown, conf_.font_size);
         }
     }
 
@@ -982,7 +1016,7 @@ private:
                 out.open("a", href == "about:blank" ? SvgWriter::Attrs{} : SvgWriter::Attrs{{"xlink:href", href}});
                 out.open("text", {{"x", num(a.x + 10)}, {"y", num(a.height + link_y + 10)}, {"dominant-baseline", "central"},
                                   {"alignment-baseline", "central"}, {"class", "actor"},
-                                  {"style", "text-anchor: start; font-size: 16px; font-weight: 400;"}});
+                                  {"style", "text-anchor: start; " + font_style()}});
                 out.element("tspan", {{"x", num(a.x + 10)}, {"dy", "0"}}, detail::decode_entity_codes(label));
                 out.close();
                 out.close();
@@ -1003,12 +1037,13 @@ private:
 
     // an actor's label: one <text> per row, all at the centre, each tspan moved by half the rows' spacing (the font size)
     void write_label_rows(SvgWriter& out, const std::string& label, double x, double y, const char* css_class) const {
+        const double size = conf_.font_size;
         const std::vector<std::string> rows = detail::split_breaks(label);
         const double count = static_cast<double>(rows.size());
         for (size_t i = 0; i < rows.size(); ++i) {
             out.open("text", {{"x", num(x)}, {"y", num(y)}, {"dominant-baseline", "central"}, {"alignment-baseline", "central"},
-                              {"class", css_class}, {"style", "text-anchor: middle; font-size: 16px; font-weight: 400;"}});
-            out.element("tspan", {{"x", num(x)}, {"dy", num(static_cast<double>(i) * 16 - (count - 1) * 8)}},
+                              {"class", css_class}, {"style", "text-anchor: middle; " + font_style()}});
+            out.element("tspan", {{"x", num(x)}, {"dy", num(static_cast<double>(i) * size - (count - 1) * size / 2)}},
                         detail::decode_entity_codes(rows[i]));
             out.close();
         }
@@ -1033,12 +1068,24 @@ private:
     void write_glyph(SvgWriter& out, const actor_box& a, bool footer) const {
         const std::string id = options_.svg_id;
         const bool control = a.actor->type == "control", boundary = a.actor->type == "boundary";
-        double glyph_bottom, label_center;
-        neo_bands(a, footer, glyph_bottom, label_center);
+        double glyph_bottom = 0, label_center = 0;
         constexpr double r = 22;
-        const double cx = a.center(), cy = glyph_bottom - 22;
+        const double cx = a.center();
+        double cy = 0, translate_y = 0;
+        if (classic_glyph(a)) {
+            // the label sits at the y drawText was given plus half the height of the actor's rect, which is the height the actor has now
+            const double actor_y = footer ? a.stopy : a.starty;
+            const double rect_height = footer ? classic_glyph_height(a) : a.height;
+            if (control) cy = actor_y + 32, label_center = actor_y + r + (footer ? 5 : 12) + rect_height / 2;
+            else if (boundary) cy = actor_y + 12, label_center = actor_y + 15 + rect_height / 2, translate_y = r / 2 + 10;
+            else cy = actor_y + (footer ? 10 : 25), label_center = actor_y + (footer ? 15 : 30) + rect_height / 2, translate_y = footer ? r : r / 2 - 5;
+            glyph_bottom = cy + r;
+        } else {
+            neo_bands(a, footer, glyph_bottom, label_center);
+            cy = glyph_bottom - 22;
+        }
         SvgWriter::Attrs attrs{{"class", std::string(control || boundary ? "actor-man" : "actor") + (footer ? " actor-bottom" : " actor-top")}, {"name", a.actor->key}};
-        if (!control) attrs.emplace_back("filter", "url(#" + id + "-drop-shadow)");
+        if (!control && conf_.neo) attrs.emplace_back("filter", "url(#" + id + "-drop-shadow)");
         std::string style = actor_style(a);
         if (boundary && style.empty()) {  // a boundary is styled with the theme's border only
             const std::string& border = theme_.sequence.at("actorBorder");
@@ -1052,12 +1099,16 @@ private:
             };
             style = "stroke: " + rgb(theme_.sequence.at("actorBorder")) + "; fill: " + rgb(theme_.sequence.at("actorBkg")) + ";";
         }
-        if (!style.empty()) attrs.emplace_back("style", style);
+        const bool classic = classic_glyph(a);
+        if (classic && translate_y != 0)  // the classic look shifts the finished glyph and its label
+            attrs.emplace_back("transform", boundary ? "translate(0," + num(translate_y) + ")" : "translate(0, " + num(translate_y) + ")");
+        if (!style.empty() && !classic) attrs.emplace_back("style", style);
         if (!footer) {
             attrs.emplace_back("data-et", "participant");
             attrs.emplace_back("data-type", a.actor->type);
             attrs.emplace_back("data-id", a.actor->key);
         }
+        if (!style.empty() && classic) attrs.emplace_back("style", style);  // there the style is set after the data attributes
         out.open("g", attrs);
         if (boundary) {
             const std::string count = std::to_string(footer ? visible_count_ - 1 : a.draw_index);
@@ -1068,10 +1119,10 @@ private:
         } else if (control) {
             out.raw("<defs><marker id=\"" + id + "-filled-head-control\" refX=\"11\" refY=\"5.8\" markerWidth=\"20\" markerHeight=\"28\" orient=\"172.5\" stroke-width=\"1.2\">"
                     "<path d=\"M 14.4 5.6 L 7.2 10.4 L 8.8 5.6 L 7.2 0.8 Z\"></path></marker></defs>");
-            out.leaf("circle", {{"cx", num(cx)}, {"cy", num(cy)}, {"r", num(r)}, {"filter", "url(#" + id + "-drop-shadow)"}});
+            out.leaf("circle", {{"cx", num(cx)}, {"cy", num(cy)}, {"r", num(r)}, {"filter", conf_.neo ? "url(#" + id + "-drop-shadow)" : std::string()}});
             out.leaf("line", {{"marker-end", "url(#" + id + "-filled-head-control)"}, {"transform", "translate(" + num(cx) + ", " + num(cy - r) + ")"}});
         } else {
-            out.leaf("circle", {{"cx", num(cx)}, {"cy", num(cy)}, {"r", num(r)}, {"width", num(a.width)}, {"height", num(a.height)}});
+            out.leaf("circle", {{"cx", num(cx)}, {"cy", num(cy)}, {"r", num(r)}, {"width", num(a.width)}, {"height", num(classic && footer ? classic_glyph_height(a) : a.height)}});
             out.leaf("line", {{"x1", num(cx - r)}, {"x2", num(cx + r)}, {"y1", num(cy + r)}, {"y2", num(cy + r)}, {"stroke-width", "2"}});
         }
         write_label_rows(out, a.label, cx, label_center, "actor actor-man");
@@ -1145,7 +1196,8 @@ private:
     // actor's lifeline is cut (at the middle of its box), the others keep the 2000 they were drawn with
     double lifeline_end(const actor_box& a) const {
         if (conf_.mirror_actors) return a.stopy;
-        return a.stopy != 0 ? a.stopy + a.height / 2 : 2000;
+        // fixLifeLineHeights runs after the drawing, so a classic glyph has the height its getBBox() gave it
+        return a.stopy != 0 ? a.stopy + (classic_glyph(a) ? classic_glyph_height(a) : a.height) / 2 : 2000;
     }
 
     void write_actor(SvgWriter& out, const actor_box& a, bool footer) const {
@@ -1247,7 +1299,7 @@ private:
             return;
         }
         out.open("g");
-        out.leaf("line", {{"id", "actor" + std::to_string(a.draw_index)}, {"x1", num(a.center())}, {"y1", num(man && !conf_.neo ? y + 80 : y + a.height)},
+        out.leaf("line", {{"id", "actor" + std::to_string(a.draw_index)}, {"x1", num(a.center())}, {"y1", num(classic_glyph(a) ? y + (a.actor->type == "boundary" ? 80 : 75) : man && !conf_.neo ? y + 80 : y + a.height)},
                           {"x2", num(a.center())}, {"y2", num(lifeline_end(a))}, {"class", "actor-line 200"}, {"stroke-width", "0.5px"},
                           {"stroke", "#999"}, {"name", a.actor->key}, {"data-et", "life-line"}, {"data-id", a.actor->key}});
         if (!man) {
@@ -1345,6 +1397,42 @@ private:
         return out.str();
     }
 
+    // drawCentralConnection: a circle where the line meets the lifeline, at the end, the start or both
+    void write_central_connection(SvgWriter& out, const Message& msg, const message_box& m) const {
+        const actor_box& from = *find_actor(msg.from);
+        const actor_box& to = *find_actor(msg.to);
+        double from_center = from.center(), to_center = to.center();
+        const bool left_to_right = from_center <= to_center;
+        const bool reverse = is_reverse_arrow(msg.type);
+        const auto offset = [&](bool ltr, bool rev) {
+            const double base = ltr ? 16.5 : -16.5;
+            return rev ? -base : base;
+        };
+        const int central = msg.central;
+        if (m.autonumbered) {
+            if (central == static_cast<int>(LineType::CentralConnection)) {
+                if (reverse) to_center += offset(left_to_right, true);
+            } else if (central == static_cast<int>(LineType::CentralConnectionReverse)) {
+                if (!reverse) from_center += offset(left_to_right, false);
+            } else if (reverse) {
+                to_center += offset(left_to_right, true);
+            } else {
+                from_center += offset(left_to_right, false);
+            }
+        }
+        const auto circle = [&](double cx) {
+            out.leaf("circle", {{"cx", num(cx)}, {"cy", num(m.line_y)}, {"r", "5"}, {"width", "10"}, {"height", "10"}});
+        };
+        out.open("g");
+        if (central == static_cast<int>(LineType::CentralConnection)) circle(to_center);
+        else if (central == static_cast<int>(LineType::CentralConnectionReverse)) circle(from_center);
+        else {
+            circle(from_center);
+            circle(to_center);
+        }
+        out.close();
+    }
+
     void write_message(SvgWriter& out, const message_box& m) const {
         const Message& msg = *m.message;
         std::string anchor;
@@ -1396,17 +1484,20 @@ private:
             const double radius = 6;
             double x1 = m.startx + radius;
             const bool reverse = is_reverse_arrow(msg.type);
-            if (bidirectional) x1 = m.startx < m.stopx ? m.startx + 2 * radius : m.startx - radius;
-            if (reverse) x1 = m.startx;
+            const bool central = msg.central != 0;
+            const double back = msg.central == static_cast<int>(LineType::CentralConnectionDual) || msg.central == static_cast<int>(LineType::CentralConnectionReverse) ? -7.5 : 0;
+            if (bidirectional) x1 = m.startx < m.stopx ? m.startx + 2 * radius : m.startx - radius + (central ? -5 : 0) + back;
+            if (reverse) x1 = m.startx + (m.stopx > m.startx ? 0 : back);
             if (self) attrs.emplace_back("x1", num(x1));
             else for (auto& a : attrs) if (a.first == "x1") a.second = num(x1);
             if (reverse) {  // the line ends before the circle at the other end
-                const double x2 = m.stopx > m.startx ? m.stopx - 2 * radius : m.stopx - radius;
+                const double x2 = (m.stopx > m.startx ? m.stopx - 2 * radius : m.stopx - radius) + (central ? 15 : 0);
                 if (self) attrs.emplace_back("x2", num(x2));
                 else for (auto& a : attrs) if (a.first == "x2") a.second = num(x2);
             }
         }
         out.leaf(self ? "path" : "line", attrs);
+        if (msg.central) write_central_connection(out, msg, m);
         if (m.numbered) {
             const double x = self ? m.from_bounds + 1
                              : is_reverse_arrow(msg.type) ? (m.startx <= m.stopx ? m.to_bounds - 1 : m.from_bounds + 1)
@@ -1426,8 +1517,6 @@ private:
     conf conf_;
     RenderOptions options_;
     detail::theme_variables theme_;
-    browser_text_measurer measurer_;
-    detail::svg_text_metrics metrics_;
     std::vector<actor_box> actors_;
     std::vector<message_box> messages_;
     size_t visible_count_ = 0;

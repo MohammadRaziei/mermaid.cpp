@@ -1,0 +1,15 @@
+%%{init: {"look": "classic"}}%%
+sequenceDiagram
+  participant A
+  participant B@{ "type": "entity" }
+  create participant C@{ "type": "control" }
+  A->>C: make
+  create participant D@{ "type": "boundary" }
+  C->>D: make too
+  create actor E
+  D->>E: and an actor
+  destroy B
+  B-xA: gone
+  destroy C
+  A-xC: kill
+  D->>A: done

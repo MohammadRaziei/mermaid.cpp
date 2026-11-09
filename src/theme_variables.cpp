@@ -1,6 +1,7 @@
 #include "theme_variables.h"
 
 #include <cstdlib>
+#include <string>
 #include <functional>
 #include <map>
 #include <stdexcept>
@@ -140,6 +141,57 @@ theme_state base_state(const std::map<std::string, std::string>& overrides) {
     });
     // A node border of the user's own makes the gradient pointless.
     if (overrides.count("nodeBorder") && !overrides.count("useGradient")) s.set("useGradient", "");
+    return s;
+}
+
+// theme-default.js (the classic default theme); it derives the pie variables from the three main colours
+theme_state classic_default_state() {
+    theme_state s;
+    s.set("background", "white");
+    s.set("primaryColor", "#ECECFF");
+    s.set("secondaryColor", "#ffffde");
+    s.set("tertiaryColor", adjust(s.get("primaryColor"), {{'h', -160}}));
+    s.set("mainBkg", "#ECECFF");
+    s.set("lineColor", "#333333");
+    s.set("arrowheadColor", "#333333");
+    s.set("border1", "#9370DB");
+    s.set("border2", "#aaaa33");
+    s.set("nodeBorder", s.get("border1"));
+    s.set("textColor", "#333");
+    s.set("titleColor", s.get("textColor"));
+    s.set("taskTextDarkColor", "black");
+    s.set("errorBkgColor", "#552222");
+    s.set("errorTextColor", "#552222");
+    s.set("fontFamily", "\"trebuchet ms\", verdana, arial, sans-serif");
+    s.set("fontSize", "16px");
+    s.set("strokeWidth", "1");
+    s.set("THEME_COLOR_LIMIT", "12");
+    s.set("useGradient", "false");
+    s.set("dropShadow", "drop-shadow(1px 2px 2px rgba(185, 185, 185, 1))");
+    const std::string primary = s.get("primaryColor"), secondary = s.get("secondaryColor"), tertiary = s.get("tertiaryColor");
+    s.set("pie1", primary);
+    s.set("pie2", secondary);
+    s.set("pie3", adjust(tertiary, {{'l', -40}}));
+    s.set("pie4", adjust(primary, {{'l', -10}}));
+    s.set("pie5", adjust(secondary, {{'l', -30}}));
+    s.set("pie6", adjust(tertiary, {{'l', -20}}));
+    s.set("pie7", adjust(primary, {{'h', 60}, {'l', -20}}));
+    s.set("pie8", adjust(primary, {{'h', -60}, {'l', -40}}));
+    s.set("pie9", adjust(primary, {{'h', 120}, {'l', -40}}));
+    s.set("pie10", adjust(primary, {{'h', 60}, {'l', -40}}));
+    s.set("pie11", adjust(primary, {{'h', -90}, {'l', -40}}));
+    s.set("pie12", adjust(primary, {{'h', 120}, {'l', -30}}));
+    s.set("pieTitleTextSize", "25px");
+    s.set("pieTitleTextColor", s.get("taskTextDarkColor"));
+    s.set("pieSectionTextSize", "17px");
+    s.set("pieSectionTextColor", s.get("textColor"));
+    s.set("pieLegendTextSize", "17px");
+    s.set("pieLegendTextColor", s.get("taskTextDarkColor"));
+    s.set("pieStrokeColor", "black");
+    s.set("pieStrokeWidth", "2px");
+    s.set("pieOuterStrokeWidth", "2px");
+    s.set("pieOuterStrokeColor", "black");
+    s.set("pieOpacity", "0.7");
     return s;
 }
 
@@ -358,6 +410,10 @@ theme_variables read_variables(const theme_state& s, bool redux) {
                             "labelBoxBkgColor", "labelBoxBorderColor", "labelTextColor", "loopTextColor", "noteBorderColor",
                             "noteBkgColor", "noteTextColor", "activationBorderColor", "activationBkgColor", "sequenceNumberColor"})
         t.sequence[key] = s.get(key);
+    for (int i = 1; i <= 12; ++i) t.pie["pie" + std::to_string(i)] = s.get("pie" + std::to_string(i));
+    for (const char* key : {"pieTitleTextSize", "pieTitleTextColor", "pieSectionTextSize", "pieSectionTextColor", "pieLegendTextSize", "pieLegendTextColor",
+                            "pieStrokeColor", "pieStrokeWidth", "pieOuterStrokeWidth", "pieOuterStrokeColor", "pieOpacity"})
+        t.pie[key] = s.get(key);
     t.font_family_config = "\"trebuchet ms\", verdana, arial, sans-serif";
     if (redux) {
         t.border_color_array = {"#E879F9", "#2DD4BF", "#FB923C", "#22D3EE", "#4ADE80", "#A78BFA",
@@ -369,6 +425,8 @@ theme_variables read_variables(const theme_state& s, bool redux) {
 }
 
 }  // namespace
+
+theme_variables theme_variables::classic_default() { return read_variables(classic_default_state(), false); }
 
 theme_variables theme_variables::named(const std::string& name) { return resolved_theme(name, {}); }
 

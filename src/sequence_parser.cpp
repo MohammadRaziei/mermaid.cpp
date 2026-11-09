@@ -516,12 +516,25 @@ private:
             }
         }
         if (!found || best == 0) fail("cannot read `" + s + "`");
-        const std::string from = actor_id(s.substr(0, best));
+        std::string before = trim(std::string_view(s).substr(0, best));
         std::string after = s.substr(best + std::char_traits<char>::length(found->token));
+        // `A()->>B`, `A->>()B`, `A()->>()B`: a connection point at the start and/or the end of the line
+        bool central_from = false, central_to = false;
+        if (before.size() >= 2 && before.compare(before.size() - 2, 2, "()") == 0) {
+            central_from = true;
+            before.erase(before.size() - 2);
+        }
+        const size_t first = after.find_first_not_of(" \t");
+        if (const std::string head = first == std::string::npos ? "" : after.substr(first); head.compare(0, 2, "()") == 0) {
+            central_to = true;
+            after = head.substr(2);
+        }
+        const std::string from = actor_id(before);
         bool activate = false, deactivate = false;
-        if (!after.empty() && after[0] == '+') activate = true;
+        if (central_to) activate = true;
+        else if (!after.empty() && after[0] == '+') activate = true;
         else if (!after.empty() && after[0] == '-') deactivate = true;
-        if (activate || deactivate) after.erase(0, 1);
+        if ((activate || deactivate) && !central_to) after.erase(0, 1);
         const size_t colon = after.find(':');
         const std::string to = actor_id(after.substr(0, colon));
         const parsed_text parsed = colon == std::string::npos ? parsed_text{} : parse_message(std::string_view(after).substr(colon));
@@ -533,8 +546,23 @@ private:
         m.text = parsed.text;
         m.wrap = parsed.wrap.value_or(model_.config.wrap.value_or(false));
         m.activate = activate;
+        if (central_from || central_to)
+            m.central = static_cast<int>(central_from && central_to ? LineType::CentralConnectionDual
+                                         : central_to              ? LineType::CentralConnection
+                                                                   : LineType::CentralConnectionReverse);
         model_.messages.push_back(std::move(m));
-        if (activate) {  // `->>+B` starts an activation of B, `-->>-B` ends one of the sender
+        if (central_to) {  // the end of the line starts an activation, the start of it too
+            Message start = fresh(LineType::CentralConnection);
+            start.from = to;
+            model_.messages.push_back(std::move(start));
+        }
+        if (central_from) {
+            Message start = fresh(LineType::CentralConnectionReverse);
+            start.from = from;
+            model_.messages.push_back(std::move(start));
+        }
+        if (central_to || central_from) {
+        } else if (activate) {  // `->>+B` starts an activation of B, `-->>-B` ends one of the sender
             Message start = fresh(LineType::ActiveStart);
             start.from = to;
             model_.messages.push_back(std::move(start));

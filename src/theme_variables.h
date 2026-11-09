@@ -41,8 +41,13 @@ struct theme_variables {
     std::string look = "neo";
     // the sequence diagram's variables (actorBkg, signalColor, noteBkgColor, ...), as the theme derives them
     std::map<std::string, std::string> sequence;
+    // the pie chart's variables (pie1 .. pie12, pieTitleTextSize, pieStrokeColor, ...), as the theme derives them
+    std::map<std::string, std::string> pie;
     std::string font_family_config;  // `fontFamily` of the diagram config (the :root rule)
 
+    // theme-default.js, the classic default theme (`default` below is the redux-color theme of Mermaid 12.2's neo look): the one a pie chart
+    // is drawn with, as the diagrams without a redux look use it. No overrides: a pie chart with `themeVariables` is not drawn.
+    static theme_variables classic_default();
     // Variables of a theme by name (`default` is Mermaid 12.2's `redux-color`, then `dark`, `forest`, `neutral`, `base`), as
     // the theme classes of Mermaid compute them; throws std::invalid_argument.
     static theme_variables named(const std::string& name);

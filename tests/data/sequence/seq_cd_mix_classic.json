@@ -1,0 +1,157 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "A",
+   "name": "A",
+   "description": "A",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "name": "B",
+   "description": "B",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "entity",
+   "nextActor": "C"
+  },
+  {
+   "key": "C",
+   "name": "C",
+   "description": "C",
+   "wrap": false,
+   "prevActor": "B",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "control",
+   "nextActor": "D"
+  },
+  {
+   "key": "D",
+   "name": "D",
+   "description": "D",
+   "wrap": false,
+   "prevActor": "C",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "boundary",
+   "nextActor": "E"
+  },
+  {
+   "key": "E",
+   "name": "E",
+   "description": "E",
+   "wrap": false,
+   "prevActor": "D",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "actor"
+  }
+ ],
+ "createdActors": [
+  [
+   "C",
+   0
+  ],
+  [
+   "D",
+   1
+  ],
+  [
+   "E",
+   2
+  ]
+ ],
+ "destroyedActors": [
+  [
+   "B",
+   3
+  ],
+  [
+   "C",
+   4
+  ]
+ ],
+ "boxes": [],
+ "messages": [
+  {
+   "id": "0",
+   "from": "A",
+   "to": "C",
+   "message": "make",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "1",
+   "from": "C",
+   "to": "D",
+   "message": "make too",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "2",
+   "from": "D",
+   "to": "E",
+   "message": "and an actor",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "3",
+   "from": "B",
+   "to": "A",
+   "message": "gone",
+   "wrap": false,
+   "type": 3,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "4",
+   "from": "A",
+   "to": "C",
+   "message": "kill",
+   "wrap": false,
+   "type": 3,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "5",
+   "from": "D",
+   "to": "A",
+   "message": "done",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

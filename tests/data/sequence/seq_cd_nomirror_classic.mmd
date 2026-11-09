@@ -1,0 +1,9 @@
+%%{init: {"look": "classic", "sequence": {"mirrorActors": false}}}%%
+sequenceDiagram
+  participant A
+  create participant B@{ "type": "control" }
+  A->>B: hi
+  destroy B
+  B-xA: bye
+  create participant C@{ "type": "entity" }
+  A->>C: again

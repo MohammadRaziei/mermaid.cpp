@@ -1,0 +1,109 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "A",
+   "box": {
+    "name": "Team",
+    "wrap": false,
+    "fill": "Aqua",
+    "actorKeys": [
+     "A",
+     "B"
+    ]
+   },
+   "name": "A",
+   "description": "A",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "box": {
+    "name": "Team",
+    "wrap": false,
+    "fill": "Aqua",
+    "actorKeys": [
+     "A",
+     "B"
+    ]
+   },
+   "name": "B",
+   "description": "B",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [
+  {
+   "name": "Team",
+   "wrap": false,
+   "fill": "Aqua",
+   "actorKeys": [
+    "A",
+    "B"
+   ]
+  }
+ ],
+ "messages": [
+  {
+   "id": "0",
+   "from": "A",
+   "to": "B",
+   "message": "A rather long message that has to be wrapped over several lines",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "1",
+   "from": "B",
+   "to": "B",
+   "message": "A long note that is also wrapped because wrap is on",
+   "wrap": false,
+   "type": 2,
+   "placement": 1
+  },
+  {
+   "id": "2",
+   "message": "rgb(200,200,255)",
+   "wrap": false,
+   "type": 22,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "3",
+   "from": "B",
+   "to": "A",
+   "message": "[inside a rect]",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "4",
+   "message": "",
+   "wrap": false,
+   "type": 23,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

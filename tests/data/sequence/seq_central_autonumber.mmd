@@ -1,0 +1,12 @@
+sequenceDiagram
+  autonumber
+  participant A
+  participant B
+  participant C
+  A->>()B: one
+  B()->>C: two
+  C()->>()A: three
+  C<<->>()A: bidirectional
+  B()/|-A: reverse
+  A\|-()B: reverse to
+  C()\|-()A: dual reverse

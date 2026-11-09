@@ -1,0 +1,17 @@
+%%{init: {"fontSize": 48}}%%
+sequenceDiagram
+  participant A as Alice<br/>Cooper
+  participant B as Bob
+  actor C as Carol
+  A->>B: Hello Bob, how are you?
+  B-->>A: Great, thanks
+  Note over A,B: A note over both
+  Note right of C: Right note<br/>two rows
+  loop Every minute
+    B->>C: ping
+  end
+  alt ok
+    C->>A: fine
+  else bad
+    C-->>A: not fine
+  end

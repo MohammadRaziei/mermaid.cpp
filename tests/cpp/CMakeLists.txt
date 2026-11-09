@@ -57,7 +57,8 @@ elseif(MERMAID_GENERATE_REFERENCES)
     set(MERMAID_REFERENCE_WORK ${CMAKE_BINARY_DIR}/references)
     set(MERMAID_REFERENCE_SVG_DIR ${MERMAID_REFERENCE_WORK}/svg)
     file(GLOB MERMAID_REFERENCE_INPUTS CONFIGURE_DEPENDS ${MERMAID_TEST_SOURCE_DIR}/data/merman/*.mmd
-                                                         ${MERMAID_TEST_SOURCE_DIR}/data/sequence/*.mmd)
+                                                         ${MERMAID_TEST_SOURCE_DIR}/data/sequence/*.mmd
+                                                         ${MERMAID_TEST_SOURCE_DIR}/data/pie/*.mmd)
     file(MAKE_DIRECTORY ${MERMAID_REFERENCE_WORK})
     if(NOT EXISTS ${MERMAID_REFERENCE_WORK}/package.json)
         file(WRITE ${MERMAID_REFERENCE_WORK}/package.json "{\"name\":\"mermaid-references\",\"private\":true,\"type\":\"module\"}\n")
@@ -74,6 +75,9 @@ elseif(MERMAID_GENERATE_REFERENCES)
         COMMAND ${CMAKE_COMMAND} -E env MERMAID_REFERENCE_FONT_DIR=${MERMAID_TEST_SOURCE_DIR}/fonts
                 ${MERMAID_NODE} ${MERMAID_REFERENCE_WORK}/render.mjs
                 ${MERMAID_TEST_SOURCE_DIR}/data/sequence ${MERMAID_REFERENCE_SVG_DIR}
+        COMMAND ${CMAKE_COMMAND} -E env MERMAID_REFERENCE_FONT_DIR=${MERMAID_TEST_SOURCE_DIR}/fonts
+                ${MERMAID_NODE} ${MERMAID_REFERENCE_WORK}/render.mjs
+                ${MERMAID_TEST_SOURCE_DIR}/data/pie ${MERMAID_REFERENCE_SVG_DIR}
         COMMAND ${CMAKE_COMMAND} -E touch ${MERMAID_REFERENCE_WORK}/references.stamp
         WORKING_DIRECTORY ${MERMAID_REFERENCE_WORK}
         DEPENDS ${MERMAID_REFERENCE_INPUTS} ${PROJECT_SOURCE_DIR}/tools/render_all_references.mjs

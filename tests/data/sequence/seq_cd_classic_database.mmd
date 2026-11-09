@@ -1,0 +1,8 @@
+%%{init: {"look": "classic"}}%%
+sequenceDiagram
+  participant A
+  create participant B@{ "type": "database" }
+  A->>B: hi
+  B->>A: back
+  destroy B
+  A-xB: bye

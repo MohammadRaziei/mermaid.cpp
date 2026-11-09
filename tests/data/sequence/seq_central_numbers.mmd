@@ -1,0 +1,10 @@
+%%{init: {"sequence": {"showSequenceNumbers": true}}}%%
+sequenceDiagram
+  participant A
+  participant B
+  participant C
+  A->>()B: one
+  B()->>C: two
+  C()->>()A: three
+  C<<->>()A: bidirectional
+  B()/|-A: reverse

@@ -1,5 +1,7 @@
 #include "flowchart_css.h"
 
+#include "khroma.h"
+
 #include <map>
 
 #include <mermaid/css_color.h>
@@ -422,7 +424,7 @@ std::string flowchart_stylesheet(const theme_variables& t, const std::string& sv
                                                            {"lineColor", t.line_color},
                                                            {"arrowheadColor", t.arrowhead_color},
                                                            {"edgeLabelBackground", t.edge_label_background},
-                                                           {"fadedEdgeLabelBackground", fade_color(t.edge_label_background, 0.5)},
+                                                           {"fadedEdgeLabelBackground", detail::khroma::fade(t.edge_label_background, 0.5)},
                                                            {"clusterBkg", t.cluster_bkg},
                                                            {"clusterBorder", t.cluster_border},
                                                            {"tertiaryColor", t.tertiary_color},

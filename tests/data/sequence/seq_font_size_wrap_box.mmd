@@ -1,0 +1,11 @@
+%%{init: {"fontSize": 18, "sequence": {"wrap": true}}}%%
+sequenceDiagram
+  box Aqua Team
+    participant A
+    participant B
+  end
+  A->>B: A rather long message that has to be wrapped over several lines
+  Note right of B: A long note that is also wrapped because wrap is on
+  rect rgb(200,200,255)
+    B->>A: [inside a rect]
+  end

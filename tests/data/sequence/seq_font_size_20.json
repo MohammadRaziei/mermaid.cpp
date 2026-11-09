@@ -1,0 +1,157 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "A",
+   "name": "A",
+   "description": "Alice<br/>Cooper",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "name": "B",
+   "description": "Bob",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "C"
+  },
+  {
+   "key": "C",
+   "name": "C",
+   "description": "Carol",
+   "wrap": false,
+   "prevActor": "B",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "actor"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [],
+ "messages": [
+  {
+   "id": "0",
+   "from": "A",
+   "to": "B",
+   "message": "Hello Bob, how are you?",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "1",
+   "from": "B",
+   "to": "A",
+   "message": "Great, thanks",
+   "wrap": false,
+   "type": 1,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "2",
+   "from": "A",
+   "to": "B",
+   "message": "A note over both",
+   "wrap": false,
+   "type": 2,
+   "placement": 2
+  },
+  {
+   "id": "3",
+   "from": "C",
+   "to": "C",
+   "message": "Right note<br/>two rows",
+   "wrap": false,
+   "type": 2,
+   "placement": 1
+  },
+  {
+   "id": "4",
+   "message": "Every minute",
+   "wrap": false,
+   "type": 10,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "5",
+   "from": "B",
+   "to": "C",
+   "message": "ping",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "6",
+   "message": "",
+   "wrap": false,
+   "type": 11,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "7",
+   "message": "ok",
+   "wrap": false,
+   "type": 12,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "8",
+   "from": "C",
+   "to": "A",
+   "message": "fine",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "9",
+   "message": "bad",
+   "wrap": false,
+   "type": 13,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "10",
+   "from": "C",
+   "to": "A",
+   "message": "not fine",
+   "wrap": false,
+   "type": 1,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "11",
+   "message": "",
+   "wrap": false,
+   "type": 14,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

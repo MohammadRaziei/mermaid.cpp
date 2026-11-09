@@ -1,0 +1,112 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "A",
+   "name": "A",
+   "description": "A",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "name": "B",
+   "description": "B",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [],
+ "messages": [
+  {
+   "id": "0",
+   "message": {
+    "visible": true
+   },
+   "wrap": false,
+   "type": 26
+  },
+  {
+   "id": "1",
+   "from": "A",
+   "to": "B",
+   "message": "first",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "2",
+   "from": "B",
+   "to": "B",
+   "message": "self call",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "3",
+   "from": "A",
+   "to": "B",
+   "message": "async",
+   "wrap": false,
+   "type": 24,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "4",
+   "from": "A",
+   "to": "B",
+   "message": "act<br/>two rows",
+   "wrap": false,
+   "type": 0,
+   "activate": true,
+   "centralConnection": 0
+  },
+  {
+   "id": "5",
+   "from": "B",
+   "message": "",
+   "wrap": false,
+   "type": 17,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "6",
+   "from": "B",
+   "to": "A",
+   "message": "done",
+   "wrap": false,
+   "type": 1,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "7",
+   "from": "B",
+   "message": "",
+   "wrap": false,
+   "type": 18,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

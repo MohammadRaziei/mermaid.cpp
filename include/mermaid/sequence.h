@@ -44,6 +44,10 @@ enum class LineType : int {
     ParOverStart = 32,
     BidirectionalSolid = 33,
     BidirectionalDotted = 34,
+    // `A->>()B` starts an activation of B (59), `A()->>B` one of A (60); a message carries `central` (59, 60 or 61 for both ends)
+    CentralConnection = 59,
+    CentralConnectionReverse = 60,
+    CentralConnectionDual = 61,
     // half arrows: the head on one side of the line only (`-|\`, `-|/`, `-\\`, `-//`), and the same at the start (`/|-`, `\|-`, `//-`, `\\-`); +10 when dotted
     SolidTop = 41,
     SolidBottom = 42,
@@ -89,6 +93,7 @@ struct Message {
     std::string text;         // message text, note text, fragment title, rect colour
     bool wrap = false;
     bool activate = false;    // `->>+`
+    int central = 0;          // 0, or the CentralConnection* value of the message's `()` marks
     std::optional<Placement> placement;  // notes
     // `autonumber [start [step]]` / `autonumber off`
     std::optional<int> number_start, number_step;
@@ -99,12 +104,15 @@ struct Message {
 struct Config {
     std::optional<double> width, height, actor_margin, box_margin, box_text_margin, note_margin, message_margin, wrap_padding;
     std::optional<double> diagram_margin_x, diagram_margin_y, bottom_margin_adj, activation_width, label_box_width, label_box_height;
+    // the top-level `fontSize` in px (a number or `"14px"`): Mermaid sets the actor, note and message font sizes to it, so the sequence
+    // keys of those names change nothing
+    std::optional<double> font_size;
     std::optional<bool> mirror_actors, wrap, show_sequence_numbers, use_max_width, right_angles, hide_unused_participants;
     std::optional<std::string> message_align, note_align;  // left / center / right (also start / middle / end)
     // the theme side of the directives, as flowchart::InitConfig reads it: theme, fontFamily, themeVariables, look
     std::optional<std::string> theme, font_family, look;
     std::map<std::string, std::string> theme_variables;
-    // keys the config knows and this renderer does not draw yet (the font keys): rendering throws
+    // keys the config knows and this renderer does not draw yet (the font families and weights; a `fontSize` that is not whole px in 6 to 48): rendering throws
     std::vector<std::string> unsupported;
 };
 

@@ -1,0 +1,8 @@
+%%{init: {"look": "neo"}}%%
+sequenceDiagram
+  participant A
+  create participant B@{ "type": "boundary" }
+  A->>B: hi
+  B->>A: back
+  destroy B
+  A-xB: bye

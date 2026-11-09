@@ -21,6 +21,8 @@ std::string darken(const std::string& color, double amount);
 std::string invert(const std::string& color);
 // khroma `rgba(r, g, b, a)`.
 std::string rgba(double r, double g, double b, double a);
+// khroma `fade` (Mermaid's styles use it for `fadedEdgeLabelBackground`): the colour with the given opacity, its channels as khroma works them out.
+std::string fade(const std::string& color, double opacity);
 // khroma `isDark`: the relative luminance is below one half.
 bool is_dark(const std::string& color);
 // theme-helpers.js `mkBorder`.

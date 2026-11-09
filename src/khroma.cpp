@@ -285,6 +285,11 @@ std::string rgba(double r, double g, double b, double a) {
     return stringify(c);
 }
 
+std::string fade(const std::string& color, double opacity) {
+    channels c = parse(color);
+    return rgba(c.get('r'), c.get('g'), c.get('b'), opacity);
+}
+
 bool is_dark(const std::string& color) { return !(luminance(color) >= .5); }
 
 std::string mk_border(const std::string& color, bool dark_mode) {

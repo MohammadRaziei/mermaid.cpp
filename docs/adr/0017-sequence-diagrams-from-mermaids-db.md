@@ -45,7 +45,11 @@ Mermaid's `calculateTextDimensions` measures every text twice (`sans-serif` and 
 second unless the first is strictly bigger in width, height and line height. In the neo look the sequence font families are
 empty, so the second measurement uses the browser default, "Times New Roman" (a serif face), while the text is drawn in the
 sans face of the stylesheet. Real Mermaid behaves this way, so the layout must too (found by deriving per-character widths
-from reference renderings: `a` = 7.1 px at 16 px is Times, not Arial). The port keeps one table for that face
-(`svg_text_metrics_data.h`, generated from Chromium by `tools/dump_svg_text_metrics.mjs`) and decides like Mermaid does;
+from reference renderings: `a` = 7.1 px at 16 px is Times, not Arial). The port keeps the design units of both faces
+(`svg_text_metrics_data.h`, generated from the fonts by `tools/dump_font_units.py`) and computes what Chromium reports at any font
+size: the length is the advances plus the `kern` pairs rounded up to 1/64 px, the box adds the ink of the glyphs rounded outwards
+(Skia's bounds), the height is the rounded hhea ascent and descent widened by the ink. This was fitted and then checked against
+getComputedTextLength() and getBBox() for 5280 strings (sizes 6 to 48, both faces) without one difference; it replaced a 16 px table
+that could not be scaled. The port decides like Mermaid does;
 `tests/fonts` pins "Times New Roman" to Liberation Serif so the references do not depend on the machine's fonts.
 

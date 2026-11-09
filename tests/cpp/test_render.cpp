@@ -412,17 +412,37 @@ UTEST(render, markdown_labels_are_html_with_strong_and_em) {
 
 UTEST(render, sequence_config_keys_that_are_not_drawn_yet_are_unsupported_and_the_others_are_read) {
     bool unsupported = false;
-    try { render_svg("%%{init: {\"sequence\": {\"messageFontSize\": 12}}}%%\nsequenceDiagram\nA->>B: x"); } catch (const UnsupportedDiagram&) { unsupported = true; }
+    try { render_svg("%%{init: {\"sequence\": {\"messageFontFamily\": \"monospace\"}}}%%\nsequenceDiagram\nA->>B: x"); } catch (const UnsupportedDiagram&) { unsupported = true; }
     ASSERT_TRUE(unsupported);
     // a later directive wins key by key
     const std::string wide = render_svg("%%{init: {\"sequence\": {\"width\": 100}}}%%\n%%{init: {\"sequence\": {\"width\": 200}}}%%\nsequenceDiagram\nA->>B: x");
     ASSERT_TRUE(wide.find("width=\"200\"") != std::string::npos);
 }
 
-UTEST(render, sequence_glyph_participant_types_in_the_classic_look_are_unsupported_not_misread) {
+UTEST(render, the_top_level_font_size_draws_every_sequence_text_and_the_per_kind_keys_change_nothing) {
+    const std::string plain = render_svg("sequenceDiagram\nA->>B: x\nNote over A: n");
+    const std::string big = render_svg("%%{init: {\"fontSize\": 20}}%%\nsequenceDiagram\nA->>B: x\nNote over A: n");
+    ASSERT_TRUE(big.find("font-size: 20px; font-weight: 400;") != std::string::npos);
+    ASSERT_TRUE(big.find("font-size: 16px; font-weight: 400;") == std::string::npos);
+    ASSERT_TRUE(render_svg("%%{init: {\"fontSize\": \"20px\"}}%%\nsequenceDiagram\nA->>B: x\nNote over A: n") == big);
+    // setConf copies the top-level size over the three keys (also in Mermaid 12.2)
+    ASSERT_TRUE(render_svg("%%{init: {\"sequence\": {\"actorFontSize\": 30, \"noteFontSize\": 9, \"messageFontSize\": 22, \"fontSize\": 12}}}%%\nsequenceDiagram\nA->>B: x\nNote over A: n") == plain);
+}
+
+UTEST(render, a_sequence_font_size_the_text_model_does_not_cover_is_unsupported) {
+    for (const char* size : {"5", "49", "14.5", "\"2em\"", "\"big\""}) {
+        bool unsupported = false;
+        try { render_svg(std::string("%%{init: {\"fontSize\": ") + size + "}}%%\nsequenceDiagram\nA->>B: x"); } catch (const UnsupportedDiagram&) { unsupported = true; }
+        ASSERT_TRUE(unsupported);
+    }
+}
+
+UTEST(render, the_classic_database_is_unsupported_not_misread_and_the_other_glyph_types_are_drawn) {
     bool unsupported = false;
-    try { render_svg("%%{init: {\"look\": \"classic\"}}%%\nsequenceDiagram\nparticipant A@{ \"type\": \"boundary\" }\nA->>A: x"); } catch (const UnsupportedDiagram&) { unsupported = true; }
+    try { render_svg("%%{init: {\"look\": \"classic\"}}%%\nsequenceDiagram\nparticipant A@{ \"type\": \"database\" }\nA->>A: x"); } catch (const UnsupportedDiagram&) { unsupported = true; }
     ASSERT_TRUE(unsupported);
+    const std::string boundary = render_svg("%%{init: {\"look\": \"classic\"}}%%\nsequenceDiagram\nparticipant A@{ \"type\": \"boundary\" }\nA->>A: x");
+    ASSERT_TRUE(boundary.find("actor-man-torso") != std::string::npos);
     // the metadata is not part of the id: one participant, drawn as a stick figure
     const std::string svg = render_svg("sequenceDiagram\nparticipant A@{ \"type\": \"actor\" }\nA->>A: x");
     ASSERT_TRUE(svg.find("actor-man") != std::string::npos);
@@ -435,11 +455,44 @@ UTEST(render, sequence_looks_other_than_neo_and_classic_are_unsupported) {
     ASSERT_TRUE(unsupported);
 }
 
-UTEST(render, sequence_menu_on_a_stick_figure_and_an_icon_property_are_unsupported) {
+UTEST(render, sequence_menu_on_a_stick_figure_or_glyph_and_an_icon_property_are_unsupported) {
     bool unsupported = false;
-    try { render_svg("sequenceDiagram\nactor A\nlink A: x @ https://e.com\nA->>A: x"); } catch (const UnsupportedDiagram&) { unsupported = true; }
-    ASSERT_TRUE(unsupported);
+    for (const char* type : {"actor", "control", "entity", "boundary"}) {  // Mermaid's drawPopup fails on all of them
+        unsupported = false;
+        try { render_svg(std::string("sequenceDiagram\nparticipant A@{ \"type\": \"") + type + "\" }\nlink A: x @ https://e.com\nA->>A: x"); } catch (const UnsupportedDiagram&) { unsupported = true; }
+        ASSERT_TRUE(unsupported);
+    }
+    unsupported = false;
     unsupported = false;
     try { render_svg("sequenceDiagram\nparticipant A\nproperties A: {\"icon\": \"@computer\"}\nA->>A: x"); } catch (const UnsupportedDiagram&) { unsupported = true; }
     ASSERT_TRUE(unsupported);
+}
+
+UTEST(render, a_pie_chart_is_drawn_and_what_changes_its_colours_is_unsupported_not_misread) {
+    const std::string svg = render_svg("pie showData title Pets\n\"Dogs\" : 386\n\"Cats\" : 85.5\n");
+    ASSERT_TRUE(svg.find("aria-roledescription=\"pie\"") != std::string::npos);
+    ASSERT_TRUE(svg.find("Dogs [386]") != std::string::npos);
+    ASSERT_TRUE(svg.find("class=\"pieTitleText\"") != std::string::npos);
+    for (const char* directive : {"{\"theme\": \"dark\"}", "{\"themeVariables\": {\"pie1\": \"#fff\"}}", "{\"fontFamily\": \"serif\"}"}) {
+        bool unsupported = false;
+        try { render_svg(std::string("%%{init: ") + directive + "}%%\npie\n\"A\" : 1\n"); } catch (const UnsupportedDiagram&) { unsupported = true; }
+        ASSERT_TRUE(unsupported);
+    }
+    bool unsupported = false;
+    try { render_svg("pie\n"); } catch (const UnsupportedDiagram&) { unsupported = true; }
+    ASSERT_TRUE(unsupported);
+    RenderOptions dark;
+    dark.theme = "dark";
+    unsupported = false;
+    try { render_svg("pie\n\"A\" : 1\n", dark); } catch (const UnsupportedDiagram&) { unsupported = true; }
+    ASSERT_TRUE(unsupported);
+}
+
+UTEST(render, slices_under_one_percent_are_left_out_and_labels_rounding_to_zero_are_dropped) {
+    const std::string svg = render_svg("pie\n\"Big\" : 1000\n\"Small\" : 3\n\"Tiny\" : 4\n");  // 0.3% and 0.4%
+    ASSERT_TRUE(svg.find("class=\"slice\"") != std::string::npos);
+    const std::string zero = ">0%<", most = ">99%<";  // no printf conversion in the asserted expression
+    ASSERT_EQ(std::string::npos, svg.find(zero));
+    ASSERT_TRUE(svg.find(most) != std::string::npos);
+    ASSERT_TRUE(svg.find(">Small<") != std::string::npos);  // still in the legend
 }

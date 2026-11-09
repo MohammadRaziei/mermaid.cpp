@@ -1,0 +1,12 @@
+%%{init: {"look": "classic"}}%%
+sequenceDiagram
+  box Aqua Team
+    participant A@{ "type": "control" }
+    participant B@{ "type": "entity" }
+  end
+  autonumber
+  A->>+B: act
+  B-->>-A: done
+  loop each
+    A->>B: again
+  end

@@ -1,6 +1,7 @@
 #include <mermaid/css_color.h>
 
 #include <cctype>
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <sstream>
@@ -14,12 +15,6 @@ int hex_digit(char c) {
     c = static_cast<char>(c | 32);
     if (c >= 'a' && c <= 'f') return c - 'a' + 10;
     return -1;
-}
-
-std::string number(double v) {
-    std::ostringstream out;
-    out << v;
-    return out.str();
 }
 
 std::string trim(std::string_view s) {
@@ -45,15 +40,6 @@ bool arguments(const std::string& text, const std::string& prefix, double out[3]
         start = comma + 1;
     }
     return true;
-}
-
-double hue_channel(double p, double q, double t) {
-    if (t < 0) t += 1;
-    if (t > 1) t -= 1;
-    if (t < 1.0 / 6) return p + (q - p) * 6 * t;
-    if (t < 0.5) return q;
-    if (t < 2.0 / 3) return p + (q - p) * (2.0 / 3 - t) * 6;
-    return p;
 }
 
 struct named_color {
@@ -237,28 +223,18 @@ std::optional<rgb_color> parse_css_color(std::string_view input) {
     double a[3];
     if (arguments(text, "rgb", a)) return rgb_color{static_cast<int>(std::lround(a[0])), static_cast<int>(std::lround(a[1])), static_cast<int>(std::lround(a[2]))};
     if (arguments(text, "hsl", a)) {
-        // the browser converts in single precision: 221.5 can come out as 221.49998 (hue 40.5882352941, saturation 60%, lightness 83.33%)
+        // the browser converts in single precision with the algorithm of CSS Color 4: 221.5 comes out as 221.49 (hue 40.58, saturation 60%,
+        // lightness 83.33%) and 143.5 stays 143.5, which rounds to 144 (hue 150, saturation 100%, lightness 56.2745098039%)
         float h = static_cast<float>(std::fmod(a[0], 360));
         if (h < 0) h += 360;
-        h /= 360;
         const float s = static_cast<float>(a[1] / 100), l = static_cast<float>(a[2] / 100);
-        float r = l, g = l, b = l;
-        if (s != 0) {
-            const float q = l < 0.5f ? l * (1 + s) : l + s - l * s;
-            const float p = 2 * l - q;
-            const auto channel = [&](float t) {
-                if (t < 0) t += 1;
-                if (t > 1) t -= 1;
-                if (t < 1.0f / 6) return p + (q - p) * 6 * t;
-                if (t < 0.5f) return q;
-                if (t < 2.0f / 3) return p + (q - p) * (2.0f / 3 - t) * 6;
-                return p;
-            };
-            r = channel(h + 1.0f / 3);
-            g = channel(h);
-            b = channel(h - 1.0f / 3);
-        }
-        return rgb_color{static_cast<int>(std::lround(r * 255)), static_cast<int>(std::lround(g * 255)), static_cast<int>(std::lround(b * 255))};
+        const float chroma = s * std::min(l, 1 - l);
+        const auto channel = [&](float n) {
+            const float k = std::fmod(n + h / 30, 12.0f);
+            return l - chroma * std::max(-1.0f, std::min({k - 3, 9 - k, 1.0f}));
+        };
+        return rgb_color{static_cast<int>(std::lround(channel(0) * 255)), static_cast<int>(std::lround(channel(8) * 255)),
+                         static_cast<int>(std::lround(channel(4) * 255))};
     }
     return keyword_color(text);
 }
@@ -267,13 +243,6 @@ std::string css_rgb(const rgb_color& c) {
     return "rgb(" + std::to_string(c.r) + ", " + std::to_string(c.g) + ", " + std::to_string(c.b) + ")";
 }
 
-std::string css_rgba(const rgb_color& c, double alpha) {
-    return "rgba(" + std::to_string(c.r) + ", " + std::to_string(c.g) + ", " + std::to_string(c.b) + ", " + number(alpha) + ")";
-}
 
-std::string fade_color(std::string_view color, double alpha) {
-    const std::optional<rgb_color> parsed = parse_css_color(color);
-    return parsed ? css_rgba(*parsed, alpha) : std::string(color);
-}
 
 }  // namespace mermaid

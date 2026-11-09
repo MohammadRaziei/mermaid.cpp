@@ -23,3 +23,4 @@ Copy `0000-template.md` for a new record and add it to the table.
 | [0015](0015-self-loops-and-dagre-coordinates.md) | Self-loops via helper nodes; dagre coordinates kept; viewBox from drawn bounds | Accepted |
 | [0016](0016-themes-computed-like-mermaid.md) | Themes computed like Mermaid, khroma's colour arithmetic ported | Accepted |
 | [0017](0017-sequence-diagrams-from-mermaids-db.md) | Sequence diagrams start from what Mermaid's sequenceDb holds | Accepted |
+| [0018](0018-pie-charts-with-the-classic-default-theme.md) | Pie charts: the classic default theme, d3's arcs, widths from the font model | Accepted |

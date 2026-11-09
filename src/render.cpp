@@ -1,4 +1,6 @@
 #include <mermaid/render.h>
+#include <mermaid/pie_parser.h>
+#include <mermaid/pie_renderer.h>
 #include <mermaid/sequence_parser.h>
 #include <mermaid/sequence_renderer.h>
 
@@ -29,9 +31,9 @@ bool is_flowchart(const std::string& word) {
 
 // Diagram types Mermaid knows but this library does not draw (yet).
 bool is_known_other(const std::string& word) {
-    static const std::array<const char*, 20> known{
+    static const std::array<const char*, 19> known{
         "sequenceDiagram", "classDiagram", "classDiagram-v2", "stateDiagram", "stateDiagram-v2", "erDiagram",
-        "gantt", "pie", "journey", "mindmap", "gitGraph", "timeline", "quadrantChart", "requirementDiagram",
+        "gantt", "journey", "mindmap", "gitGraph", "timeline", "quadrantChart", "requirementDiagram",
         "sankey-beta", "xychart-beta", "block-beta", "packet-beta", "kanban", "architecture-beta"};
     for (const char* k : known)
         if (word == k) return true;
@@ -45,6 +47,7 @@ std::string render_svg(std::string_view source, const RenderOptions& options) {
     if (statements.empty()) throw ParseError("empty diagram", 1);
 
     const std::string word = first_word(statements.front().text);
+    if (word == "pie") return pie::render_svg(pie::Parser().parse(source), options);
     if (word == "sequenceDiagram") return sequence::render_svg(sequence::Parser().parse(source), options);
     if (!is_flowchart(word)) {
         if (is_known_other(word)) throw UnsupportedDiagram(word + " diagrams are not supported yet");

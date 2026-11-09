@@ -1,0 +1,134 @@
+{
+ "title": "",
+ "actors": [
+  {
+   "key": "A",
+   "name": "A",
+   "description": "A",
+   "wrap": false,
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "B"
+  },
+  {
+   "key": "B",
+   "name": "B",
+   "description": "B",
+   "wrap": false,
+   "prevActor": "A",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant",
+   "nextActor": "C"
+  },
+  {
+   "key": "C",
+   "name": "C",
+   "description": "C",
+   "wrap": false,
+   "prevActor": "B",
+   "links": {},
+   "properties": {},
+   "actorCnt": null,
+   "rectData": null,
+   "type": "participant"
+  }
+ ],
+ "createdActors": [],
+ "destroyedActors": [],
+ "boxes": [],
+ "messages": [
+  {
+   "id": "0",
+   "from": "A",
+   "to": "B",
+   "message": "to the point",
+   "wrap": false,
+   "type": 0,
+   "activate": true,
+   "centralConnection": 59
+  },
+  {
+   "id": "1",
+   "from": "B",
+   "message": "",
+   "wrap": false,
+   "type": 59,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "2",
+   "from": "B",
+   "to": "C",
+   "message": "from the point",
+   "wrap": false,
+   "type": 0,
+   "activate": false,
+   "centralConnection": 60
+  },
+  {
+   "id": "3",
+   "from": "B",
+   "message": "",
+   "wrap": false,
+   "type": 60,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "4",
+   "from": "A",
+   "to": "C",
+   "message": "both",
+   "wrap": false,
+   "type": 0,
+   "activate": true,
+   "centralConnection": 61
+  },
+  {
+   "id": "5",
+   "from": "C",
+   "message": "",
+   "wrap": false,
+   "type": 59,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "6",
+   "from": "A",
+   "message": "",
+   "wrap": false,
+   "type": 60,
+   "activate": false,
+   "centralConnection": 0
+  },
+  {
+   "id": "7",
+   "from": "A",
+   "to": "B",
+   "message": "dotted",
+   "wrap": false,
+   "type": 1,
+   "activate": true,
+   "centralConnection": 59
+  },
+  {
+   "id": "8",
+   "from": "B",
+   "message": "",
+   "wrap": false,
+   "type": 59,
+   "activate": false,
+   "centralConnection": 0
+  }
+ ],
+ "autonumber": false,
+ "wrap": false
+}

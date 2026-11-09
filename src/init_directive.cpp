@@ -3,6 +3,7 @@
 #include "rough_path.h"
 
 #include <cctype>
+#include <algorithm>
 #include <cstdlib>
 #include <map>
 #include <memory>
@@ -153,6 +154,16 @@ sequence::Config parse_sequence_init(std::string_view source) {
         if (!value) continue;
         read_theme_settings(*value, theme);
         if (const json_value* wrap = value->find("wrap"); wrap && wrap->type == json_value::kind::boolean) config.wrap = wrap->number != 0;
+        if (const json_value* size = value->find("fontSize")) {
+            // "14px" or "14": utils.parseFontSize; any other unit is left to the browser
+            std::string digits = size->type == json_value::kind::string ? size->string : std::string();
+            if (digits.size() > 2 && digits.compare(digits.size() - 2, 2, "px") == 0) digits.resize(digits.size() - 2);
+            char* end = nullptr;
+            const double parsed = digits.empty() ? 0 : std::strtod(digits.c_str(), &end);
+            if (size->type == json_value::kind::number) config.font_size = size->number;
+            else if (!digits.empty() && end && *end == '\0') config.font_size = parsed;
+            else config.unsupported.push_back("fontSize");
+        }
         const json_value* group = value->find("sequence");
         if (!group || group->type != json_value::kind::object) continue;
         struct number_key {
@@ -198,9 +209,7 @@ sequence::Config parse_sequence_init(std::string_view source) {
         static const string_key strings[] = {{"messageAlign", &sequence::Config::message_align}, {"noteAlign", &sequence::Config::note_align}};
         for (const string_key& k : strings)
             if (const json_value* v = group->find(k.name); v && v->type == json_value::kind::string) config.*k.field = v->string;
-        static const char* const undrawn[] = {"actorFontSize", "actorFontFamily",
-                                               "actorFontWeight", "noteFontSize", "noteFontFamily", "noteFontWeight", "messageFontSize",
-                                               "messageFontFamily", "messageFontWeight"};
+        static const char* const undrawn[] = {"actorFontFamily", "actorFontWeight", "noteFontFamily", "noteFontWeight", "messageFontFamily", "messageFontWeight"};
         for (const char* name : undrawn)
             if (group->find(name)) config.unsupported.push_back(name);
     }
@@ -208,6 +217,37 @@ sequence::Config parse_sequence_init(std::string_view source) {
     config.font_family = theme.font_family;
     config.theme_variables = theme.theme_variables;
     config.look = theme.look;
+    return config;
+}
+
+pie::Config parse_pie_init(std::string_view source) {
+    pie::Config config;
+    const auto unsupported = [&](const char* key) {
+        if (std::find(config.unsupported.begin(), config.unsupported.end(), key) == config.unsupported.end()) config.unsupported.push_back(key);
+    };
+    size_t pos = 0;
+    while ((pos = source.find("%%{", pos)) != std::string_view::npos) {
+        const size_t end = source.find("}%%", pos);
+        if (end == std::string_view::npos) break;
+        const std::string_view body = source.substr(pos + 3, end - pos - 3);
+        pos = end + 3;
+        const std::string_view payload = directive_payload(body);
+        if (payload.empty()) continue;
+        const std::string text = std::string(payload) + "}";
+        auto value = json_reader(payload).read_object();
+        if (!value) value = json_reader(text).read_object();
+        if (!value) continue;
+        if (const json_value* theme = value->find("theme"); theme && !(theme->type == json_value::kind::string && theme->string == "default")) unsupported("theme");
+        if (value->find("themeVariables")) unsupported("themeVariables");
+        if (value->find("fontFamily")) unsupported("fontFamily");
+        const json_value* group = value->find("pie");
+        if (!group || group->type != json_value::kind::object) continue;
+        if (const json_value* v = group->find("textPosition"); v && v->type == json_value::kind::number) config.text_position = v->number;
+        if (const json_value* v = group->find("donutHole"); v && v->type == json_value::kind::number) config.donut_hole = v->number;
+        if (const json_value* v = group->find("legendPosition"); v && v->type == json_value::kind::string) config.legend_position = v->string;
+        if (const json_value* v = group->find("highlightSlice"); v && v->type == json_value::kind::string) config.highlight_slice = v->string;
+        if (const json_value* v = group->find("useMaxWidth"); v && v->type == json_value::kind::boolean) config.use_max_width = v->number != 0;
+    }
     return config;
 }
 
